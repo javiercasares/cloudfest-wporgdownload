@@ -263,6 +263,27 @@ class SettingsTest extends TestCase {
 			$defaults['max_concurrent_downloads'],
 			'max_concurrent_downloads should not exceed 5'
 		);
+
+		// Sync and download settings should be enabled by default.
+		$this->assertTrue(
+			$defaults['sync_plugins_enabled'],
+			'sync_plugins_enabled should default to true'
+		);
+
+		$this->assertTrue(
+			$defaults['sync_themes_enabled'],
+			'sync_themes_enabled should default to true'
+		);
+
+		$this->assertTrue(
+			$defaults['download_plugin_zips_enabled'],
+			'download_plugin_zips_enabled should default to true'
+		);
+
+		$this->assertTrue(
+			$defaults['download_theme_zips_enabled'],
+			'download_theme_zips_enabled should default to true'
+		);
 	}
 
 	/**

@@ -56,8 +56,8 @@ final class WPInsight_Admin {
 	 * @return void
 	 */
 	public static function init(): void {
-		add_action( 'admin_menu', array( __CLASS__, 'add_admin_menu' ) );
-		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
+		add_action( 'admin_menu', [ __CLASS__, 'add_admin_menu' ] );
+		add_action( 'admin_init', [ __CLASS__, 'register_settings' ] );
 	}
 
 	/**
@@ -74,7 +74,7 @@ final class WPInsight_Admin {
 			__( 'WPInsight', 'cloudfest-wporgdownload' ),           // Menu title.
 			'manage_options',                                        // Capability.
 			self::SETTINGS_PAGE_SLUG,                                // Menu slug.
-			array( __CLASS__, 'render_settings_page' )               // Callback.
+			[ __CLASS__, 'render_settings_page' ]               // Callback.
 		);
 	}
 
@@ -91,17 +91,17 @@ final class WPInsight_Admin {
 		register_setting(
 			self::SETTINGS_GROUP,
 			WPINSIGHT_SETTINGS_OPTION,
-			array(
+			[
 				'type'              => 'array',
-				'sanitize_callback' => array( __CLASS__, 'sanitize_settings' ),
-			)
+				'sanitize_callback' => [ __CLASS__, 'sanitize_settings' ],
+			]
 		);
 
 		// General Settings Section.
 		add_settings_section(
 			'wpinsight_general',
 			__( 'General Settings', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_section_general' ),
+			[ __CLASS__, 'render_section_general' ],
 			self::SETTINGS_PAGE_SLUG
 		);
 
@@ -109,7 +109,7 @@ final class WPInsight_Admin {
 		add_settings_section(
 			'wpinsight_sync',
 			__( 'Sync Settings', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_section_sync' ),
+			[ __CLASS__, 'render_section_sync' ],
 			self::SETTINGS_PAGE_SLUG
 		);
 
@@ -117,7 +117,7 @@ final class WPInsight_Admin {
 		add_settings_section(
 			'wpinsight_rate_limiting',
 			__( 'Rate Limiting', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_section_rate_limiting' ),
+			[ __CLASS__, 'render_section_rate_limiting' ],
 			self::SETTINGS_PAGE_SLUG
 		);
 
@@ -125,7 +125,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'delete_on_uninstall',
 			__( 'Delete Data on Uninstall', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_delete_on_uninstall' ),
+			[ __CLASS__, 'render_field_delete_on_uninstall' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_general'
 		);
@@ -134,7 +134,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'auto_sync_enabled',
 			__( 'Enable Auto Sync', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_auto_sync_enabled' ),
+			[ __CLASS__, 'render_field_auto_sync_enabled' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -142,7 +142,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'sync_plugins_enabled',
 			__( 'Sync Plugins', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_sync_plugins_enabled' ),
+			[ __CLASS__, 'render_field_sync_plugins_enabled' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -150,7 +150,23 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'sync_themes_enabled',
 			__( 'Sync Themes', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_sync_themes_enabled' ),
+			[ __CLASS__, 'render_field_sync_themes_enabled' ],
+			self::SETTINGS_PAGE_SLUG,
+			'wpinsight_sync'
+		);
+
+		add_settings_field(
+			'download_plugin_zips_enabled',
+			__( 'Download Plugin ZIPs', 'cloudfest-wporgdownload' ),
+			[ __CLASS__, 'render_field_download_plugin_zips_enabled' ],
+			self::SETTINGS_PAGE_SLUG,
+			'wpinsight_sync'
+		);
+
+		add_settings_field(
+			'download_theme_zips_enabled',
+			__( 'Download Theme ZIPs', 'cloudfest-wporgdownload' ),
+			[ __CLASS__, 'render_field_download_theme_zips_enabled' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -158,7 +174,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'sync_interval',
 			__( 'Sync Interval (seconds)', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_sync_interval' ),
+			[ __CLASS__, 'render_field_sync_interval' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -167,7 +183,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'max_concurrent_downloads',
 			__( 'Max Concurrent Downloads', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_max_concurrent_downloads' ),
+			[ __CLASS__, 'render_field_max_concurrent_downloads' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
@@ -175,7 +191,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'zip_worker_interval',
 			__( 'ZIP Worker Interval (seconds)', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_zip_worker_interval' ),
+			[ __CLASS__, 'render_field_zip_worker_interval' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
@@ -183,7 +199,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'max_retries',
 			__( 'Max Download Retries', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_max_retries' ),
+			[ __CLASS__, 'render_field_max_retries' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
@@ -347,11 +363,43 @@ final class WPInsight_Admin {
 	 * @return void
 	 */
 	public static function render_field_sync_themes_enabled(): void {
-		$value = WPInsight_Settings::get( 'sync_themes_enabled', false );
+		$value = WPInsight_Settings::get( 'sync_themes_enabled', true );
 		?>
 		<label>
 			<input type="checkbox" name="<?php echo esc_attr( WPINSIGHT_SETTINGS_OPTION . '[sync_themes_enabled]' ); ?>" value="1" <?php checked( $value, true ); ?> />
 			<?php esc_html_e( 'Sync WordPress.org themes', 'cloudfest-wporgdownload' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Render download_plugin_zips_enabled field.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function render_field_download_plugin_zips_enabled(): void {
+		$value = WPInsight_Settings::get( 'download_plugin_zips_enabled', true );
+		?>
+		<label>
+			<input type="checkbox" name="<?php echo esc_attr( WPINSIGHT_SETTINGS_OPTION . '[download_plugin_zips_enabled]' ); ?>" value="1" <?php checked( $value, true ); ?> />
+			<?php esc_html_e( 'Download plugin ZIP files (requires Sync Plugins enabled)', 'cloudfest-wporgdownload' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Render download_theme_zips_enabled field.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function render_field_download_theme_zips_enabled(): void {
+		$value = WPInsight_Settings::get( 'download_theme_zips_enabled', true );
+		?>
+		<label>
+			<input type="checkbox" name="<?php echo esc_attr( WPINSIGHT_SETTINGS_OPTION . '[download_theme_zips_enabled]' ); ?>" value="1" <?php checked( $value, true ); ?> />
+			<?php esc_html_e( 'Download theme ZIP files (requires Sync Themes enabled)', 'cloudfest-wporgdownload' ); ?>
 		</label>
 		<?php
 	}
@@ -432,21 +480,28 @@ final class WPInsight_Admin {
 	 * @return array Sanitized settings.
 	 */
 	public static function sanitize_settings( array $input ): array {
-		$sanitized = array();
+		$sanitized = [];
 
 		// Convert checkbox values (empty = false, '1' = true).
-		$checkboxes = array( 'delete_on_uninstall', 'auto_sync_enabled', 'sync_plugins_enabled', 'sync_themes_enabled' );
+		$checkboxes = [
+			'delete_on_uninstall',
+			'auto_sync_enabled',
+			'sync_plugins_enabled',
+			'sync_themes_enabled',
+			'download_plugin_zips_enabled',
+			'download_theme_zips_enabled',
+		];
 		foreach ( $checkboxes as $key ) {
 			$sanitized[ $key ] = isset( $input[ $key ] ) && '1' === $input[ $key ];
 		}
 
 		// Validate and sanitize number fields using Settings class.
-		$number_fields = array(
+		$number_fields = [
 			'max_concurrent_downloads',
 			'sync_interval',
 			'zip_worker_interval',
 			'max_retries',
-		);
+		];
 
 		foreach ( $number_fields as $key ) {
 			if ( isset( $input[ $key ] ) ) {

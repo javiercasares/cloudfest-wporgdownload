@@ -276,14 +276,14 @@ final class WPInsight_WPOrg_Client {
 			// Check for HTTP errors.
 			if ( is_wp_error( $response ) ) {
 				// Log error and retry.
-				error_log(
-					sprintf(
-						'WPInsight API Error (attempt %d/%d): %s',
-						$attempt,
-						self::MAX_RETRIES,
-						$response->get_error_message()
-					)
-				);
+					self::log_error(
+						sprintf(
+							'WPInsight API Error (attempt %d/%d): %s',
+							$attempt,
+							self::MAX_RETRIES,
+							$response->get_error_message()
+						)
+					);
 
 				if ( $attempt < self::MAX_RETRIES ) {
 					// Exponential backoff: 1s, 2s, 4s.
@@ -297,14 +297,14 @@ final class WPInsight_WPOrg_Client {
 			// Check HTTP status code.
 			$status_code = wp_remote_retrieve_response_code( $response );
 			if ( 200 !== $status_code ) {
-				error_log(
-					sprintf(
-						'WPInsight API Error (attempt %d/%d): HTTP %d',
-						$attempt,
-						self::MAX_RETRIES,
-						$status_code
-					)
-				);
+					self::log_error(
+						sprintf(
+							'WPInsight API Error (attempt %d/%d): HTTP %d',
+							$attempt,
+							self::MAX_RETRIES,
+							$status_code
+						)
+					);
 
 				if ( $attempt < self::MAX_RETRIES ) {
 					// Exponential backoff.
@@ -320,13 +320,13 @@ final class WPInsight_WPOrg_Client {
 			$data = json_decode( $body, true );
 
 			if ( null === $data ) {
-				error_log(
-					sprintf(
-						'WPInsight API Error (attempt %d/%d): Invalid JSON response',
-						$attempt,
-						self::MAX_RETRIES
-					)
-				);
+					self::log_error(
+						sprintf(
+							'WPInsight API Error (attempt %d/%d): Invalid JSON response',
+							$attempt,
+							self::MAX_RETRIES
+						)
+					);
 
 				if ( $attempt < self::MAX_RETRIES ) {
 					// Exponential backoff.
@@ -401,5 +401,22 @@ final class WPInsight_WPOrg_Client {
 		);
 
 		return false !== $result;
+	}
+
+	/**
+	 * Log an error message.
+	 *
+	 * Only logs when WP_DEBUG is enabled to avoid polluting production logs.
+	 * This is the WordPress-recommended way to handle debug logging.
+	 *
+	 * @since 0.1.0
+	 * @param string $message Error message to log.
+	 * @return void
+	 */
+	private static function log_error( string $message ): void {
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional logging when WP_DEBUG is enabled.
+			error_log( $message );
+		}
 	}
 }
