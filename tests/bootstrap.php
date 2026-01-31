@@ -332,6 +332,91 @@ if ( ! function_exists( 'wp_delete_post' ) ) {
 	}
 }
 
+if ( ! function_exists( 'get_post_field' ) ) {
+	/**
+	 * Stub for get_post_field() WordPress function.
+	 *
+	 * @param string $field   Field name.
+	 * @param int    $post_id Post ID.
+	 * @return string Empty string.
+	 */
+	function get_post_field( $field, $post_id ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $field, $post_id );
+		return 'test-slug';
+	}
+}
+
+if ( ! function_exists( 'number_format_i18n' ) ) {
+	/**
+	 * Stub for number_format_i18n() WordPress function.
+	 *
+	 * @param int $number Number to format.
+	 * @return string Formatted number.
+	 */
+	function number_format_i18n( $number ) {
+		return number_format( $number );
+	}
+}
+
+if ( ! function_exists( 'human_time_diff' ) ) {
+	/**
+	 * Stub for human_time_diff() WordPress function.
+	 *
+	 * @param int $from From timestamp.
+	 * @param int $to   To timestamp.
+	 * @return string Time difference.
+	 */
+	function human_time_diff( $from, $to ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $from, $to );
+		return '2 days';
+	}
+}
+
+if ( ! function_exists( 'add_filter' ) ) {
+	/**
+	 * Stub for add_filter() WordPress function.
+	 *
+	 * @param string   $hook     Hook name.
+	 * @param callable $callback Callback function.
+	 * @param int      $priority Priority.
+	 * @param int      $args     Number of arguments.
+	 * @return void
+	 */
+	function add_filter( $hook, $callback, $priority = 10, $args = 1 ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $hook, $callback, $priority, $args );
+	}
+}
+
+if ( ! function_exists( 'esc_html' ) ) {
+	/**
+	 * Stub for esc_html() WordPress function.
+	 *
+	 * @param string $text Text to escape.
+	 * @return string Escaped text.
+	 */
+	function esc_html( $text ) {
+		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'esc_html__' ) ) {
+	/**
+	 * Stub for esc_html__() WordPress function.
+	 *
+	 * @param string $text   Text to translate and escape.
+	 * @param string $domain Text domain.
+	 * @return string Escaped translated text.
+	 */
+	function esc_html__( $text, $domain = 'default' ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $domain );
+		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
 // Load plugin main file (defines constants).
 require_once dirname( __DIR__ ) . '/cloudfest-wporgdownload.php';
 

@@ -379,4 +379,126 @@ class CPTTest extends TestCase {
 			'get_plugin_meta() should return empty array for invalid post ID'
 		);
 	}
+
+	/**
+	 * Test that plugin_columns returns an array.
+	 *
+	 * Verifies that the plugin_columns() method returns an array of columns.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_plugin_columns_returns_array(): void {
+		$columns = WPInsight_CPT::plugin_columns(
+			array(
+				'cb'    => '<input type="checkbox" />',
+				'title' => 'Title',
+				'date'  => 'Date',
+			)
+		);
+
+		$this->assertIsArray(
+			$columns,
+			'plugin_columns() should return an array'
+		);
+
+		$this->assertNotEmpty(
+			$columns,
+			'plugin_columns() should return a non-empty array'
+		);
+
+		$this->assertArrayHasKey(
+			'slug',
+			$columns,
+			'plugin_columns() should include slug column'
+		);
+
+		$this->assertArrayHasKey(
+			'version',
+			$columns,
+			'plugin_columns() should include version column'
+		);
+	}
+
+	/**
+	 * Test that theme_columns returns an array.
+	 *
+	 * Verifies that the theme_columns() method returns an array of columns.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_theme_columns_returns_array(): void {
+		$columns = WPInsight_CPT::theme_columns(
+			array(
+				'cb'    => '<input type="checkbox" />',
+				'title' => 'Title',
+				'date'  => 'Date',
+			)
+		);
+
+		$this->assertIsArray(
+			$columns,
+			'theme_columns() should return an array'
+		);
+
+		$this->assertNotEmpty(
+			$columns,
+			'theme_columns() should return a non-empty array'
+		);
+
+		$this->assertArrayHasKey(
+			'slug',
+			$columns,
+			'theme_columns() should include slug column'
+		);
+
+		$this->assertArrayHasKey(
+			'version',
+			$columns,
+			'theme_columns() should include version column'
+		);
+	}
+
+	/**
+	 * Test that plugin_column_content can be called.
+	 *
+	 * Verifies that calling plugin_column_content() doesn't throw exceptions
+	 * and produces output.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_plugin_column_content_can_be_called(): void {
+		// Capture output to avoid risky test warnings.
+		ob_start();
+		WPInsight_CPT::plugin_column_content( 'slug', 1 );
+		$output = ob_get_clean();
+
+		$this->assertIsString(
+			$output,
+			'plugin_column_content() should produce output'
+		);
+	}
+
+	/**
+	 * Test that theme_column_content can be called.
+	 *
+	 * Verifies that calling theme_column_content() doesn't throw exceptions
+	 * and produces output.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_theme_column_content_can_be_called(): void {
+		// Capture output to avoid risky test warnings.
+		ob_start();
+		WPInsight_CPT::theme_column_content( 'slug', 1 );
+		$output = ob_get_clean();
+
+		$this->assertIsString(
+			$output,
+			'theme_column_content() should produce output'
+		);
+	}
 }

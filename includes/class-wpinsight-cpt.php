@@ -62,6 +62,7 @@ final class WPInsight_CPT {
 	public static function register(): void {
 		self::register_plugin_cpt();
 		self::register_theme_cpt();
+		self::setup_admin_columns();
 	}
 
 	/**
@@ -130,7 +131,7 @@ final class WPInsight_CPT {
 			'publicly_queryable' => false,
 			'show_ui'            => true,
 			'show_in_menu'       => true,
-			'menu_position'      => 58, // Below Plugins menu.
+			'menu_position'      => 26, // Below Comments menu.
 			'menu_icon'          => 'dashicons-admin-plugins',
 			'query_var'          => false,
 			'rewrite'            => false,
@@ -186,7 +187,7 @@ final class WPInsight_CPT {
 			'publicly_queryable' => false,
 			'show_ui'            => true,
 			'show_in_menu'       => true,
-			'menu_position'      => 59, // Below WP.org Plugins menu.
+			'menu_position'      => 27, // Below WP.org Plugins menu.
 			'menu_icon'          => 'dashicons-admin-appearance',
 			'query_var'          => false,
 			'rewrite'            => false,
@@ -492,5 +493,208 @@ final class WPInsight_CPT {
 		}
 
 		return $meta;
+	}
+
+	/**
+	 * Setup admin columns for CPTs.
+	 *
+	 * Hooks into WordPress filters and actions to customize the admin columns
+	 * displayed in the post list tables for plugins and themes.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	private static function setup_admin_columns(): void {
+		// Plugin columns.
+		add_filter( 'manage_' . self::PLUGIN_POST_TYPE . '_posts_columns', array( __CLASS__, 'plugin_columns' ) );
+		add_action( 'manage_' . self::PLUGIN_POST_TYPE . '_posts_custom_column', array( __CLASS__, 'plugin_column_content' ), 10, 2 );
+
+		// Theme columns.
+		add_filter( 'manage_' . self::THEME_POST_TYPE . '_posts_columns', array( __CLASS__, 'theme_columns' ) );
+		add_action( 'manage_' . self::THEME_POST_TYPE . '_posts_custom_column', array( __CLASS__, 'theme_column_content' ), 10, 2 );
+	}
+
+	/**
+	 * Customize plugin admin columns.
+	 *
+	 * Modifies the columns displayed in the plugin CPT admin list table.
+	 * Adds custom columns for slug, version, downloads, rating, etc.
+	 *
+	 * @since 0.1.0
+	 * @param array $columns Default columns.
+	 * @return array Modified columns.
+	 */
+	public static function plugin_columns( array $columns ): array {
+		// Remove default columns we don't need.
+		unset( $columns['date'] );
+
+		// Build new column structure.
+		$new_columns = array(
+			'cb'              => $columns['cb'], // Checkbox.
+			'title'           => $columns['title'], // Title.
+			'slug'            => __( 'Slug', 'cloudfest-wporgdownload' ),
+			'version'         => __( 'Version', 'cloudfest-wporgdownload' ),
+			'author'          => __( 'Author', 'cloudfest-wporgdownload' ),
+			'downloads'       => __( 'Downloads', 'cloudfest-wporgdownload' ),
+			'active_installs' => __( 'Active Installs', 'cloudfest-wporgdownload' ),
+			'rating'          => __( 'Rating', 'cloudfest-wporgdownload' ),
+			'last_updated'    => __( 'Last Updated', 'cloudfest-wporgdownload' ),
+		);
+
+		return $new_columns;
+	}
+
+	/**
+	 * Customize theme admin columns.
+	 *
+	 * Modifies the columns displayed in the theme CPT admin list table.
+	 * Adds custom columns for slug, version, downloads, rating, etc.
+	 *
+	 * @since 0.1.0
+	 * @param array $columns Default columns.
+	 * @return array Modified columns.
+	 */
+	public static function theme_columns( array $columns ): array {
+		// Remove default columns we don't need.
+		unset( $columns['date'] );
+
+		// Build new column structure.
+		$new_columns = array(
+			'cb'           => $columns['cb'], // Checkbox.
+			'title'        => $columns['title'], // Title.
+			'slug'         => __( 'Slug', 'cloudfest-wporgdownload' ),
+			'version'      => __( 'Version', 'cloudfest-wporgdownload' ),
+			'author'       => __( 'Author', 'cloudfest-wporgdownload' ),
+			'downloads'    => __( 'Downloads', 'cloudfest-wporgdownload' ),
+			'rating'       => __( 'Rating', 'cloudfest-wporgdownload' ),
+			'last_updated' => __( 'Last Updated', 'cloudfest-wporgdownload' ),
+		);
+
+		return $new_columns;
+	}
+
+	/**
+	 * Display plugin custom column content.
+	 *
+	 * Outputs the content for custom columns in the plugin CPT admin list table.
+	 * Retrieves data from post meta and formats it for display.
+	 *
+	 * @since 0.1.0
+	 * @param string $column  Column name.
+	 * @param int    $post_id Post ID.
+	 * @return void
+	 */
+	public static function plugin_column_content( string $column, int $post_id ): void {
+		$meta = self::get_plugin_meta( $post_id );
+
+		switch ( $column ) {
+			case 'slug':
+				echo esc_html( $meta['slug'] ?? get_post_field( 'post_name', $post_id ) );
+				break;
+
+			case 'version':
+				echo esc_html( $meta['version'] ?? '—' );
+				break;
+
+			case 'author':
+				echo esc_html( $meta['author'] ?? '—' );
+				break;
+
+			case 'downloads':
+				$downloads = $meta['downloaded'] ?? 0;
+				echo esc_html( number_format_i18n( (int) $downloads ) );
+				break;
+
+			case 'active_installs':
+				$installs = $meta['active_installs'] ?? 0;
+				echo esc_html( number_format_i18n( (int) $installs ) );
+				break;
+
+			case 'rating':
+				$rating = $meta['rating'] ?? 0;
+				if ( $rating > 0 ) {
+					// Display rating as percentage with star icon.
+					echo '<span class="dashicons dashicons-star-filled" style="color: #ffb900;"></span> ';
+					echo esc_html( number_format_i18n( (int) $rating ) . '%' );
+				} else {
+					echo '—';
+				}
+				break;
+
+			case 'last_updated':
+				$last_updated = $meta['last_updated'] ?? '';
+				if ( ! empty( $last_updated ) ) {
+					// Convert to human-readable format.
+					$timestamp = strtotime( $last_updated );
+					if ( $timestamp ) {
+						echo esc_html( human_time_diff( $timestamp, time() ) . ' ago' );
+					} else {
+						echo esc_html( $last_updated );
+					}
+				} else {
+					echo '—';
+				}
+				break;
+		}
+	}
+
+	/**
+	 * Display theme custom column content.
+	 *
+	 * Outputs the content for custom columns in the theme CPT admin list table.
+	 * Retrieves data from post meta and formats it for display.
+	 *
+	 * @since 0.1.0
+	 * @param string $column  Column name.
+	 * @param int    $post_id Post ID.
+	 * @return void
+	 */
+	public static function theme_column_content( string $column, int $post_id ): void {
+		$meta = self::get_theme_meta( $post_id );
+
+		switch ( $column ) {
+			case 'slug':
+				echo esc_html( $meta['slug'] ?? get_post_field( 'post_name', $post_id ) );
+				break;
+
+			case 'version':
+				echo esc_html( $meta['version'] ?? '—' );
+				break;
+
+			case 'author':
+				echo esc_html( $meta['author'] ?? '—' );
+				break;
+
+			case 'downloads':
+				$downloads = $meta['downloaded'] ?? 0;
+				echo esc_html( number_format_i18n( (int) $downloads ) );
+				break;
+
+			case 'rating':
+				$rating = $meta['rating'] ?? 0;
+				if ( $rating > 0 ) {
+					// Display rating as percentage with star icon.
+					echo '<span class="dashicons dashicons-star-filled" style="color: #ffb900;"></span> ';
+					echo esc_html( number_format_i18n( (int) $rating ) . '%' );
+				} else {
+					echo '—';
+				}
+				break;
+
+			case 'last_updated':
+				$last_updated = $meta['last_updated'] ?? '';
+				if ( ! empty( $last_updated ) ) {
+					// Convert to human-readable format.
+					$timestamp = strtotime( $last_updated );
+					if ( $timestamp ) {
+						echo esc_html( human_time_diff( $timestamp, time() ) . ' ago' );
+					} else {
+						echo esc_html( $last_updated );
+					}
+				} else {
+					echo '—';
+				}
+				break;
+		}
 	}
 }
