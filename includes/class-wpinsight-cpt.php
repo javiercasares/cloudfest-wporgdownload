@@ -296,8 +296,8 @@ final class WPInsight_CPT {
 	 * All meta keys are prefixed with _wpinsight_ and are private (start with _).
 	 *
 	 * @since 0.1.0
-	 * @param int   $post_id Plugin post ID.
-	 * @param array $data    Plugin data from WordPress.org API.
+	 * @param int                  $post_id Plugin post ID.
+	 * @param array<string, mixed> $data    Plugin data from WordPress.org API.
 	 * @return bool True on success, false on failure.
 	 */
 	public static function save_plugin_meta( int $post_id, array $data ): bool {
@@ -356,8 +356,8 @@ final class WPInsight_CPT {
 	 * All meta keys are prefixed with _wpinsight_ and are private (start with _).
 	 *
 	 * @since 0.1.0
-	 * @param int   $post_id Theme post ID.
-	 * @param array $data    Theme data from WordPress.org API.
+	 * @param int                  $post_id Theme post ID.
+	 * @param array<string, mixed> $data    Theme data from WordPress.org API.
 	 * @return bool True on success, false on failure.
 	 */
 	public static function save_theme_meta( int $post_id, array $data ): bool {
@@ -521,8 +521,8 @@ final class WPInsight_CPT {
 	 * Adds custom columns for slug, version, downloads, rating, etc.
 	 *
 	 * @since 0.1.0
-	 * @param array $columns Default columns.
-	 * @return array Modified columns.
+	 * @param array<string, string> $columns Default columns.
+	 * @return array<string, string> Modified columns.
 	 */
 	public static function plugin_columns( array $columns ): array {
 		// Remove default columns we don't need.
@@ -551,8 +551,8 @@ final class WPInsight_CPT {
 	 * Adds custom columns for slug, version, downloads, rating, etc.
 	 *
 	 * @since 0.1.0
-	 * @param array $columns Default columns.
-	 * @return array Modified columns.
+	 * @param array<string, string> $columns Default columns.
+	 * @return array<string, string> Modified columns.
 	 */
 	public static function theme_columns( array $columns ): array {
 		// Remove default columns we don't need.

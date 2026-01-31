@@ -61,14 +61,6 @@ final class WPInsight_Sync {
 	private const STATE_COMPLETED = 'completed';
 
 	/**
-	 * Sync state: Paused.
-	 *
-	 * @since 0.1.0
-	 * @var string
-	 */
-	private const STATE_PAUSED = 'paused';
-
-	/**
 	 * Sync state: Error.
 	 *
 	 * @since 0.1.0
@@ -350,9 +342,9 @@ final class WPInsight_Sync {
 	 * Adds download jobs to the zip_queue table for each version.
 	 *
 	 * @since 0.1.0
-	 * @param string $slug     Plugin slug.
-	 * @param array  $versions Versions array (version => download_url).
-	 * @param int    $post_id  Plugin post ID.
+	 * @param string                $slug     Plugin slug.
+	 * @param array<string, string> $versions Versions array (version => download_url).
+	 * @param int                   $post_id  Plugin post ID.
 	 * @return void
 	 */
 	private static function enqueue_plugin_downloads( string $slug, array $versions, int $post_id ): void {
@@ -402,9 +394,9 @@ final class WPInsight_Sync {
 	 * Adds download jobs to the zip_queue table for each version.
 	 *
 	 * @since 0.1.0
-	 * @param string $slug     Theme slug.
-	 * @param array  $versions Versions array (version => download_url).
-	 * @param int    $post_id  Theme post ID.
+	 * @param string                $slug     Theme slug.
+	 * @param array<string, string> $versions Versions array (version => download_url).
+	 * @param int                   $post_id  Theme post ID.
 	 * @return void
 	 */
 	private static function enqueue_theme_downloads( string $slug, array $versions, int $post_id ): void {
@@ -455,7 +447,7 @@ final class WPInsight_Sync {
 	 *
 	 * @since 0.1.0
 	 * @param string $type Sync type ('plugin' or 'theme').
-	 * @return array {
+	 * @return array<string, mixed> {
 	 *     Sync state data.
 	 *
 	 *     @type string $status      Sync status.

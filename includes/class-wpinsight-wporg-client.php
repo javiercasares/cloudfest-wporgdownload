@@ -72,14 +72,14 @@ final class WPInsight_WPOrg_Client {
 	 * This is used for the initial sync to discover all plugins.
 	 *
 	 * @since 0.1.0
-	 * @param array $args {
+	 * @param array<string, mixed> $args {
 	 *     Query arguments.
 	 *
 	 *     @type string $browse  Browse type (updated, popular, new, favorites). Default 'updated'.
 	 *     @type int    $page    Page number (1-indexed). Default 1.
 	 *     @type int    $per_page Number of results per page. Default 100.
 	 * }
-	 * @return array|false {
+	 * @return array<string, mixed>|false {
 	 *     API response data or false on failure.
 	 *
 	 *     @type array  $plugins List of plugin objects.
@@ -122,7 +122,7 @@ final class WPInsight_WPOrg_Client {
 	 *
 	 * @since 0.1.0
 	 * @param string $slug Plugin slug.
-	 * @return array|false Plugin information object or false on failure.
+	 * @return array<string, mixed>|false Plugin information object or false on failure.
 	 */
 	public static function get_plugin_info( string $slug ): array|false {
 		if ( empty( $slug ) ) {
@@ -164,14 +164,14 @@ final class WPInsight_WPOrg_Client {
 	 * This is used for the initial sync to discover all themes.
 	 *
 	 * @since 0.1.0
-	 * @param array $args {
+	 * @param array<string, mixed> $args {
 	 *     Query arguments.
 	 *
 	 *     @type string $browse  Browse type (updated, popular, new, featured). Default 'updated'.
 	 *     @type int    $page    Page number (1-indexed). Default 1.
 	 *     @type int    $per_page Number of results per page. Default 100.
 	 * }
-	 * @return array|false {
+	 * @return array<string, mixed>|false {
 	 *     API response data or false on failure.
 	 *
 	 *     @type array  $themes List of theme objects.
@@ -214,7 +214,7 @@ final class WPInsight_WPOrg_Client {
 	 *
 	 * @since 0.1.0
 	 * @param string $slug Theme slug.
-	 * @return array|false Theme information object or false on failure.
+	 * @return array<string, mixed>|false Theme information object or false on failure.
 	 */
 	public static function get_theme_info( string $slug ): array|false {
 		if ( empty( $slug ) ) {
@@ -252,9 +252,9 @@ final class WPInsight_WPOrg_Client {
 	 * All API methods should use this method to make requests.
 	 *
 	 * @since 0.1.0
-	 * @param string $url  API endpoint URL.
-	 * @param array  $args Request arguments to be JSON-encoded.
-	 * @return array|false Response data or false on failure.
+	 * @param string               $url  API endpoint URL.
+	 * @param array<string, mixed> $args Request arguments to be JSON-encoded.
+	 * @return array<string, mixed>|false Response data or false on failure.
 	 */
 	private static function make_request( string $url, array $args ): array|false {
 		$attempt = 0;
