@@ -133,15 +133,15 @@ foreach ( $theme_posts as $post_id ) {
  */
 
 // Get table names using DB class helper method.
-$table_sync_state = WPInsight_DB::get_table_name( 'sync_state' );
-$table_zip_queue  = WPInsight_DB::get_table_name( 'zip_queue' );
-$table_artifacts  = WPInsight_DB::get_table_name( 'artifacts' );
+$wpinsight_table_sync_state = WPInsight_DB::get_table_name( 'sync_state' );
+$wpinsight_table_zip_queue  = WPInsight_DB::get_table_name( 'zip_queue' );
+$wpinsight_table_artifacts  = WPInsight_DB::get_table_name( 'artifacts' );
 
 // Drop all custom tables.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_sync_state ) );
-$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_zip_queue ) );
-$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_artifacts ) );
+$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $wpinsight_table_sync_state ) );
+$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $wpinsight_table_zip_queue ) );
+$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $wpinsight_table_artifacts ) );
 // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 
 /*
