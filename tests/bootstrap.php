@@ -357,6 +357,24 @@ if ( ! function_exists( 'number_format_i18n' ) ) {
 	}
 }
 
+if ( ! function_exists( 'size_format' ) ) {
+	/**
+	 * Stub for size_format() WordPress function.
+	 *
+	 * @param int $bytes    Number of bytes.
+	 * @param int $decimals Number of decimal places.
+	 * @return string Formatted size string.
+	 */
+	function size_format( $bytes, $decimals = 0 ) {
+		$units = [ 'B', 'KB', 'MB', 'GB', 'TB' ];
+		$bytes = max( $bytes, 0 );
+		$pow   = floor( ( $bytes ? log( $bytes ) : 0 ) / log( 1024 ) );
+		$pow   = min( $pow, count( $units ) - 1 );
+		$bytes /= pow( 1024, $pow );
+		return round( $bytes, $decimals ) . ' ' . $units[ $pow ];
+	}
+}
+
 if ( ! function_exists( 'human_time_diff' ) ) {
 	/**
 	 * Stub for human_time_diff() WordPress function.

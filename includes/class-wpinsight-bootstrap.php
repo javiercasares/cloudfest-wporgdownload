@@ -90,11 +90,11 @@ final class WPInsight_Bootstrap {
 		// Initialize ZIP queue worker (Phase 7).
 		WPInsight_Zip_Queue::init();
 
-		// TODO: Register WP-CLI commands (Phase 12).
-		// if ( defined( 'WP_CLI' ) && WP_CLI ) {
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cli.php'.
-		// WPInsight_CLI::register().
-		// }.
+		// Register WP-CLI commands (Phase 8).
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cli.php';
+			WPInsight_CLI::register();
+		}
 	}
 
 	/**
