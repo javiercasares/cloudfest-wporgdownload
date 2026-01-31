@@ -69,8 +69,10 @@ final class WPInsight_Bootstrap {
 		// Load WordPress.org API Client (Phase 5).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-wporg-client.php';
 
-		// TODO: Load remaining class files (Phase 6+).
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-sync.php'.
+		// Load Sync Engine (Phase 6).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-sync.php';
+
+		// TODO: Load remaining class files (Phase 7+).
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php'.
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-storage.php'.
 
@@ -83,8 +85,8 @@ final class WPInsight_Bootstrap {
 		// Initialize admin UI (Phase 4).
 		WPInsight_Admin::init();
 
-		// TODO: Initialize sync engine (Phase 7).
-		// WPInsight_Sync::init().
+		// Initialize sync engine (Phase 6).
+		WPInsight_Sync::init();
 
 		// TODO: Initialize ZIP queue (Phase 8).
 		// WPInsight_Zip_Queue::init().
@@ -141,10 +143,12 @@ final class WPInsight_Bootstrap {
 		WPInsight_CPT::register();
 		flush_rewrite_rules();
 
-		// TODO: Schedule recurring jobs (Phase 7, 8).
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-sync.php'.
+		// Schedule sync job (Phase 6).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-sync.php';
+		WPInsight_Sync::ensure_scheduled();
+
+		// TODO: Schedule ZIP worker (Phase 7).
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php'.
-		// WPInsight_Sync::ensure_scheduled().
 		// WPInsight_Zip_Queue::ensure_scheduled().
 
 		// Set activation timestamp for future reference.

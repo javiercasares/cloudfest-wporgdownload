@@ -596,3 +596,46 @@ require_once dirname( __DIR__ ) . '/cloudfest-wporgdownload.php';
 
 // Bootstrap complete.
 echo "PHPUnit bootstrap loaded.\n";
+
+if ( ! function_exists( 'as_schedule_recurring_action' ) ) {
+	/**
+	 * Stub for as_schedule_recurring_action() Action Scheduler function.
+	 *
+	 * @param int    $timestamp Timestamp.
+	 * @param int    $interval  Interval in seconds.
+	 * @param string $hook      Hook name.
+	 * @param array  $args      Arguments.
+	 * @param string $group     Group name.
+	 * @return int Action ID.
+	 */
+	function as_schedule_recurring_action( $timestamp, $interval, $hook, $args = [], $group = '' ) {
+		return 1;
+	}
+}
+
+if ( ! function_exists( 'as_next_scheduled_action' ) ) {
+	/**
+	 * Stub for as_next_scheduled_action() Action Scheduler function.
+	 *
+	 * @param string $hook  Hook name.
+	 * @param array  $args  Arguments.
+	 * @param string $group Group name.
+	 * @return int|false Next scheduled timestamp or false.
+	 */
+	function as_next_scheduled_action( $hook, $args = [], $group = '' ) {
+		return false;
+	}
+}
+
+if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
+	/**
+	 * Stub for as_get_scheduled_actions() Action Scheduler function.
+	 *
+	 * @param array  $args        Query arguments.
+	 * @param string $return_type Return type.
+	 * @return array Scheduled actions.
+	 */
+	function as_get_scheduled_actions( $args = [], $return_type = 'OBJECT' ) {
+		return [];
+	}
+}
