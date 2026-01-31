@@ -258,14 +258,15 @@ final class WPInsight_DB {
 		);
 
 		if ( empty( $column_exists ) ) {
-			// Add last_error column to sync_state.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			// Add last_error column to sync_state (v1.1.0 migration).
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN last_error TEXT DEFAULT NULL AFTER status',
 					$sync_state_table
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 		}
 
 		// Check if priority column exists in zip_queue.
@@ -279,14 +280,15 @@ final class WPInsight_DB {
 		);
 
 		if ( empty( $column_exists ) ) {
-			// Add priority column to zip_queue.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			// Add priority column to zip_queue (v1.1.0 migration).
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN priority INT(11) NOT NULL DEFAULT 0 AFTER max_attempts',
 					$zip_queue_table
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 		}
 
 		// Check if queued_at column exists in zip_queue.
@@ -300,14 +302,15 @@ final class WPInsight_DB {
 		);
 
 		if ( empty( $column_exists ) ) {
-			// Add queued_at column to zip_queue.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			// Add queued_at column to zip_queue (v1.1.0 migration).
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD COLUMN queued_at DATETIME DEFAULT NULL AFTER scheduled_at',
 					$zip_queue_table
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 		}
 
 		// Add composite indexes to zip_queue.
@@ -322,13 +325,15 @@ final class WPInsight_DB {
 		);
 
 		if ( empty( $indexes ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			// Add composite index for status+timestamp queries (v1.1.0 migration).
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD INDEX idx_status_started (status, started_at)',
 					$zip_queue_table
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -341,13 +346,15 @@ final class WPInsight_DB {
 		);
 
 		if ( empty( $indexes ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			// Add composite index for priority queue queries (v1.1.0 migration).
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 			$wpdb->query(
 				$wpdb->prepare(
 					'ALTER TABLE %i ADD INDEX idx_pending_priority (status, priority, queued_at)',
 					$zip_queue_table
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 		}
 
 		// error_log table will be created by dbDelta in create_tables().

@@ -397,7 +397,7 @@ final class WPInsight_Sync {
 		$now   = current_time( 'mysql', true );
 
 		// Build multi-row INSERT statement.
-		$values       = [];
+		$values       = [ $table ]; // Table name as first parameter for %i.
 		$placeholders = [];
 
 		foreach ( $versions as $version => $download_url ) {
@@ -413,9 +413,10 @@ final class WPInsight_Sync {
 			$values[]       = $now;
 		}
 
-		$query = "INSERT INTO {$table} (artifact_type, artifact_slug, artifact_version, artifact_post_id, download_url, status, priority, attempts, queued_at)
-				  VALUES " . implode( ', ', $placeholders );
+		$query = 'INSERT INTO %i (artifact_type, artifact_slug, artifact_version, artifact_post_id, download_url, status, priority, attempts, queued_at)
+				  VALUES ' . implode( ', ', $placeholders );
 
+		// Bulk insert with prepared statement - PHPCS can't trace $query variable.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$result = $wpdb->query( $wpdb->prepare( $query, $values ) );
 
