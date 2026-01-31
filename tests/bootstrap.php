@@ -276,12 +276,10 @@ if ( ! function_exists( 'is_wp_error' ) ) {
 	 * Stub for is_wp_error() WordPress function.
 	 *
 	 * @param mixed $thing Thing to check.
-	 * @return bool False.
+	 * @return bool True if WP_Error, false otherwise.
 	 */
 	function is_wp_error( $thing ) {
-		// Suppress unused parameter warnings in test stubs.
-		unset( $thing );
-		return false;
+		return $thing instanceof WP_Error;
 	}
 }
 
@@ -414,6 +412,145 @@ if ( ! function_exists( 'esc_html__' ) ) {
 		// Suppress unused parameter warnings in test stubs.
 		unset( $domain );
 		return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+
+if ( ! function_exists( 'wp_remote_post' ) ) {
+	/**
+	 * Stub for wp_remote_post() WordPress function.
+	 *
+	 * @param string $url  Request URL.
+	 * @param array  $args Request arguments.
+	 * @return WP_Error Fake error for test environment.
+	 */
+	function wp_remote_post( $url, $args = array() ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $url, $args );
+		return new WP_Error( 'http_request_failed', 'Test stub: wp_remote_post not available' );
+	}
+}
+
+if ( ! function_exists( 'wp_remote_get' ) ) {
+	/**
+	 * Stub for wp_remote_get() WordPress function.
+	 *
+	 * @param string $url  Request URL.
+	 * @param array  $args Request arguments.
+	 * @return WP_Error Fake error for test environment.
+	 */
+	function wp_remote_get( $url, $args = array() ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $url, $args );
+		return new WP_Error( 'http_request_failed', 'Test stub: wp_remote_get not available' );
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
+	/**
+	 * Stub for wp_remote_retrieve_response_code() WordPress function.
+	 *
+	 * @param array|WP_Error $response Response array or WP_Error.
+	 * @return int Response code.
+	 */
+	function wp_remote_retrieve_response_code( $response ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $response );
+		return 200;
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
+	/**
+	 * Stub for wp_remote_retrieve_body() WordPress function.
+	 *
+	 * @param array|WP_Error $response Response array or WP_Error.
+	 * @return string Response body.
+	 */
+	function wp_remote_retrieve_body( $response ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $response );
+		return '{}';
+	}
+}
+
+if ( ! function_exists( 'wp_parse_args' ) ) {
+	/**
+	 * Stub for wp_parse_args() WordPress function.
+	 *
+	 * @param string|array $args     Value to merge with defaults.
+	 * @param array        $defaults Default array.
+	 * @return array Merged array.
+	 */
+	function wp_parse_args( $args, $defaults = array() ) {
+		if ( is_object( $args ) ) {
+			$parsed_args = get_object_vars( $args );
+		} elseif ( is_array( $args ) ) {
+			$parsed_args = $args;
+		} else {
+			parse_str( (string) $args, $parsed_args );
+		}
+
+		if ( is_array( $defaults ) && $defaults ) {
+			return array_merge( $defaults, $parsed_args );
+		}
+		return $parsed_args;
+	}
+}
+
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	/**
+	 * Stub for wp_json_encode() WordPress function.
+	 *
+	 * @param mixed $data    Data to encode.
+	 * @param int   $options Optional. JSON encode options.
+	 * @param int   $depth   Optional. Maximum depth.
+	 * @return string|false JSON string or false on failure.
+	 */
+	function wp_json_encode( $data, $options = 0, $depth = 512 ) {
+		return json_encode( $data, $options, $depth );
+	}
+}
+
+if ( ! class_exists( 'WP_Error' ) ) {
+	/**
+	 * Stub for WP_Error class.
+	 *
+	 * @since 0.1.0
+	 */
+	class WP_Error {
+		/**
+		 * Error code.
+		 *
+		 * @var string
+		 */
+		private $code;
+
+		/**
+		 * Error message.
+		 *
+		 * @var string
+		 */
+		private $message;
+
+		/**
+		 * Constructor.
+		 *
+		 * @param string $code    Error code.
+		 * @param string $message Error message.
+		 */
+		public function __construct( $code = '', $message = '' ) {
+			$this->code    = $code;
+			$this->message = $message;
+		}
+
+		/**
+		 * Get error message.
+		 *
+		 * @return string Error message.
+		 */
+		public function get_error_message(): string {
+			return $this->message;
+		}
 	}
 }
 

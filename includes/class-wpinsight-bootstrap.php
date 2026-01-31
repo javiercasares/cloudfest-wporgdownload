@@ -63,9 +63,13 @@ final class WPInsight_Bootstrap {
 		// Load CPT class (Phase 3).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cpt.php';
 
-		// TODO: Load remaining class files (Phase 4+).
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-admin.php'.
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-wporg-client.php'.
+		// Load Admin class (Phase 4).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-admin.php';
+
+		// Load WordPress.org API Client (Phase 5).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-wporg-client.php';
+
+		// TODO: Load remaining class files (Phase 6+).
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-sync.php'.
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php'.
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-storage.php'.
@@ -76,8 +80,8 @@ final class WPInsight_Bootstrap {
 		// Hook database upgrade checker (Phase 2).
 		add_action( 'admin_init', array( 'WPInsight_DB', 'maybe_upgrade' ) );
 
-		// TODO: Initialize admin UI (Phase 5).
-		// WPInsight_Admin::init().
+		// Initialize admin UI (Phase 4).
+		WPInsight_Admin::init();
 
 		// TODO: Initialize sync engine (Phase 7).
 		// WPInsight_Sync::init().

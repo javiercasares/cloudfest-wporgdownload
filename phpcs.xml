@@ -34,8 +34,11 @@
         </properties>
     </rule>
 
-    <!-- Allow short array syntax -->
-    <rule ref="Generic.Arrays.DisallowShortArraySyntax.Found">
+    <!-- Allow short array syntax (disable universal sniff) -->
+    <rule ref="Universal.Arrays.DisallowShortArraySyntax">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.Arrays.DisallowShortArraySyntax">
         <severity>0</severity>
     </rule>
 
