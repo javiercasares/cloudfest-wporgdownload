@@ -78,13 +78,17 @@ final class WPInsight_Admin {
 	 * @return void
 	 */
 	public static function add_admin_menu(): void {
+		// Get critical error count for badge.
+		$error_count = self::get_critical_error_count();
+		$error_badge = $error_count > 0 ? sprintf( ' <span class="awaiting-mod">%d</span>', $error_count ) : '';
+
 		// Add main Dashboard page under Tools menu.
 		add_management_page(
-			__( 'WPInsight Dashboard', 'cloudfest-wporgdownload' ), // Page title.
-			__( 'WPInsight', 'cloudfest-wporgdownload' ),            // Menu title.
-			'manage_options',                                         // Capability.
-			self::DASHBOARD_PAGE_SLUG,                                // Menu slug.
-			[ __CLASS__, 'render_dashboard_page' ]                    // Callback.
+			__( 'WPInsight Dashboard', 'cloudfest-wporgdownload' ),           // Page title.
+			__( 'WPInsight', 'cloudfest-wporgdownload' ) . $error_badge,      // Menu title with badge.
+			'manage_options',                                                   // Capability.
+			self::DASHBOARD_PAGE_SLUG,                                          // Menu slug.
+			[ __CLASS__, 'render_dashboard_page' ]                              // Callback.
 		);
 
 		// Add Settings page under Settings menu.
@@ -99,11 +103,11 @@ final class WPInsight_Admin {
 		// Add Error Log page (only visible when WP_DEBUG is enabled).
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 			add_management_page(
-				__( 'WPInsight Error Log', 'cloudfest-wporgdownload' ), // Page title.
-				__( 'WPInsight Errors', 'cloudfest-wporgdownload' ),    // Menu title.
-				'manage_options',                                         // Capability.
-				'wpinsight-error-log',                                    // Menu slug.
-				[ __CLASS__, 'render_error_log_page' ]                    // Callback.
+				__( 'WPInsight Error Log', 'cloudfest-wporgdownload' ),                // Page title.
+				__( 'WPInsight Errors', 'cloudfest-wporgdownload' ) . $error_badge,    // Menu title with badge.
+				'manage_options',                                                        // Capability.
+				'wpinsight-error-log',                                                   // Menu slug.
+				[ __CLASS__, 'render_error_log_page' ]                                   // Callback.
 			);
 		}
 	}
@@ -415,17 +419,20 @@ final class WPInsight_Admin {
 			<div class="wpinsight-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
 				<div style="background: #fff; padding: 20px; border-left: 4px solid #2271b1; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
 					<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Plugins', 'cloudfest-wporgdownload' ); ?></h3>
-					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( number_format_i18n( $plugin_count ) ); ?></div>
+					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( self::format_number_abbreviated( $plugin_count ) ); ?></div>
+					<div style="font-size: 11px; color: #646970; margin-top: 5px;" title="<?php echo esc_attr( number_format_i18n( $plugin_count ) ); ?>"><?php echo esc_html( number_format_i18n( $plugin_count ) ); ?> total</div>
 				</div>
 
 				<div style="background: #fff; padding: 20px; border-left: 4px solid #2271b1; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
 					<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Themes', 'cloudfest-wporgdownload' ); ?></h3>
-					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( number_format_i18n( $theme_count ) ); ?></div>
+					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( self::format_number_abbreviated( $theme_count ) ); ?></div>
+					<div style="font-size: 11px; color: #646970; margin-top: 5px;" title="<?php echo esc_attr( number_format_i18n( $theme_count ) ); ?>"><?php echo esc_html( number_format_i18n( $theme_count ) ); ?> total</div>
 				</div>
 
 				<div style="background: #fff; padding: 20px; border-left: 4px solid #00a32a; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
 					<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Downloaded ZIPs', 'cloudfest-wporgdownload' ); ?></h3>
-					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( number_format_i18n( $artifact_count ) ); ?></div>
+					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( self::format_number_abbreviated( $artifact_count ) ); ?></div>
+					<div style="font-size: 11px; color: #646970; margin-top: 5px;" title="<?php echo esc_attr( number_format_i18n( $artifact_count ) ); ?>"><?php echo esc_html( number_format_i18n( $artifact_count ) ); ?> total</div>
 				</div>
 
 				<div style="background: #fff; padding: 20px; border-left: 4px solid #d63638; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
@@ -442,22 +449,49 @@ final class WPInsight_Admin {
 						<thead>
 							<tr>
 								<th><?php esc_html_e( 'Type', 'cloudfest-wporgdownload' ); ?></th>
-								<th><?php esc_html_e( 'Status', 'cloudfest-wporgdownload' ); ?></th>
-								<th><?php esc_html_e( 'Page', 'cloudfest-wporgdownload' ); ?></th>
+								<th><?php esc_html_e( 'Status / Progress', 'cloudfest-wporgdownload' ); ?></th>
+								<th><?php esc_html_e( 'Last Run', 'cloudfest-wporgdownload' ); ?></th>
 								<th><?php esc_html_e( 'Actions', 'cloudfest-wporgdownload' ); ?></th>
 							</tr>
 						</thead>
 						<tbody>
 							<tr>
 								<td><strong><?php esc_html_e( 'Plugins', 'cloudfest-wporgdownload' ); ?></strong></td>
-								<td><code><?php echo esc_html( $plugin_state['status'] ); ?></code></td>
-								<td><?php echo esc_html( number_format_i18n( $plugin_state['page'] ) ); ?></td>
 								<td>
-									<form method="post" style="display: inline;">
-										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
-										<input type="hidden" name="wpinsight_action" value="sync_plugins">
-										<button type="submit" class="button button-small"><?php esc_html_e( 'Sync Now', 'cloudfest-wporgdownload' ); ?></button>
-									</form>
+									<code><?php echo esc_html( $plugin_state['status'] ); ?></code>
+									<?php if ( 'running' === $plugin_state['status'] || 'syncing' === $plugin_state['status'] ) : ?>
+										<?php echo wp_kses_post( self::render_progress_bar( $plugin_state ) ); ?>
+									<?php endif; ?>
+								</td>
+								<td>
+									<?php
+									if ( ! empty( $plugin_state['last_run_at'] ) ) {
+										$last_run = strtotime( $plugin_state['last_run_at'] );
+										if ( $last_run ) {
+											echo '<span title="' . esc_attr( $plugin_state['last_run_at'] ) . '">';
+											// translators: %s is the time difference (e.g., "2 hours ago").
+											echo esc_html( sprintf( __( '%s ago', 'cloudfest-wporgdownload' ), human_time_diff( $last_run ) ) );
+											echo '</span>';
+										}
+									} else {
+										echo '<span style="color: #646970;">—</span>';
+									}
+									?>
+								</td>
+								<td>
+									<?php if ( 'error' === $plugin_state['status'] ) : ?>
+										<form method="post" style="display: inline;">
+											<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+											<input type="hidden" name="wpinsight_action" value="sync_plugins">
+											<button type="submit" class="button button-small button-primary"><?php esc_html_e( 'Resume', 'cloudfest-wporgdownload' ); ?></button>
+										</form>
+									<?php else : ?>
+										<form method="post" style="display: inline;">
+											<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+											<input type="hidden" name="wpinsight_action" value="sync_plugins">
+											<button type="submit" class="button button-small"><?php esc_html_e( 'Sync Now', 'cloudfest-wporgdownload' ); ?></button>
+										</form>
+									<?php endif; ?>
 									<form method="post" style="display: inline;">
 										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
 										<input type="hidden" name="wpinsight_action" value="reset_sync_plugins">
@@ -467,14 +501,41 @@ final class WPInsight_Admin {
 							</tr>
 							<tr>
 								<td><strong><?php esc_html_e( 'Themes', 'cloudfest-wporgdownload' ); ?></strong></td>
-								<td><code><?php echo esc_html( $theme_state['status'] ); ?></code></td>
-								<td><?php echo esc_html( number_format_i18n( $theme_state['page'] ) ); ?></td>
 								<td>
-									<form method="post" style="display: inline;">
-										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
-										<input type="hidden" name="wpinsight_action" value="sync_themes">
-										<button type="submit" class="button button-small"><?php esc_html_e( 'Sync Now', 'cloudfest-wporgdownload' ); ?></button>
-									</form>
+									<code><?php echo esc_html( $theme_state['status'] ); ?></code>
+									<?php if ( 'running' === $theme_state['status'] || 'syncing' === $theme_state['status'] ) : ?>
+										<?php echo wp_kses_post( self::render_progress_bar( $theme_state ) ); ?>
+									<?php endif; ?>
+								</td>
+								<td>
+									<?php
+									if ( ! empty( $theme_state['last_run_at'] ) ) {
+										$last_run = strtotime( $theme_state['last_run_at'] );
+										if ( $last_run ) {
+											echo '<span title="' . esc_attr( $theme_state['last_run_at'] ) . '">';
+											// translators: %s is the time difference (e.g., "2 hours ago").
+											echo esc_html( sprintf( __( '%s ago', 'cloudfest-wporgdownload' ), human_time_diff( $last_run ) ) );
+											echo '</span>';
+										}
+									} else {
+										echo '<span style="color: #646970;">—</span>';
+									}
+									?>
+								</td>
+								<td>
+									<?php if ( 'error' === $theme_state['status'] ) : ?>
+										<form method="post" style="display: inline;">
+											<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+											<input type="hidden" name="wpinsight_action" value="sync_themes">
+											<button type="submit" class="button button-small button-primary"><?php esc_html_e( 'Resume', 'cloudfest-wporgdownload' ); ?></button>
+										</form>
+									<?php else : ?>
+										<form method="post" style="display: inline;">
+											<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+											<input type="hidden" name="wpinsight_action" value="sync_themes">
+											<button type="submit" class="button button-small"><?php esc_html_e( 'Sync Now', 'cloudfest-wporgdownload' ); ?></button>
+										</form>
+									<?php endif; ?>
 									<form method="post" style="display: inline;">
 										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
 										<input type="hidden" name="wpinsight_action" value="reset_sync_themes">
@@ -1730,5 +1791,112 @@ final class WPInsight_Admin {
 		);
 
 		return is_numeric( $total ) ? (int) $total : 0;
+	}
+
+	/**
+	 * Get count of critical errors in last hour.
+	 *
+	 * Returns the count of EMERGENCY and ERROR severity logs from the last hour.
+	 * Used for displaying error badges in admin menu.
+	 *
+	 * @since 1.1.0
+	 * @return int Number of critical errors.
+	 */
+	private static function get_critical_error_count(): int {
+		global $wpdb;
+
+		$table = WPInsight_DB::get_table_name( 'error_log' );
+
+		// Safety check: Verify table exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		if ( ! $table_exists ) {
+			return 0;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$count = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM %i
+				WHERE severity IN (%s, %s)
+				AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+				$table,
+				'emergency',
+				'error'
+			)
+		);
+
+		return is_numeric( $count ) ? (int) $count : 0;
+	}
+
+	/**
+	 * Format large numbers with K/M/B abbreviations.
+	 *
+	 * Converts large numbers to human-readable format:
+	 * - 1234 → "1.2K"
+	 * - 1234567 → "1.2M"
+	 * - 1234567890 → "1.2B"
+	 *
+	 * @since 1.1.0
+	 * @param int $number Number to format.
+	 * @return string Formatted number with abbreviation.
+	 */
+	private static function format_number_abbreviated( int $number ): string {
+		if ( $number < 1000 ) {
+			return (string) number_format_i18n( $number );
+		}
+
+		if ( $number < 1000000 ) {
+			return number_format_i18n( $number / 1000, 1 ) . 'K';
+		}
+
+		if ( $number < 1000000000 ) {
+			return number_format_i18n( $number / 1000000, 1 ) . 'M';
+		}
+
+		return number_format_i18n( $number / 1000000000, 1 ) . 'B';
+	}
+
+	/**
+	 * Render progress bar HTML for sync status.
+	 *
+	 * Displays a visual progress bar showing sync completion percentage.
+	 *
+	 * @since 1.1.0
+	 * @param array<string, mixed> $sync_state Sync state array with page, total_pages.
+	 * @return string Progress bar HTML.
+	 */
+	private static function render_progress_bar( array $sync_state ): string {
+		if ( empty( $sync_state['total_pages'] ) || $sync_state['total_pages'] <= 0 ) {
+			return '';
+		}
+
+		$current = isset( $sync_state['page'] ) ? (int) $sync_state['page'] : 0;
+		$total   = (int) $sync_state['total_pages'];
+		$percent = $total > 0 ? min( 100, round( ( $current / $total ) * 100 ) ) : 0;
+
+		// Color based on progress.
+		$color = '#00a32a'; // Green.
+		if ( $percent < 30 ) {
+			$color = '#d63638'; // Red.
+		} elseif ( $percent < 70 ) {
+			$color = '#dba617'; // Orange.
+		}
+
+		$html  = '<div style="background: #f0f0f1; border-radius: 3px; height: 20px; margin: 5px 0; overflow: hidden;">';
+		$html .= sprintf(
+			'<div style="background: %s; height: 100%%; width: %d%%; transition: width 0.3s ease;"></div>',
+			esc_attr( $color ),
+			$percent
+		);
+		$html .= '</div>';
+		$html .= sprintf(
+			'<div style="font-size: 11px; color: #646970;">%d%% complete (%s / %s pages)</div>',
+			$percent,
+			esc_html( number_format_i18n( $current ) ),
+			esc_html( number_format_i18n( $total ) )
+		);
+
+		return $html;
 	}
 }
