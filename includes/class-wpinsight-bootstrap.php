@@ -72,9 +72,8 @@ final class WPInsight_Bootstrap {
 		// Load Sync Engine (Phase 6).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-sync.php';
 
-		// TODO: Load remaining class files (Phase 7+).
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php'.
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-storage.php'.
+		// Load ZIP Queue Worker (Phase 7).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php';
 
 		// Register CPTs on init hook (Phase 3).
 		add_action( 'init', array( 'WPInsight_CPT', 'register' ) );
@@ -88,8 +87,8 @@ final class WPInsight_Bootstrap {
 		// Initialize sync engine (Phase 6).
 		WPInsight_Sync::init();
 
-		// TODO: Initialize ZIP queue (Phase 8).
-		// WPInsight_Zip_Queue::init().
+		// Initialize ZIP queue worker (Phase 7).
+		WPInsight_Zip_Queue::init();
 
 		// TODO: Register WP-CLI commands (Phase 12).
 		// if ( defined( 'WP_CLI' ) && WP_CLI ) {
@@ -147,9 +146,9 @@ final class WPInsight_Bootstrap {
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-sync.php';
 		WPInsight_Sync::ensure_scheduled();
 
-		// TODO: Schedule ZIP worker (Phase 7).
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php'.
-		// WPInsight_Zip_Queue::ensure_scheduled().
+		// Schedule ZIP worker (Phase 7).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php';
+		WPInsight_Zip_Queue::ensure_scheduled();
 
 		// Set activation timestamp for future reference.
 		update_option( WPINSIGHT_ACTIVATED_AT_OPTION, current_time( 'mysql' ) );

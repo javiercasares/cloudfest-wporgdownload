@@ -639,3 +639,91 @@ if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
 		return [];
 	}
 }
+
+if ( ! function_exists( 'wp_upload_dir' ) ) {
+	/**
+	 * Stub for wp_upload_dir() WordPress function.
+	 *
+	 * @return array Upload directory info.
+	 */
+	function wp_upload_dir() {
+		return [
+			'path'    => '/tmp/uploads',
+			'url'     => 'http://example.com/wp-content/uploads',
+			'subdir'  => '',
+			'basedir' => '/tmp/uploads',
+			'baseurl' => 'http://example.com/wp-content/uploads',
+			'error'   => false,
+		];
+	}
+}
+
+if ( ! function_exists( 'wp_mkdir_p' ) ) {
+	/**
+	 * Stub for wp_mkdir_p() WordPress function.
+	 *
+	 * @param string $target Directory path.
+	 * @return bool True on success.
+	 */
+	function wp_mkdir_p( $target ) {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_delete_file' ) ) {
+	/**
+	 * Stub for wp_delete_file() WordPress function.
+	 *
+	 * @param string $file File path.
+	 * @return bool True on success.
+	 */
+	function wp_delete_file( $file ) {
+		return true;
+	}
+}
+
+// Create global $wpdb mock.
+if ( ! isset( $GLOBALS['wpdb'] ) ) {
+	$GLOBALS['wpdb'] = new class() {
+		public $prefix = 'wp_';
+
+		public function get_var( $query ) {
+			return 0;
+		}
+
+		public function get_row( $query, $output = OBJECT, $offset = 0 ) {
+			return null;
+		}
+
+		public function get_results( $query, $output = OBJECT ) {
+			return [];
+		}
+
+		public function query( $query ) {
+			return 0;
+		}
+
+		public function insert( $table, $data, $format = null ) {
+			return 1;
+		}
+
+		public function update( $table, $data, $where, $format = null, $where_format = null ) {
+			return 1;
+		}
+
+		public function prepare( $query, ...$args ) {
+			return $query;
+		}
+	};
+}
+
+// Define WordPress database result type constants.
+if ( ! defined( 'OBJECT' ) ) {
+	define( 'OBJECT', 'OBJECT' );
+}
+if ( ! defined( 'ARRAY_A' ) ) {
+	define( 'ARRAY_A', 'ARRAY_A' );
+}
+if ( ! defined( 'ARRAY_N' ) ) {
+	define( 'ARRAY_N', 'ARRAY_N' );
+}
