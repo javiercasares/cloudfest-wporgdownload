@@ -212,4 +212,171 @@ class CPTTest extends TestCase {
 			);
 		}
 	}
+
+	/**
+	 * Test that find_or_create_plugin returns an integer.
+	 *
+	 * Verifies that the find_or_create_plugin() method returns a post ID.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_find_or_create_plugin_returns_int(): void {
+		$post_id = WPInsight_CPT::find_or_create_plugin( 'test-plugin', 'Test Plugin' );
+
+		$this->assertIsInt(
+			$post_id,
+			'find_or_create_plugin() should return an integer'
+		);
+
+		$this->assertGreaterThanOrEqual(
+			0,
+			$post_id,
+			'Post ID should be non-negative'
+		);
+	}
+
+	/**
+	 * Test that find_or_create_theme returns an integer.
+	 *
+	 * Verifies that the find_or_create_theme() method returns a post ID.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_find_or_create_theme_returns_int(): void {
+		$post_id = WPInsight_CPT::find_or_create_theme( 'test-theme', 'Test Theme' );
+
+		$this->assertIsInt(
+			$post_id,
+			'find_or_create_theme() should return an integer'
+		);
+
+		$this->assertGreaterThanOrEqual(
+			0,
+			$post_id,
+			'Post ID should be non-negative'
+		);
+	}
+
+	/**
+	 * Test that save_plugin_meta returns a boolean.
+	 *
+	 * Verifies that the save_plugin_meta() method returns true/false.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_save_plugin_meta_returns_bool(): void {
+		$result = WPInsight_CPT::save_plugin_meta(
+			1,
+			array(
+				'slug'    => 'test-plugin',
+				'version' => '1.0.0',
+				'author'  => 'Test Author',
+			)
+		);
+
+		$this->assertIsBool(
+			$result,
+			'save_plugin_meta() should return a boolean'
+		);
+	}
+
+	/**
+	 * Test that save_theme_meta returns a boolean.
+	 *
+	 * Verifies that the save_theme_meta() method returns true/false.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_save_theme_meta_returns_bool(): void {
+		$result = WPInsight_CPT::save_theme_meta(
+			1,
+			array(
+				'slug'    => 'test-theme',
+				'version' => '1.0.0',
+				'author'  => 'Test Author',
+			)
+		);
+
+		$this->assertIsBool(
+			$result,
+			'save_theme_meta() should return a boolean'
+		);
+	}
+
+	/**
+	 * Test that get_plugin_meta returns an array.
+	 *
+	 * Verifies that the get_plugin_meta() method returns an array.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_get_plugin_meta_returns_array(): void {
+		$meta = WPInsight_CPT::get_plugin_meta( 1 );
+
+		$this->assertIsArray(
+			$meta,
+			'get_plugin_meta() should return an array'
+		);
+	}
+
+	/**
+	 * Test that get_theme_meta returns an array.
+	 *
+	 * Verifies that the get_theme_meta() method returns an array.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_get_theme_meta_returns_array(): void {
+		$meta = WPInsight_CPT::get_theme_meta( 1 );
+
+		$this->assertIsArray(
+			$meta,
+			'get_theme_meta() should return an array'
+		);
+	}
+
+	/**
+	 * Test that save_plugin_meta handles empty data.
+	 *
+	 * Verifies that save_plugin_meta() returns false for empty data.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_save_plugin_meta_handles_empty_data(): void {
+		$result = WPInsight_CPT::save_plugin_meta( 1, array() );
+
+		$this->assertFalse(
+			$result,
+			'save_plugin_meta() should return false for empty data'
+		);
+	}
+
+	/**
+	 * Test that get_plugin_meta handles invalid post ID.
+	 *
+	 * Verifies that get_plugin_meta() returns empty array for invalid post ID.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public function test_get_plugin_meta_handles_invalid_post_id(): void {
+		$meta = WPInsight_CPT::get_plugin_meta( 0 );
+
+		$this->assertIsArray(
+			$meta,
+			'get_plugin_meta() should return an array'
+		);
+
+		$this->assertEmpty(
+			$meta,
+			'get_plugin_meta() should return empty array for invalid post ID'
+		);
+	}
 }

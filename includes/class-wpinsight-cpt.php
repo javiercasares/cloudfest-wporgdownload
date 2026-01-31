@@ -199,4 +199,298 @@ final class WPInsight_CPT {
 
 		register_post_type( self::THEME_POST_TYPE, $args );
 	}
+
+	/**
+	 * Find or create a plugin post by slug.
+	 *
+	 * Searches for an existing plugin post with the given slug (post_name).
+	 * If not found, creates a new post with the slug and name.
+	 *
+	 * @since 0.1.0
+	 * @param string $slug Plugin slug from WordPress.org.
+	 * @param string $name Plugin display name.
+	 * @return int Post ID of found or created plugin post.
+	 */
+	public static function find_or_create_plugin( string $slug, string $name ): int {
+		// Try to find existing post by slug (post_name).
+		$existing = get_posts(
+			array(
+				'post_type'      => self::PLUGIN_POST_TYPE,
+				'name'           => $slug,
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'post_status'    => 'any',
+			)
+		);
+
+		if ( ! empty( $existing ) ) {
+			return $existing[0];
+		}
+
+		// Create new post.
+		$post_id = wp_insert_post(
+			array(
+				'post_type'   => self::PLUGIN_POST_TYPE,
+				'post_title'  => $name,
+				'post_name'   => $slug,
+				'post_status' => 'publish',
+			)
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			return 0;
+		}
+
+		return $post_id;
+	}
+
+	/**
+	 * Find or create a theme post by slug.
+	 *
+	 * Searches for an existing theme post with the given slug (post_name).
+	 * If not found, creates a new post with the slug and name.
+	 *
+	 * @since 0.1.0
+	 * @param string $slug Theme slug from WordPress.org.
+	 * @param string $name Theme display name.
+	 * @return int Post ID of found or created theme post.
+	 */
+	public static function find_or_create_theme( string $slug, string $name ): int {
+		// Try to find existing post by slug (post_name).
+		$existing = get_posts(
+			array(
+				'post_type'      => self::THEME_POST_TYPE,
+				'name'           => $slug,
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'post_status'    => 'any',
+			)
+		);
+
+		if ( ! empty( $existing ) ) {
+			return $existing[0];
+		}
+
+		// Create new post.
+		$post_id = wp_insert_post(
+			array(
+				'post_type'   => self::THEME_POST_TYPE,
+				'post_title'  => $name,
+				'post_name'   => $slug,
+				'post_status' => 'publish',
+			)
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			return 0;
+		}
+
+		return $post_id;
+	}
+
+	/**
+	 * Save plugin metadata to post meta.
+	 *
+	 * Takes data from WordPress.org API response and saves it as post meta.
+	 * All meta keys are prefixed with _wpinsight_ and are private (start with _).
+	 *
+	 * @since 0.1.0
+	 * @param int   $post_id Plugin post ID.
+	 * @param array $data    Plugin data from WordPress.org API.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function save_plugin_meta( int $post_id, array $data ): bool {
+		if ( empty( $post_id ) || empty( $data ) ) {
+			return false;
+		}
+
+		// Map of API field => meta key.
+		$meta_map = array(
+			'slug'              => '_wpinsight_slug',
+			'author'            => '_wpinsight_author',
+			'version'           => '_wpinsight_version',
+			'requires'          => '_wpinsight_requires_wp',
+			'requires_php'      => '_wpinsight_requires_php',
+			'rating'            => '_wpinsight_rating',
+			'num_ratings'       => '_wpinsight_num_ratings',
+			'active_installs'   => '_wpinsight_active_installs',
+			'downloaded'        => '_wpinsight_downloaded',
+			'last_updated'      => '_wpinsight_last_updated',
+			'added'             => '_wpinsight_added',
+			'homepage'          => '_wpinsight_homepage',
+			'download_link'     => '_wpinsight_download_url',
+			'short_description' => '_wpinsight_short_description',
+			'description'       => '_wpinsight_description',
+		);
+
+		// Save scalar fields.
+		foreach ( $meta_map as $api_field => $meta_key ) {
+			if ( isset( $data[ $api_field ] ) ) {
+				update_post_meta( $post_id, $meta_key, $data[ $api_field ] );
+			}
+		}
+
+		// Save array fields (serialized).
+		$array_fields = array(
+			'sections' => '_wpinsight_sections',
+			'tags'     => '_wpinsight_tags',
+			'versions' => '_wpinsight_versions',
+			'banners'  => '_wpinsight_banners',
+			'icons'    => '_wpinsight_icons',
+		);
+
+		foreach ( $array_fields as $api_field => $meta_key ) {
+			if ( isset( $data[ $api_field ] ) && is_array( $data[ $api_field ] ) ) {
+				update_post_meta( $post_id, $meta_key, $data[ $api_field ] );
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Save theme metadata to post meta.
+	 *
+	 * Takes data from WordPress.org API response and saves it as post meta.
+	 * All meta keys are prefixed with _wpinsight_ and are private (start with _).
+	 *
+	 * @since 0.1.0
+	 * @param int   $post_id Theme post ID.
+	 * @param array $data    Theme data from WordPress.org API.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function save_theme_meta( int $post_id, array $data ): bool {
+		if ( empty( $post_id ) || empty( $data ) ) {
+			return false;
+		}
+
+		// Map of API field => meta key.
+		$meta_map = array(
+			'slug'          => '_wpinsight_slug',
+			'author'        => '_wpinsight_author',
+			'version'       => '_wpinsight_version',
+			'requires'      => '_wpinsight_requires_wp',
+			'requires_php'  => '_wpinsight_requires_php',
+			'rating'        => '_wpinsight_rating',
+			'num_ratings'   => '_wpinsight_num_ratings',
+			'downloaded'    => '_wpinsight_downloaded',
+			'last_updated'  => '_wpinsight_last_updated',
+			'homepage'      => '_wpinsight_homepage',
+			'download_link' => '_wpinsight_download_url',
+			'description'   => '_wpinsight_description',
+		);
+
+		// Save scalar fields.
+		foreach ( $meta_map as $api_field => $meta_key ) {
+			if ( isset( $data[ $api_field ] ) ) {
+				update_post_meta( $post_id, $meta_key, $data[ $api_field ] );
+			}
+		}
+
+		// Save array fields (serialized).
+		$array_fields = array(
+			'tags'           => '_wpinsight_tags',
+			'versions'       => '_wpinsight_versions',
+			'screenshot_url' => '_wpinsight_screenshot_url',
+		);
+
+		foreach ( $array_fields as $api_field => $meta_key ) {
+			if ( isset( $data[ $api_field ] ) ) {
+				update_post_meta( $post_id, $meta_key, $data[ $api_field ] );
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Get plugin metadata from post meta.
+	 *
+	 * Retrieves all plugin metadata and returns it as an associative array.
+	 *
+	 * @since 0.1.0
+	 * @param int $post_id Plugin post ID.
+	 * @return array Associative array of plugin metadata.
+	 */
+	public static function get_plugin_meta( int $post_id ): array {
+		if ( empty( $post_id ) ) {
+			return array();
+		}
+
+		$meta_keys = array(
+			'slug',
+			'author',
+			'version',
+			'requires_wp',
+			'requires_php',
+			'rating',
+			'num_ratings',
+			'active_installs',
+			'downloaded',
+			'last_updated',
+			'added',
+			'homepage',
+			'download_url',
+			'short_description',
+			'description',
+			'sections',
+			'tags',
+			'versions',
+			'banners',
+			'icons',
+		);
+
+		$meta = array();
+		foreach ( $meta_keys as $key ) {
+			$meta_value = get_post_meta( $post_id, '_wpinsight_' . $key, true );
+			if ( ! empty( $meta_value ) ) {
+				$meta[ $key ] = $meta_value;
+			}
+		}
+
+		return $meta;
+	}
+
+	/**
+	 * Get theme metadata from post meta.
+	 *
+	 * Retrieves all theme metadata and returns it as an associative array.
+	 *
+	 * @since 0.1.0
+	 * @param int $post_id Theme post ID.
+	 * @return array Associative array of theme metadata.
+	 */
+	public static function get_theme_meta( int $post_id ): array {
+		if ( empty( $post_id ) ) {
+			return array();
+		}
+
+		$meta_keys = array(
+			'slug',
+			'author',
+			'version',
+			'requires_wp',
+			'requires_php',
+			'rating',
+			'num_ratings',
+			'downloaded',
+			'last_updated',
+			'homepage',
+			'download_url',
+			'description',
+			'tags',
+			'versions',
+			'screenshot_url',
+		);
+
+		$meta = array();
+		foreach ( $meta_keys as $key ) {
+			$meta_value = get_post_meta( $post_id, '_wpinsight_' . $key, true );
+			if ( ! empty( $meta_value ) ) {
+				$meta[ $key ] = $meta_value;
+			}
+		}
+
+		return $meta;
+	}
 }

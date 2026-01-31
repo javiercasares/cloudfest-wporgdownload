@@ -243,6 +243,95 @@ if ( ! function_exists( '__' ) ) {
 	}
 }
 
+if ( ! function_exists( 'get_posts' ) ) {
+	/**
+	 * Stub for get_posts() WordPress function.
+	 *
+	 * @param array $args Query arguments.
+	 * @return array Empty array.
+	 */
+	function get_posts( $args = array() ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $args );
+		return array();
+	}
+}
+
+if ( ! function_exists( 'wp_insert_post' ) ) {
+	/**
+	 * Stub for wp_insert_post() WordPress function.
+	 *
+	 * @param array $postarr Post data.
+	 * @return int Fake post ID.
+	 */
+	function wp_insert_post( $postarr ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $postarr );
+		return 123; // Return fake post ID.
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	/**
+	 * Stub for is_wp_error() WordPress function.
+	 *
+	 * @param mixed $thing Thing to check.
+	 * @return bool False.
+	 */
+	function is_wp_error( $thing ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $thing );
+		return false;
+	}
+}
+
+if ( ! function_exists( 'update_post_meta' ) ) {
+	/**
+	 * Stub for update_post_meta() WordPress function.
+	 *
+	 * @param int    $post_id    Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 * @return bool True.
+	 */
+	function update_post_meta( $post_id, $meta_key, $meta_value ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $post_id, $meta_key, $meta_value );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'get_post_meta' ) ) {
+	/**
+	 * Stub for get_post_meta() WordPress function.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $key     Meta key.
+	 * @param bool   $single  Return single value.
+	 * @return mixed Empty string or array.
+	 */
+	function get_post_meta( $post_id, $key = '', $single = false ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $post_id, $key );
+		return $single ? '' : array();
+	}
+}
+
+if ( ! function_exists( 'wp_delete_post' ) ) {
+	/**
+	 * Stub for wp_delete_post() WordPress function.
+	 *
+	 * @param int  $post_id      Post ID.
+	 * @param bool $force_delete Force delete.
+	 * @return bool True.
+	 */
+	function wp_delete_post( $post_id, $force_delete = false ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $post_id, $force_delete );
+		return true;
+	}
+}
+
 // Load plugin main file (defines constants).
 require_once dirname( __DIR__ ) . '/cloudfest-wporgdownload.php';
 
