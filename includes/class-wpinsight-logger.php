@@ -83,6 +83,14 @@ final class WPInsight_Logger {
 	private const RATE_LIMIT_SECONDS = 3600;
 
 	/**
+	 * Recursion prevention flag.
+	 *
+	 * @since 1.1.0
+	 * @var bool $is_logging Flag to prevent infinite recursion.
+	 */
+	private static bool $is_logging = false;
+
+	/**
 	 * Initialize logger.
 	 *
 	 * Sets up hooks for admin notices and scheduled cleanup.
@@ -102,8 +110,8 @@ final class WPInsight_Logger {
 	 * System is unusable. Sends email notification if enabled.
 	 *
 	 * @since 1.1.0
-	 * @param string $message The log message.
-	 * @param array  $context Optional. Additional context data.
+	 * @param string               $message The log message.
+	 * @param array<string, mixed> $context Optional. Additional context data.
 	 * @return void
 	 */
 	public static function emergency( string $message, array $context = [] ): void {
@@ -116,8 +124,8 @@ final class WPInsight_Logger {
 	 * Error conditions. Sends email notification if enabled.
 	 *
 	 * @since 1.1.0
-	 * @param string $message The log message.
-	 * @param array  $context Optional. Additional context data.
+	 * @param string               $message The log message.
+	 * @param array<string, mixed> $context Optional. Additional context data.
 	 * @return void
 	 */
 	public static function error( string $message, array $context = [] ): void {
@@ -130,8 +138,8 @@ final class WPInsight_Logger {
 	 * Warning conditions. Does not send email.
 	 *
 	 * @since 1.1.0
-	 * @param string $message The log message.
-	 * @param array  $context Optional. Additional context data.
+	 * @param string               $message The log message.
+	 * @param array<string, mixed> $context Optional. Additional context data.
 	 * @return void
 	 */
 	public static function warning( string $message, array $context = [] ): void {
@@ -144,8 +152,8 @@ final class WPInsight_Logger {
 	 * Informational messages. Does not send email.
 	 *
 	 * @since 1.1.0
-	 * @param string $message The log message.
-	 * @param array  $context Optional. Additional context data.
+	 * @param string               $message The log message.
+	 * @param array<string, mixed> $context Optional. Additional context data.
 	 * @return void
 	 */
 	public static function info( string $message, array $context = [] ): void {
@@ -158,8 +166,8 @@ final class WPInsight_Logger {
 	 * Debug-level messages. Only logged when WP_DEBUG is true.
 	 *
 	 * @since 1.1.0
-	 * @param string $message The log message.
-	 * @param array  $context Optional. Additional context data.
+	 * @param string               $message The log message.
+	 * @param array<string, mixed> $context Optional. Additional context data.
 	 * @return void
 	 */
 	public static function debug( string $message, array $context = [] ): void {
@@ -179,12 +187,20 @@ final class WPInsight_Logger {
 	 * @since 1.1.0
 	 * @param int         $limit    Optional. Maximum number of logs to retrieve. Default 50.
 	 * @param string|null $severity Optional. Filter by severity level. Default null (all).
-	 * @return array Array of log entries with id, severity, message, context, created_at.
+	 * @return array<int, array<string, mixed>> Array of log entries with id, severity, message, context, created_at.
 	 */
 	public static function get_recent_errors( int $limit = 50, ?string $severity = null ): array {
 		global $wpdb;
 
 		$table = WPInsight_DB::get_table_name( 'error_log' );
+
+		// Safety check: Verify table exists to prevent infinite loops.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		if ( ! $table_exists ) {
+			return []; // Table doesn't exist yet, return empty array.
+		}
+
 		$limit = max( 1, min( $limit, 1000 ) ); // Clamp between 1 and 1000.
 
 		if ( null !== $severity ) {
@@ -245,7 +261,15 @@ final class WPInsight_Logger {
 		global $wpdb;
 
 		$table = WPInsight_DB::get_table_name( 'error_log' );
-		$days  = max( 1, $days ); // At least 1 day.
+
+		// Safety check: Verify table exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		if ( ! $table_exists ) {
+			return 0; // Table doesn't exist yet.
+		}
+
+		$days = max( 1, $days ); // At least 1 day.
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$deleted = $wpdb->query(
@@ -265,13 +289,20 @@ final class WPInsight_Logger {
 	 * Handles the actual logging to database and triggers email notifications.
 	 *
 	 * @since 1.1.0
-	 * @param string $severity The severity level.
-	 * @param string $message  The log message.
-	 * @param array  $context  Optional. Additional context data.
+	 * @param string               $severity The severity level.
+	 * @param string               $message  The log message.
+	 * @param array<string, mixed> $context  Optional. Additional context data.
 	 * @return void
 	 */
 	private static function log( string $severity, string $message, array $context = [] ): void {
 		global $wpdb;
+
+		// Prevent infinite recursion: if we're already logging, bail out.
+		if ( self::$is_logging ) {
+			return;
+		}
+
+		self::$is_logging = true;
 
 		// Validate severity.
 		$valid_severities = [ self::EMERGENCY, self::ERROR, self::WARNING, self::INFO, self::DEBUG ];
@@ -285,17 +316,23 @@ final class WPInsight_Logger {
 		// Insert into database.
 		$table = WPInsight_DB::get_table_name( 'error_log' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$wpdb->insert(
-			$table,
-			[
-				'severity'   => $severity,
-				'message'    => $message,
-				'context'    => $context_json,
-				'created_at' => current_time( 'mysql' ),
-			],
-			[ '%s', '%s', '%s', '%s' ]
-		);
+		// Safety check: Verify table exists before attempting insert.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+
+		if ( $table_exists ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->insert(
+				$table,
+				[
+					'severity'   => $severity,
+					'message'    => $message,
+					'context'    => $context_json,
+					'created_at' => current_time( 'mysql' ),
+				],
+				[ '%s', '%s', '%s', '%s' ]
+			);
+		}
 
 		// Also log to PHP error_log for immediate debugging.
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -308,6 +345,9 @@ final class WPInsight_Logger {
 		if ( in_array( $severity, [ self::EMERGENCY, self::ERROR ], true ) ) {
 			self::maybe_send_email_notification( $severity, $message, $context );
 		}
+
+		// Reset recursion flag.
+		self::$is_logging = false;
 	}
 
 	/**
@@ -316,9 +356,9 @@ final class WPInsight_Logger {
 	 * Rate-limited to 1 email per hour per error type.
 	 *
 	 * @since 1.1.0
-	 * @param string $severity The severity level.
-	 * @param string $message  The log message.
-	 * @param array  $context  Optional. Additional context data.
+	 * @param string               $severity The severity level.
+	 * @param string               $message  The log message.
+	 * @param array<string, mixed> $context  Optional. Additional context data.
 	 * @return void
 	 */
 	private static function maybe_send_email_notification( string $severity, string $message, array $context = [] ): void {
@@ -359,6 +399,7 @@ final class WPInsight_Logger {
 		);
 
 		if ( ! empty( $context ) ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- Used for email formatting, not debug output.
 			$body .= "Context:\n" . print_r( $context, true ) . "\n\n";
 		}
 
