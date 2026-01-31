@@ -36,13 +36,13 @@
 ```php
 /**
  * Plugin Name: CloudFest WPOrg Download
- * Plugin URI: https://wpdesarrollo.com/
+ * Plugin URI: https://github.com/javiercasares/cloudfest-wporgdownload
  * Description: Downloads and archives ALL WordPress.org plugins including historical versions
  * Version: 0.1.0
  * Requires at least: 6.9
  * Requires PHP: 8.4
  * Author: CloudFest Team
- * Author URI: https://wpdesarrollo.com/
+ * Author URI: https://hackathon.cloudfest.com/
  * License: GPL-3.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: cloudfest-wporgdownload

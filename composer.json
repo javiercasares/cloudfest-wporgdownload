@@ -1,0 +1,33 @@
+{
+    "name": "cloudfest/wporgdownload",
+    "description": "Downloads and archives ALL WordPress.org plugins including historical versions",
+    "type": "wordpress-plugin",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "CloudFest Team",
+            "homepage": "https://hackathon.cloudfest.com/"
+        }
+    ],
+    "require": {
+        "php": ">=8.4"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3.7",
+        "wp-coding-standards/wpcs": "^3.0",
+        "phpcsstandards/phpcsutils": "^1.0",
+        "phpcsstandards/phpcsextra": "^1.2",
+        "phpunit/phpunit": "^10.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "scripts": {
+        "phpcs": "phpcs --standard=WordPress --extensions=php --colors -p .",
+        "phpcbf": "phpcbf --standard=WordPress --extensions=php -p .",
+        "phpcs-file": "phpcs --standard=WordPress --extensions=php --colors",
+        "test": "phpunit"
+    }
+}
