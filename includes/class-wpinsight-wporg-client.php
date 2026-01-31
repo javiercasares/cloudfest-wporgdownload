@@ -92,23 +92,23 @@ final class WPInsight_WPOrg_Client {
 	 *     }
 	 * }
 	 */
-	public static function query_plugins( array $args = array() ): array|false {
-		$defaults = array(
+	public static function query_plugins( array $args = [] ): array|false {
+		$defaults = [
 			'browse'   => 'updated',
 			'page'     => 1,
 			'per_page' => 100,
-		);
+		];
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$request_args = array(
+		$request_args = [
 			'action'  => 'query_plugins',
-			'request' => array(
+			'request' => [
 				'browse'   => $args['browse'],
 				'page'     => $args['page'],
 				'per_page' => $args['per_page'],
-			),
-		);
+			],
+		];
 
 		return self::make_request( self::PLUGINS_API_URL, $request_args );
 	}
@@ -129,11 +129,11 @@ final class WPInsight_WPOrg_Client {
 			return false;
 		}
 
-		$request_args = array(
+		$request_args = [
 			'action'  => 'plugin_information',
-			'request' => array(
+			'request' => [
 				'slug'   => $slug,
-				'fields' => array(
+				'fields' => [
 					'versions'                 => true,
 					'downloaded'               => true,
 					'active_installs'          => true,
@@ -150,9 +150,9 @@ final class WPInsight_WPOrg_Client {
 					'support_threads_resolved' => false,
 					'homepage'                 => true,
 					'donate_link'              => true,
-				),
-			),
-		);
+				],
+			],
+		];
 
 		return self::make_request( self::PLUGINS_API_URL, $request_args );
 	}
@@ -184,23 +184,23 @@ final class WPInsight_WPOrg_Client {
 	 *     }
 	 * }
 	 */
-	public static function query_themes( array $args = array() ): array|false {
-		$defaults = array(
+	public static function query_themes( array $args = [] ): array|false {
+		$defaults = [
 			'browse'   => 'updated',
 			'page'     => 1,
 			'per_page' => 100,
-		);
+		];
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$request_args = array(
+		$request_args = [
 			'action'  => 'query_themes',
-			'request' => array(
+			'request' => [
 				'browse'   => $args['browse'],
 				'page'     => $args['page'],
 				'per_page' => $args['per_page'],
-			),
-		);
+			],
+		];
 
 		return self::make_request( self::THEMES_API_URL, $request_args );
 	}
@@ -221,11 +221,11 @@ final class WPInsight_WPOrg_Client {
 			return false;
 		}
 
-		$request_args = array(
+		$request_args = [
 			'action'  => 'theme_information',
-			'request' => array(
+			'request' => [
 				'slug'   => $slug,
-				'fields' => array(
+				'fields' => [
 					'versions'        => true,
 					'downloaded'      => true,
 					'active_installs' => true,
@@ -238,9 +238,9 @@ final class WPInsight_WPOrg_Client {
 					'ratings'         => true,
 					'num_ratings'     => true,
 					'homepage'        => true,
-				),
-			),
-		);
+				],
+			],
+		];
 
 		return self::make_request( self::THEMES_API_URL, $request_args );
 	}
@@ -264,13 +264,13 @@ final class WPInsight_WPOrg_Client {
 
 			$response = wp_remote_post(
 				$url,
-				array(
+				[
 					'timeout' => self::HTTP_TIMEOUT,
-					'headers' => array(
+					'headers' => [
 						'Content-Type' => 'application/json',
-					),
+					],
 					'body'    => wp_json_encode( $args ),
-				)
+				]
 			);
 
 			// Check for HTTP errors.
@@ -394,10 +394,10 @@ final class WPInsight_WPOrg_Client {
 	public static function is_api_accessible(): bool {
 		// Try to query first page of plugins.
 		$result = self::query_plugins(
-			array(
+			[
 				'page'     => 1,
 				'per_page' => 1,
-			)
+			]
 		);
 
 		return false !== $result;
@@ -407,16 +407,13 @@ final class WPInsight_WPOrg_Client {
 	 * Log an error message.
 	 *
 	 * Only logs when WP_DEBUG is enabled to avoid polluting production logs.
-	 * This is the WordPress-recommended way to handle debug logging.
+	 * Uses centralized logger (v1.1.0+).
 	 *
 	 * @since 0.1.0
 	 * @param string $message Error message to log.
 	 * @return void
 	 */
 	private static function log_error( string $message ): void {
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Conditional logging when WP_DEBUG is enabled.
-			error_log( $message );
-		}
+		WPInsight_Logger::error( $message );
 	}
 }

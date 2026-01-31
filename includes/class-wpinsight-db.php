@@ -37,10 +37,14 @@ final class WPInsight_DB {
 	 *
 	 * Increment this when making schema changes to trigger upgrades.
 	 *
+	 * Version History:
+	 * - 1.0.0: Initial schema
+	 * - 1.1.0: Added last_error to sync_state, composite indexes to zip_queue, error_log table
+	 *
 	 * @since 0.1.0
 	 * @var string SCHEMA_VERSION Current schema version.
 	 */
-	private const SCHEMA_VERSION = '1.0.0';
+	private const SCHEMA_VERSION = '1.1.0';
 
 
 	/**
@@ -101,7 +105,7 @@ final class WPInsight_DB {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		// SQL statements for all tables.
-		$sql = array();
+		$sql = [];
 
 		// Table 1: Sync State - tracks pagination cursor and sync status.
 		$sql[] = 'CREATE TABLE ' . self::get_table_name( 'sync_state' ) . " (
@@ -112,6 +116,7 @@ final class WPInsight_DB {
 			total_items int(11) unsigned DEFAULT NULL,
 			total_pages int(11) unsigned DEFAULT NULL,
 			status varchar(20) NOT NULL DEFAULT 'idle',
+			last_error text DEFAULT NULL,
 			last_run_at datetime DEFAULT NULL,
 			completed_at datetime DEFAULT NULL,
 			created_at datetime NOT NULL,
@@ -131,8 +136,10 @@ final class WPInsight_DB {
 			status varchar(20) NOT NULL DEFAULT 'pending',
 			attempts tinyint(3) unsigned NOT NULL DEFAULT 0,
 			max_attempts tinyint(3) unsigned NOT NULL DEFAULT 3,
+			priority int(11) NOT NULL DEFAULT 0,
 			last_error text DEFAULT NULL,
 			scheduled_at datetime DEFAULT NULL,
+			queued_at datetime DEFAULT NULL,
 			started_at datetime DEFAULT NULL,
 			completed_at datetime DEFAULT NULL,
 			created_at datetime NOT NULL,
@@ -141,7 +148,9 @@ final class WPInsight_DB {
 			UNIQUE KEY slug_version (slug(191), version(50), item_type),
 			KEY status (status),
 			KEY item_type (item_type),
-			KEY scheduled_at (scheduled_at)
+			KEY scheduled_at (scheduled_at),
+			KEY idx_status_started (status, started_at),
+			KEY idx_pending_priority (status, priority, queued_at)
 		) $charset_collate;";
 
 		// Table 3: Artifacts - downloaded ZIP file records (~600K rows expected).
@@ -160,6 +169,17 @@ final class WPInsight_DB {
 			UNIQUE KEY slug_version (slug(191), version(50), item_type),
 			KEY item_type (item_type),
 			KEY slug (slug(191))
+		) $charset_collate;";
+
+		// Table 4: Error Log - centralized error logging (since v1.1.0).
+		$sql[] = 'CREATE TABLE ' . self::get_table_name( 'error_log' ) . " (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			severity varchar(20) NOT NULL,
+			message text NOT NULL,
+			context text DEFAULT NULL,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY idx_severity_time (severity, created_at)
 		) $charset_collate;";
 
 		// Execute all CREATE TABLE statements.
@@ -189,28 +209,148 @@ final class WPInsight_DB {
 	/**
 	 * Perform database schema upgrade.
 	 *
-	 * Handles schema migrations from one version to another. Currently just
-	 * recreates tables and updates version, but can be extended to handle
-	 * data migrations in the future.
+	 * Handles schema migrations from one version to another. Runs version-specific
+	 * migrations in order before recreating tables.
 	 *
 	 * @since 0.1.0
-	 * @param string $from_version The version we're upgrading from (reserved for future use).
+	 * @param string $from_version The version we're upgrading from.
 	 * @return void
 	 */
 	private static function upgrade( string $from_version ): void {
-		// Suppress unused parameter warning - reserved for future version-specific migrations.
-		unset( $from_version );
-		// For now, just recreate tables (dbDelta will update schema if needed).
+		// Run version-specific migrations before recreating tables.
+		if ( version_compare( $from_version, '1.1.0', '<' ) ) {
+			self::migrate_to_1_1_0();
+		}
+
+		// Recreate tables (dbDelta will update schema if needed).
 		self::create_tables();
 
 		// Update stored version.
 		update_option( WPINSIGHT_DB_VERSION_OPTION, self::SCHEMA_VERSION );
+	}
 
-		// Future: Add version-specific migrations here.
-		// Example:
-		// if ( version_compare( $from_version, '1.1.0', '<' ) ) {
-		// self::migrate_to_1_1_0().
-		// }.
+	/**
+	 * Migrate database schema from 1.0.0 to 1.1.0.
+	 *
+	 * Changes in v1.1.0:
+	 * - Add last_error column to sync_state table
+	 * - Add priority and queued_at columns to zip_queue table
+	 * - Add composite indexes to zip_queue for performance
+	 * - Create error_log table
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	private static function migrate_to_1_1_0(): void {
+		global $wpdb;
+
+		$sync_state_table = self::get_table_name( 'sync_state' );
+		$zip_queue_table  = self::get_table_name( 'zip_queue' );
+
+		// Check if last_error column exists in sync_state.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$sync_state_table,
+				'last_error'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add last_error column to sync_state.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN last_error TEXT DEFAULT NULL AFTER status',
+					$sync_state_table
+				)
+			);
+		}
+
+		// Check if priority column exists in zip_queue.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$zip_queue_table,
+				'priority'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add priority column to zip_queue.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN priority INT(11) NOT NULL DEFAULT 0 AFTER max_attempts',
+					$zip_queue_table
+				)
+			);
+		}
+
+		// Check if queued_at column exists in zip_queue.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$zip_queue_table,
+				'queued_at'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add queued_at column to zip_queue.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN queued_at DATETIME DEFAULT NULL AFTER scheduled_at',
+					$zip_queue_table
+				)
+			);
+		}
+
+		// Add composite indexes to zip_queue.
+		// Note: dbDelta will handle these in create_tables(), but we check manually for immediate effect.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$indexes = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW INDEX FROM %i WHERE Key_name = %s',
+				$zip_queue_table,
+				'idx_status_started'
+			)
+		);
+
+		if ( empty( $indexes ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD INDEX idx_status_started (status, started_at)',
+					$zip_queue_table
+				)
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$indexes = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW INDEX FROM %i WHERE Key_name = %s',
+				$zip_queue_table,
+				'idx_pending_priority'
+			)
+		);
+
+		if ( empty( $indexes ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD INDEX idx_pending_priority (status, priority, queued_at)',
+					$zip_queue_table
+				)
+			);
+		}
+
+		// error_log table will be created by dbDelta in create_tables().
 	}
 
 	/**

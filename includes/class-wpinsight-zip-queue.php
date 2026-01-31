@@ -65,7 +65,7 @@ final class WPInsight_Zip_Queue {
 	 */
 	public static function init(): void {
 		// Register ZIP worker tick handler.
-		add_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array( __CLASS__, 'worker_tick' ) );
+		add_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [ __CLASS__, 'worker_tick' ] );
 	}
 
 	/**
@@ -84,7 +84,7 @@ final class WPInsight_Zip_Queue {
 		}
 
 		// Check if already scheduled.
-		$next_run = as_next_scheduled_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
+		$next_run = as_next_scheduled_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
 		if ( false !== $next_run ) {
 			return; // Already scheduled.
 		}
@@ -95,7 +95,7 @@ final class WPInsight_Zip_Queue {
 			time(),
 			$interval,
 			WPINSIGHT_ZIP_WORKER_TICK_ACTION,
-			array(),
+			[],
 			WPINSIGHT_AS_GROUP
 		);
 	}
@@ -141,6 +141,7 @@ final class WPInsight_Zip_Queue {
 	 * Count active downloads.
 	 *
 	 * Returns the number of downloads currently in 'processing' state.
+	 * Uses indexed query with timestamp check to avoid full table scans (v1.1.0+).
 	 *
 	 * @since 0.1.0
 	 * @return int Number of active downloads.
@@ -150,12 +151,52 @@ final class WPInsight_Zip_Queue {
 
 		$table = WPInsight_DB::get_table_name( 'zip_queue' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Count active downloads. Table name from get_table_name() is safe.
+		// Use indexed query (idx_status_started) with timestamp to avoid full table scan.
+		// Only count jobs started in last 10 minutes (stale locks are cleaned separately).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$count = $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$table} WHERE status = 'processing'" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT COUNT(*) FROM {$table}
+			WHERE status = 'processing'
+			AND started_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE)"
 		);
 
 		return (int) $count;
+	}
+
+	/**
+	 * Cleanup stale processing locks.
+	 *
+	 * Resets jobs stuck in 'processing' state for more than 10 minutes.
+	 * This handles crashed workers that never completed or failed properly.
+	 *
+	 * @since 1.1.0
+	 * @return int Number of stale locks cleaned up.
+	 */
+	public static function cleanup_stale_locks(): int {
+		global $wpdb;
+
+		$table = WPInsight_DB::get_table_name( 'zip_queue' );
+
+		// Find jobs stuck in processing for more than 10 minutes.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$cleaned = $wpdb->query(
+			"UPDATE {$table}
+			SET status = 'pending', started_at = NULL
+			WHERE status = 'processing'
+			AND started_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)"
+		);
+
+		if ( $cleaned > 0 ) {
+			WPInsight_Logger::warning(
+				sprintf( 'Cleaned up %d stale processing locks', $cleaned ),
+				[ 'cleaned' => $cleaned ]
+			);
+
+			// Invalidate cache.
+			delete_transient( 'wpinsight_queue_stats' );
+		}
+
+		return is_numeric( $cleaned ) ? (int) $cleaned : 0;
 	}
 
 	/**
@@ -192,14 +233,14 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			$table,
-			array(
+			[
 				'status'       => 'processing',
 				'started_at'   => current_time( 'mysql', true ),
 				'last_attempt' => current_time( 'mysql', true ),
-			),
-			array( 'id' => $job['id'] ),
-			array( '%s', '%s', '%s' ),
-			array( '%d' )
+			],
+			[ 'id' => $job['id'] ],
+			[ '%s', '%s', '%s' ],
+			[ '%d' ]
 		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit required.
@@ -249,11 +290,11 @@ final class WPInsight_Zip_Queue {
 		// Download the file.
 		$response = wp_remote_get(
 			$url,
-			array(
+			[
 				'timeout'  => self::DOWNLOAD_TIMEOUT,
 				'stream'   => true,
 				'filename' => $dest_file,
-			)
+			]
 		);
 
 		// Check for errors.
@@ -337,14 +378,17 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			$queue_table,
-			array(
+			[
 				'status'       => 'completed',
 				'completed_at' => current_time( 'mysql', true ),
-			),
-			array( 'id' => $job_id ),
-			array( '%s', '%s' ),
-			array( '%d' )
+			],
+			[ 'id' => $job_id ],
+			[ '%s', '%s' ],
+			[ '%d' ]
 		);
+
+		// Invalidate queue stats cache.
+		delete_transient( 'wpinsight_queue_stats' );
 
 		// Create artifact record.
 		$artifacts_table = WPInsight_DB::get_table_name( 'artifacts' );
@@ -352,7 +396,7 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->insert(
 			$artifacts_table,
-			array(
+			[
 				'artifact_type'    => $job['artifact_type'],
 				'artifact_slug'    => $job['artifact_slug'],
 				'artifact_version' => $job['artifact_version'],
@@ -361,8 +405,8 @@ final class WPInsight_Zip_Queue {
 				'file_size'        => $file_size,
 				'file_hash'        => hash_file( 'sha256', $file_path ),
 				'downloaded_at'    => current_time( 'mysql', true ),
-			),
-			array( '%s', '%s', '%s', '%d', '%s', '%d', '%s', '%s' )
+			],
+			[ '%s', '%s', '%s', '%d', '%s', '%d', '%s', '%s' ]
 		);
 	}
 
@@ -391,32 +435,35 @@ final class WPInsight_Zip_Queue {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$table,
-				array(
+				[
 					'status'       => 'failed',
 					'attempts'     => $attempts,
 					'last_error'   => $error,
 					'last_attempt' => current_time( 'mysql', true ),
-				),
-				array( 'id' => $job_id ),
-				array( '%s', '%d', '%s', '%s' ),
-				array( '%d' )
+				],
+				[ 'id' => $job_id ],
+				[ '%s', '%d', '%s', '%s' ],
+				[ '%d' ]
 			);
 		} else {
 			// Retry available, requeue as pending.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$table,
-				array(
+				[
 					'status'       => 'pending',
 					'attempts'     => $attempts,
 					'last_error'   => $error,
 					'last_attempt' => current_time( 'mysql', true ),
-				),
-				array( 'id' => $job_id ),
-				array( '%s', '%d', '%s', '%s' ),
-				array( '%d' )
+				],
+				[ 'id' => $job_id ],
+				[ '%s', '%d', '%s', '%s' ],
+				[ '%d' ]
 			);
 		}
+
+		// Invalidate queue stats cache.
+		delete_transient( 'wpinsight_queue_stats' );
 	}
 
 	/**
@@ -462,30 +509,44 @@ final class WPInsight_Zip_Queue {
 	 * }
 	 */
 	public static function get_queue_stats(): array {
+		// Try to get cached stats first (60 second TTL).
+		$cache_key = 'wpinsight_queue_stats';
+		$stats     = get_transient( $cache_key );
+
+		if ( false !== $stats && is_array( $stats ) ) {
+			return $stats;
+		}
+
+		// Cache miss - query database.
 		global $wpdb;
 
 		$table = WPInsight_DB::get_table_name( 'zip_queue' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Get queue statistics grouped by status. Table name from get_table_name() is safe.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$results = $wpdb->get_results(
-			"SELECT status, COUNT(*) as count FROM {$table} GROUP BY status", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT status, COUNT(*) as count FROM {$table} GROUP BY status",
 			ARRAY_A
 		);
 
-		$stats = array(
+		$stats = [
 			'pending'    => 0,
 			'processing' => 0,
 			'completed'  => 0,
 			'failed'     => 0,
 			'total'      => 0,
-		);
+		];
 
-		foreach ( $results as $row ) {
-			$status           = $row['status'];
-			$count            = (int) $row['count'];
-			$stats[ $status ] = $count;
-			$stats['total']  += $count;
+		if ( is_array( $results ) ) {
+			foreach ( $results as $row ) {
+				$status           = $row['status'];
+				$count            = (int) $row['count'];
+				$stats[ $status ] = $count;
+				$stats['total']  += $count;
+			}
 		}
+
+		// Cache for 60 seconds.
+		set_transient( $cache_key, $stats, 60 );
 
 		return $stats;
 	}

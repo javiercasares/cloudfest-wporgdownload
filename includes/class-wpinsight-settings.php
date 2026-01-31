@@ -52,35 +52,40 @@ final class WPInsight_Settings {
 	 * @return array<string,mixed> Associative array of default settings.
 	 */
 	public static function get_defaults(): array {
-		return array(
+		return [
 			// Data management.
-			'delete_on_uninstall'          => false, // Preserve data by default.
+			'delete_on_uninstall'               => false, // Preserve data by default.
 
 			// Rate limiting - CRITICAL for WordPress.org.
-			'max_concurrent_downloads'     => 3, // Max 3 concurrent downloads to avoid bans.
+			'max_concurrent_downloads'          => 3, // Max 3 concurrent downloads to avoid bans.
 
 			// Scheduling intervals (in seconds).
-			'sync_interval'                => 300, // 5 minutes - sync check frequency.
-			'zip_worker_interval'          => 60,  // 1 minute - ZIP download worker frequency.
+			'sync_interval'                     => 300, // 5 minutes - sync check frequency.
+			'zip_worker_interval'               => 60,  // 1 minute - ZIP download worker frequency.
 
 			// API pagination.
-			'per_page'                     => 100, // Items per page from WordPress.org API.
+			'per_page'                          => 100, // Items per page from WordPress.org API.
 
 			// Retry logic.
-			'max_retries'                  => 3,   // Maximum download retry attempts.
+			'max_retries'                       => 3,   // Maximum download retry attempts.
 
 			// Storage paths (relative to wp-content/uploads/).
-			'storage_base_path'            => 'wpinsight',
+			'storage_base_path'                 => 'wpinsight',
 
 			// Sync behavior.
-			'auto_sync_enabled'            => true, // Enable automatic background sync.
-			'sync_plugins_enabled'         => true, // Sync plugins.
-			'sync_themes_enabled'          => true,  // Sync themes metadata.
+			'auto_sync_enabled'                 => true, // Enable automatic background sync.
+			'sync_plugins_enabled'              => true, // Sync plugins.
+			'sync_themes_enabled'               => true,  // Sync themes metadata.
 
 			// Download behavior.
-			'download_plugin_zips_enabled' => true,  // Download plugin ZIP files.
-			'download_theme_zips_enabled'  => true,  // Download theme ZIP files.
-		);
+			'download_plugin_zips_enabled'      => true,  // Download plugin ZIP files.
+			'download_theme_zips_enabled'       => true,  // Download theme ZIP files.
+
+			// Error notifications (v1.1.0+).
+			'admin_email_notifications_enabled' => false, // Email notifications for critical errors (opt-in).
+			'admin_notification_email'          => get_option( 'admin_email' ), // Email recipient.
+			'log_retention_days'                => 30, // Days to retain error logs.
+		];
 	}
 
 	/**
@@ -115,7 +120,7 @@ final class WPInsight_Settings {
 	 * @return array<string,mixed> All settings merged with defaults.
 	 */
 	public static function get_all(): array {
-		$stored   = get_option( WPINSIGHT_SETTINGS_OPTION, array() );
+		$stored   = get_option( WPINSIGHT_SETTINGS_OPTION, [] );
 		$defaults = self::get_defaults();
 
 		// Merge stored settings over defaults.
@@ -166,7 +171,7 @@ final class WPInsight_Settings {
 	public static function update_all( array $new_settings ): bool {
 		try {
 			// Validate all values first (fail fast).
-			$validated = array();
+			$validated = [];
 			foreach ( $new_settings as $key => $value ) {
 				$validated[ $key ] = self::validate( $key, $value );
 			}

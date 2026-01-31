@@ -60,6 +60,9 @@ final class WPInsight_Bootstrap {
 		// Load settings class (Phase 2).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-settings.php';
 
+		// Load logger class (Phase 5: v1.1.0+).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-logger.php';
+
 		// Load CPT class (Phase 3).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cpt.php';
 
@@ -76,10 +79,13 @@ final class WPInsight_Bootstrap {
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php';
 
 		// Register CPTs on init hook (Phase 3).
-		add_action( 'init', array( 'WPInsight_CPT', 'register' ) );
+		add_action( 'init', [ 'WPInsight_CPT', 'register' ] );
 
 		// Hook database upgrade checker (Phase 2).
-		add_action( 'admin_init', array( 'WPInsight_DB', 'maybe_upgrade' ) );
+		add_action( 'admin_init', [ 'WPInsight_DB', 'maybe_upgrade' ] );
+
+		// Initialize logger (Phase 5: v1.1.0+).
+		WPInsight_Logger::init();
 
 		// Initialize admin UI (Phase 4).
 		WPInsight_Admin::init();
@@ -89,6 +95,12 @@ final class WPInsight_Bootstrap {
 
 		// Initialize ZIP queue worker (Phase 7).
 		WPInsight_Zip_Queue::init();
+
+		// Schedule daily log cleanup (Phase 5: v1.1.0+).
+		if ( ! wp_next_scheduled( 'wpinsight_cleanup_logs' ) ) {
+			wp_schedule_event( time(), 'daily', 'wpinsight_cleanup_logs' );
+		}
+		add_action( 'wpinsight_cleanup_logs', [ 'WPInsight_Logger', 'clear_old_logs' ] );
 
 		// Register WP-CLI commands (Phase 8).
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
@@ -126,10 +138,10 @@ final class WPInsight_Bootstrap {
 			wp_die(
 				wp_kses_post( self::get_action_scheduler_error_message() ),
 				esc_html__( 'Plugin Activation Failed', 'cloudfest-wporgdownload' ),
-				array(
+				[
 					'back_link' => true,
 					'response'  => 500,
-				)
+				]
 			);
 		}
 
@@ -179,10 +191,10 @@ final class WPInsight_Bootstrap {
 		// Unschedule all Action Scheduler jobs.
 		if ( function_exists( 'as_unschedule_all_actions' ) ) {
 			// Unschedule sync tick (runs every 5 minutes).
-			as_unschedule_all_actions( WPINSIGHT_SYNC_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
+			as_unschedule_all_actions( WPINSIGHT_SYNC_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
 
 			// Unschedule ZIP worker tick (runs every 1 minute).
-			as_unschedule_all_actions( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
+			as_unschedule_all_actions( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
 		}
 
 		// Note: We intentionally do NOT delete any data here.

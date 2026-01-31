@@ -79,7 +79,7 @@ final class WPInsight_Sync {
 	 */
 	public static function init(): void {
 		// Register sync tick handler.
-		add_action( WPINSIGHT_SYNC_TICK_ACTION, array( __CLASS__, 'sync_tick' ) );
+		add_action( WPINSIGHT_SYNC_TICK_ACTION, [ __CLASS__, 'sync_tick' ] );
 	}
 
 	/**
@@ -98,7 +98,7 @@ final class WPInsight_Sync {
 		}
 
 		// Check if already scheduled.
-		$next_run = as_next_scheduled_action( WPINSIGHT_SYNC_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
+		$next_run = as_next_scheduled_action( WPINSIGHT_SYNC_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
 		if ( false !== $next_run ) {
 			return; // Already scheduled.
 		}
@@ -109,7 +109,7 @@ final class WPInsight_Sync {
 			time(),
 			$interval,
 			WPINSIGHT_SYNC_TICK_ACTION,
-			array(),
+			[],
 			WPINSIGHT_AS_GROUP
 		);
 	}
@@ -154,7 +154,7 @@ final class WPInsight_Sync {
 		$state = self::get_sync_state( 'plugin' );
 
 		// Skip if already completed or in error state.
-		if ( in_array( $state['status'], array( self::STATE_COMPLETED, self::STATE_ERROR ), true ) ) {
+		if ( in_array( $state['status'], [ self::STATE_COMPLETED, self::STATE_ERROR ], true ) ) {
 			return false;
 		}
 
@@ -164,11 +164,11 @@ final class WPInsight_Sync {
 		// Fetch plugins from API.
 		$per_page = WPInsight_Settings::get( 'per_page', 100 );
 		$response = WPInsight_WPOrg_Client::query_plugins(
-			array(
+			[
 				'browse'   => 'updated',
 				'page'     => $state['page'],
 				'per_page' => $per_page,
-			)
+			]
 		);
 
 		// Handle API error.
@@ -216,7 +216,7 @@ final class WPInsight_Sync {
 		$state = self::get_sync_state( 'theme' );
 
 		// Skip if already completed or in error state.
-		if ( in_array( $state['status'], array( self::STATE_COMPLETED, self::STATE_ERROR ), true ) ) {
+		if ( in_array( $state['status'], [ self::STATE_COMPLETED, self::STATE_ERROR ], true ) ) {
 			return false;
 		}
 
@@ -226,11 +226,11 @@ final class WPInsight_Sync {
 		// Fetch themes from API.
 		$per_page = WPInsight_Settings::get( 'per_page', 100 );
 		$response = WPInsight_WPOrg_Client::query_themes(
-			array(
+			[
 				'browse'   => 'updated',
 				'page'     => $state['page'],
 				'per_page' => $per_page,
-			)
+			]
 		);
 
 		// Handle API error.
@@ -337,9 +337,93 @@ final class WPInsight_Sync {
 	}
 
 	/**
+	 * Batch check which versions already exist in queue.
+	 *
+	 * Performs a single SELECT query with IN clause instead of N queries.
+	 *
+	 * @since 1.1.0
+	 * @param string   $slug     Item slug.
+	 * @param string   $type     Item type ('plugin' or 'theme').
+	 * @param string[] $versions Array of version strings.
+	 * @return array<string, bool> Associative array with version => true for existing versions.
+	 */
+	private static function batch_check_existing_versions( string $slug, string $type, array $versions ): array {
+		global $wpdb;
+
+		if ( empty( $versions ) ) {
+			return [];
+		}
+
+		$table = WPInsight_DB::get_table_name( 'zip_queue' );
+
+		// Build placeholders for IN clause.
+		$placeholders = implode( ', ', array_fill( 0, count( $versions ), '%s' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$existing = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT artifact_version FROM {$table} WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version IN ($placeholders)",
+				array_merge( [ $type, $slug ], $versions )
+			)
+		);
+
+		// Convert to associative array for fast lookup.
+		return is_array( $existing ) ? array_fill_keys( $existing, true ) : [];
+	}
+
+	/**
+	 * Batch insert multiple queue jobs.
+	 *
+	 * Performs a single bulk INSERT instead of N individual inserts.
+	 *
+	 * @since 1.1.0
+	 * @param string                $slug     Item slug.
+	 * @param string                $type     Item type ('plugin' or 'theme').
+	 * @param array<string, string> $versions Versions array (version => download_url).
+	 * @param int                   $post_id  Post ID.
+	 * @return int Number of rows inserted.
+	 */
+	private static function batch_insert_queue_jobs( string $slug, string $type, array $versions, int $post_id ): int {
+		global $wpdb;
+
+		if ( empty( $versions ) ) {
+			return 0;
+		}
+
+		$table = WPInsight_DB::get_table_name( 'zip_queue' );
+		$now   = current_time( 'mysql', true );
+
+		// Build multi-row INSERT statement.
+		$values       = [];
+		$placeholders = [];
+
+		foreach ( $versions as $version => $download_url ) {
+			$placeholders[] = '(%s, %s, %s, %d, %s, %s, %d, %d, %s)';
+			$values[]       = $type;
+			$values[]       = $slug;
+			$values[]       = $version;
+			$values[]       = $post_id;
+			$values[]       = $download_url;
+			$values[]       = 'pending';
+			$values[]       = 50; // Normal priority.
+			$values[]       = 0;  // Attempts.
+			$values[]       = $now;
+		}
+
+		$query = "INSERT INTO {$table} (artifact_type, artifact_slug, artifact_version, artifact_post_id, download_url, status, priority, attempts, queued_at)
+				  VALUES " . implode( ', ', $placeholders );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$result = $wpdb->query( $wpdb->prepare( $query, $values ) );
+
+		return is_numeric( $result ) ? (int) $result : 0;
+	}
+
+	/**
 	 * Enqueue plugin ZIP downloads.
 	 *
 	 * Adds download jobs to the zip_queue table for each version.
+	 * Uses batch operations to minimize database queries (v1.1.0+).
 	 *
 	 * @since 0.1.0
 	 * @param string                $slug     Plugin slug.
@@ -348,42 +432,45 @@ final class WPInsight_Sync {
 	 * @return void
 	 */
 	private static function enqueue_plugin_downloads( string $slug, array $versions, int $post_id ): void {
-		global $wpdb;
+		if ( empty( $versions ) ) {
+			return;
+		}
 
-		$table = WPInsight_DB::get_table_name( 'zip_queue' );
-
-		foreach ( $versions as $version => $download_url ) {
-			// Skip if already in queue.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Check if version exists in queue. Table name from get_table_name() is safe.
-			$exists = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT id FROM {$table} WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					'plugin',
-					$slug,
-					$version
-				)
-			);
-
-			if ( $exists ) {
-				continue; // Already queued.
+		// Check memory before processing large version arrays.
+		$memory_needed_mb = ( count( $versions ) * 1024 ) / ( 1024 * 1024 ); // Rough estimate.
+		if ( $memory_needed_mb > 32 ) {
+			$memory_available = (int) ini_get( 'memory_limit' );
+			if ( $memory_available > 0 && $memory_available < 128 ) {
+				WPInsight_Logger::warning(
+					sprintf( 'Large version array (%d versions) may exceed memory limit (%dM)', count( $versions ), $memory_available ),
+					[
+						'slug'           => $slug,
+						'versions_count' => count( $versions ),
+					]
+				);
 			}
+		}
 
-			// Insert into queue.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->insert(
-				$table,
-				array(
-					'artifact_type'    => 'plugin',
-					'artifact_slug'    => $slug,
-					'artifact_version' => $version,
-					'artifact_post_id' => $post_id,
-					'download_url'     => $download_url,
-					'status'           => 'pending',
-					'priority'         => 50, // Normal priority.
-					'attempts'         => 0,
-					'queued_at'        => current_time( 'mysql', true ),
-				),
-				array( '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s' )
+		// Batch check which versions already exist (1 query instead of N).
+		$existing = self::batch_check_existing_versions( $slug, 'plugin', array_keys( $versions ) );
+
+		// Filter out already-queued versions.
+		$new_versions = array_diff_key( $versions, $existing );
+
+		if ( empty( $new_versions ) ) {
+			return; // All versions already queued.
+		}
+
+		// Batch insert all new versions (1 query instead of N).
+		$inserted = self::batch_insert_queue_jobs( $slug, 'plugin', $new_versions, $post_id );
+
+		if ( $inserted > 0 ) {
+			WPInsight_Logger::info(
+				sprintf( 'Enqueued %d plugin versions for download', $inserted ),
+				[
+					'slug'     => $slug,
+					'inserted' => $inserted,
+				]
 			);
 		}
 	}
@@ -392,6 +479,7 @@ final class WPInsight_Sync {
 	 * Enqueue theme ZIP downloads.
 	 *
 	 * Adds download jobs to the zip_queue table for each version.
+	 * Uses batch operations to minimize database queries (v1.1.0+).
 	 *
 	 * @since 0.1.0
 	 * @param string                $slug     Theme slug.
@@ -400,42 +488,45 @@ final class WPInsight_Sync {
 	 * @return void
 	 */
 	private static function enqueue_theme_downloads( string $slug, array $versions, int $post_id ): void {
-		global $wpdb;
+		if ( empty( $versions ) ) {
+			return;
+		}
 
-		$table = WPInsight_DB::get_table_name( 'zip_queue' );
-
-		foreach ( $versions as $version => $download_url ) {
-			// Skip if already in queue.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Check if version exists in queue. Table name from get_table_name() is safe.
-			$exists = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT id FROM {$table} WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					'theme',
-					$slug,
-					$version
-				)
-			);
-
-			if ( $exists ) {
-				continue; // Already queued.
+		// Check memory before processing large version arrays.
+		$memory_needed_mb = ( count( $versions ) * 1024 ) / ( 1024 * 1024 ); // Rough estimate.
+		if ( $memory_needed_mb > 32 ) {
+			$memory_available = (int) ini_get( 'memory_limit' );
+			if ( $memory_available > 0 && $memory_available < 128 ) {
+				WPInsight_Logger::warning(
+					sprintf( 'Large version array (%d versions) may exceed memory limit (%dM)', count( $versions ), $memory_available ),
+					[
+						'slug'           => $slug,
+						'versions_count' => count( $versions ),
+					]
+				);
 			}
+		}
 
-			// Insert into queue.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->insert(
-				$table,
-				array(
-					'artifact_type'    => 'theme',
-					'artifact_slug'    => $slug,
-					'artifact_version' => $version,
-					'artifact_post_id' => $post_id,
-					'download_url'     => $download_url,
-					'status'           => 'pending',
-					'priority'         => 50, // Normal priority.
-					'attempts'         => 0,
-					'queued_at'        => current_time( 'mysql', true ),
-				),
-				array( '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s' )
+		// Batch check which versions already exist (1 query instead of N).
+		$existing = self::batch_check_existing_versions( $slug, 'theme', array_keys( $versions ) );
+
+		// Filter out already-queued versions.
+		$new_versions = array_diff_key( $versions, $existing );
+
+		if ( empty( $new_versions ) ) {
+			return; // All versions already queued.
+		}
+
+		// Batch insert all new versions (1 query instead of N).
+		$inserted = self::batch_insert_queue_jobs( $slug, 'theme', $new_versions, $post_id );
+
+		if ( $inserted > 0 ) {
+			WPInsight_Logger::info(
+				sprintf( 'Enqueued %d theme versions for download', $inserted ),
+				[
+					'slug'     => $slug,
+					'inserted' => $inserted,
+				]
 			);
 		}
 	}
@@ -472,20 +563,20 @@ final class WPInsight_Sync {
 
 		if ( ! $row ) {
 			// No state yet, return defaults.
-			return array(
+			return [
 				'status'     => self::STATE_IDLE,
 				'page'       => 1,
 				'last_error' => '',
 				'updated_at' => current_time( 'mysql', true ),
-			);
+			];
 		}
 
-		return array(
+		return [
 			'status'     => $row['status'],
 			'page'       => (int) $row['page'],
 			'last_error' => $row['last_error'] ?? '',
 			'updated_at' => $row['updated_at'],
-		);
+		];
 	}
 
 	/**
@@ -508,14 +599,14 @@ final class WPInsight_Sync {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->replace(
 			$table,
-			array(
+			[
 				'sync_type'  => $type,
 				'status'     => $status,
 				'page'       => $page,
 				'last_error' => $last_error,
 				'updated_at' => current_time( 'mysql', true ),
-			),
-			array( '%s', '%s', '%d', '%s', '%s' )
+			],
+			[ '%s', '%s', '%d', '%s', '%s' ]
 		);
 
 		return false !== $result;
