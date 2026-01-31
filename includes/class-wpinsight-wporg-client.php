@@ -262,6 +262,12 @@ final class WPInsight_WPOrg_Client {
 		while ( $attempt < self::MAX_RETRIES ) {
 			++$attempt;
 
+			$json_body = wp_json_encode( $args );
+			if ( false === $json_body ) {
+				WPInsight_Logger::error( 'Failed to encode API request as JSON', [ 'args' => $args ] );
+				return false;
+			}
+
 			$response = wp_remote_post(
 				$url,
 				[
@@ -269,7 +275,7 @@ final class WPInsight_WPOrg_Client {
 					'headers' => [
 						'Content-Type' => 'application/json',
 					],
-					'body'    => wp_json_encode( $args ),
+					'body'    => $json_body,
 				]
 			);
 

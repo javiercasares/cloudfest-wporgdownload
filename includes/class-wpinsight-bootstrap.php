@@ -100,7 +100,12 @@ final class WPInsight_Bootstrap {
 		if ( ! wp_next_scheduled( 'wpinsight_cleanup_logs' ) ) {
 			wp_schedule_event( time(), 'daily', 'wpinsight_cleanup_logs' );
 		}
-		add_action( 'wpinsight_cleanup_logs', [ 'WPInsight_Logger', 'clear_old_logs' ] );
+		add_action(
+			'wpinsight_cleanup_logs',
+			function () {
+				WPInsight_Logger::clear_old_logs();
+			}
+		);
 
 		// Register WP-CLI commands (Phase 8).
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {

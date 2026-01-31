@@ -36,11 +36,11 @@ final class WPInsight_CLI {
 			return;
 		}
 
-		WP_CLI::add_command( 'wpinsight sync', array( __CLASS__, 'sync' ) );
-		WP_CLI::add_command( 'wpinsight zip', array( __CLASS__, 'zip' ) );
-		WP_CLI::add_command( 'wpinsight stats', array( __CLASS__, 'stats' ) );
-		WP_CLI::add_command( 'wpinsight queue', array( __CLASS__, 'queue' ) );
-		WP_CLI::add_command( 'wpinsight reset', array( __CLASS__, 'reset' ) );
+		WP_CLI::add_command( 'wpinsight sync', [ __CLASS__, 'sync' ] );
+		WP_CLI::add_command( 'wpinsight zip', [ __CLASS__, 'zip' ] );
+		WP_CLI::add_command( 'wpinsight stats', [ __CLASS__, 'stats' ] );
+		WP_CLI::add_command( 'wpinsight queue', [ __CLASS__, 'queue' ] );
+		WP_CLI::add_command( 'wpinsight reset', [ __CLASS__, 'reset' ] );
 	}
 
 	/**
@@ -77,7 +77,7 @@ final class WPInsight_CLI {
 		$reset = isset( $assoc_args['reset'] );
 
 		// Validate type.
-		if ( ! in_array( $type, array( 'plugins', 'themes', 'both' ), true ) ) {
+		if ( ! in_array( $type, [ 'plugins', 'themes', 'both' ], true ) ) {
 			WP_CLI::error( 'Invalid type. Must be: plugins, themes, or both.' );
 		}
 
@@ -394,7 +394,7 @@ final class WPInsight_CLI {
 		}
 
 		// Validate type.
-		if ( ! in_array( $type, array( 'plugins', 'themes', 'both' ), true ) ) {
+		if ( ! in_array( $type, [ 'plugins', 'themes', 'both' ], true ) ) {
 			WP_CLI::error( 'Invalid type. Must be: plugins, themes, or both.' );
 		}
 

@@ -359,13 +359,16 @@ final class WPInsight_Sync {
 		// Build placeholders for IN clause.
 		$placeholders = implode( ', ', array_fill( 0, count( $versions ), '%s' ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		// Dynamic IN clause with placeholders - PHPCS can't count merged array parameters.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$existing = $wpdb->get_col(
 			$wpdb->prepare(
-				"SELECT artifact_version FROM {$table} WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version IN ($placeholders)",
-				array_merge( [ $type, $slug ], $versions )
+				"SELECT artifact_version FROM %i WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version IN ($placeholders)",
+				array_merge( [ $table, $type, $slug ], $versions )
 			)
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 
 		// Convert to associative array for fast lookup.
 		return is_array( $existing ) ? array_fill_keys( $existing, true ) : [];

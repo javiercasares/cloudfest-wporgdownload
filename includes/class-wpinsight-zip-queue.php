@@ -153,11 +153,14 @@ final class WPInsight_Zip_Queue {
 
 		// Use indexed query (idx_status_started) with timestamp to avoid full table scan.
 		// Only count jobs started in last 10 minutes (stale locks are cleaned separately).
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$count = $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$table}
-			WHERE status = 'processing'
-			AND started_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE)"
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM %i
+				WHERE status = 'processing'
+				AND started_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE)",
+				$table
+			)
 		);
 
 		return (int) $count;
@@ -178,12 +181,15 @@ final class WPInsight_Zip_Queue {
 		$table = WPInsight_DB::get_table_name( 'zip_queue' );
 
 		// Find jobs stuck in processing for more than 10 minutes.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$cleaned = $wpdb->query(
-			"UPDATE {$table}
-			SET status = 'pending', started_at = NULL
-			WHERE status = 'processing'
-			AND started_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)"
+			$wpdb->prepare(
+				"UPDATE %i
+				SET status = 'pending', started_at = NULL
+				WHERE status = 'processing'
+				AND started_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)",
+				$table
+			)
 		);
 
 		if ( $cleaned > 0 ) {
@@ -283,7 +289,8 @@ final class WPInsight_Zip_Queue {
 		// Check if file already exists.
 		if ( file_exists( $dest_file ) ) {
 			// File already downloaded, mark as completed.
-			self::mark_job_completed( $job_id, $dest_file, filesize( $dest_file ) );
+			$file_size = filesize( $dest_file );
+			self::mark_job_completed( $job_id, $dest_file, false !== $file_size ? $file_size : 0 );
 			return true;
 		}
 
@@ -318,9 +325,9 @@ final class WPInsight_Zip_Queue {
 
 		// Verify file size.
 		$file_size = filesize( $dest_file );
-		if ( 0 === $file_size ) {
+		if ( false === $file_size || 0 === $file_size ) {
 			wp_delete_file( $dest_file ); // Remove empty file.
-			self::mark_job_failed( $job_id, 'Downloaded file is empty', (int) $job['attempts'] );
+			self::mark_job_failed( $job_id, 'Downloaded file is empty or unreadable', (int) $job['attempts'] );
 			return false;
 		}
 
@@ -522,9 +529,12 @@ final class WPInsight_Zip_Queue {
 
 		$table = WPInsight_DB::get_table_name( 'zip_queue' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_results(
-			"SELECT status, COUNT(*) as count FROM {$table} GROUP BY status",
+			$wpdb->prepare(
+				'SELECT status, COUNT(*) as count FROM %i GROUP BY status',
+				$table
+			),
 			ARRAY_A
 		);
 
@@ -592,7 +602,11 @@ final class WPInsight_Zip_Queue {
 
 		$table = WPInsight_DB::get_table_name( 'zip_queue' );
 
-		$cutoff_date = gmdate( 'Y-m-d H:i:s', strtotime( "-{$older_than_days} days" ) );
+		$cutoff_timestamp = strtotime( "-{$older_than_days} days" );
+		if ( false === $cutoff_timestamp ) {
+			return 0; // Invalid date calculation.
+		}
+		$cutoff_date = gmdate( 'Y-m-d H:i:s', $cutoff_timestamp );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Delete old completed jobs with prepared statement. Table name from get_table_name() is safe.
 		$result = $wpdb->query(
