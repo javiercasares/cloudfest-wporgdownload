@@ -415,6 +415,24 @@ if ( ! function_exists( 'esc_html__' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_count_posts' ) ) {
+	/**
+	 * Stub for wp_count_posts() WordPress function.
+	 *
+	 * @param string $type Post type.
+	 * @return object Post counts.
+	 */
+	function wp_count_posts( $type = 'post' ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $type );
+		return (object) [
+			'publish' => 0,
+			'draft'   => 0,
+			'pending' => 0,
+		];
+	}
+}
+
 if ( ! function_exists( 'wp_remote_post' ) ) {
 	/**
 	 * Stub for wp_remote_post() WordPress function.

@@ -1668,6 +1668,324 @@ Only move to next step when all checkmarks are complete for current step.
 
 ---
 
+## Phase 18: Debug Tools & Diagnostics
+
+**Status:** ✅ Basic implementation (v0.1.0)
+**Future Enhancements:** Planned for future phases
+
+### Current Implementation (Phase 5)
+
+**Location:** Settings page → Debug Tools section (only visible when `WP_DEBUG` is enabled)
+
+**Available Tools:**
+1. ✅ **Database Tables Check**
+   - Verifies all custom tables exist
+   - Shows missing tables if any
+   - Manual verification trigger
+
+2. ✅ **Scheduled Jobs Monitor**
+   - Displays count of pending Action Scheduler jobs
+   - Shows sync and ZIP worker job counts
+   - Reset jobs functionality (unschedule all)
+
+3. ✅ **CPT Statistics**
+   - Shows plugin post count
+   - Shows theme post count
+   - Real-time display
+
+4. ✅ **WordPress.org API Test**
+   - Tests API connectivity
+   - Manual test trigger
+   - Shows connection status
+
+### Planned Enhancements
+
+#### Phase 18.1: Enhanced Database Diagnostics
+
+**Tasks:**
+- [ ] Add table size information (MB/GB)
+- [ ] Show row counts for each table
+- [ ] Add index health check
+- [ ] Detect table corruption
+- [ ] Add "Repair Tables" action
+- [ ] Show last table optimization timestamp
+- [ ] Add "Optimize Tables" action
+
+**Database Metrics to Display:**
+```php
+- sync_state: X rows, X MB
+- zip_queue: X rows, X MB (X pending, X processing, X completed, X failed)
+- artifacts: X rows, X MB (X plugins, X themes)
+```
+
+**Validation:**
+- [ ] All metrics display correctly
+- [ ] Repair action works
+- [ ] Optimize action reduces table size
+
+---
+
+#### Phase 18.2: Action Scheduler Deep Dive
+
+**Tasks:**
+- [ ] Show detailed job statistics by status (pending, in-progress, completed, failed)
+- [ ] Display next scheduled run times
+- [ ] Show failed job logs with error messages
+- [ ] Add "Retry Failed Jobs" action
+- [ ] Add "Clear Completed Jobs" action (Action Scheduler cleanup)
+- [ ] Show job execution history (last 10 runs)
+- [ ] Display average job execution time
+
+**Job Statistics Display:**
+```
+Sync Jobs:
+  - Pending: 5
+  - In Progress: 1
+  - Completed (24h): 288
+  - Failed (24h): 2
+  - Next Run: 2026-01-31 15:35:00
+  - Avg Duration: 2.5s
+
+ZIP Jobs:
+  - Pending: 150
+  - In Progress: 3
+  - Completed (24h): 1,440
+  - Failed (24h): 5
+  - Next Run: 2026-01-31 15:30:00
+  - Avg Duration: 8.2s
+```
+
+**Validation:**
+- [ ] Statistics accurate
+- [ ] Actions work correctly
+- [ ] No memory issues with large result sets
+
+---
+
+#### Phase 18.3: Sync Progress Dashboard
+
+**Tasks:**
+- [ ] Create sync progress visualization
+- [ ] Show plugins synced vs. total
+- [ ] Show themes synced vs. total
+- [ ] Display current sync status (idle, running, paused)
+- [ ] Show last successful sync timestamp
+- [ ] Display sync errors/warnings count
+- [ ] Add "Force Sync Now" action
+- [ ] Show estimated time to complete full sync
+
+**Progress Display:**
+```
+Plugin Sync: [████████░░] 80% (48,000 / 60,000)
+Theme Sync:  [██████████] 100% (11,800 / 11,800)
+
+Status: Running
+Last Sync: 5 minutes ago
+Errors: 3 (view log)
+ETA: 2 hours 15 minutes
+```
+
+**Validation:**
+- [ ] Progress bars accurate
+- [ ] ETAs reasonable
+- [ ] Force sync works
+
+---
+
+#### Phase 18.4: Download Queue Monitor
+
+**Tasks:**
+- [ ] Show ZIP download queue statistics
+- [ ] Display active downloads (current 3)
+- [ ] Show download speed (MB/s)
+- [ ] Display failed downloads with retry info
+- [ ] Show disk space usage vs. available
+- [ ] Add "Pause Downloads" action
+- [ ] Add "Resume Downloads" action
+- [ ] Show largest files in queue
+
+**Queue Display:**
+```
+Active Downloads (3/3):
+  1. akismet.5.3.zip (downloading: 45%, 2.1 MB/s)
+  2. woocommerce.8.5.1.zip (downloading: 78%, 1.8 MB/s)
+  3. jetpack.12.9.zip (downloading: 12%, 3.2 MB/s)
+
+Queue Status:
+  - Pending: 148,523 files
+  - Completed: 451,477 files (75%)
+  - Failed: 125 files (view details)
+
+Disk Usage:
+  - Used: 156 GB
+  - Available: 344 GB
+  - Estimated Total: 200 GB
+```
+
+**Validation:**
+- [ ] Real-time updates work
+- [ ] Pause/resume functions correctly
+- [ ] Disk space calculations accurate
+
+---
+
+#### Phase 18.5: API Health Monitor
+
+**Tasks:**
+- [ ] Track API response times
+- [ ] Show API rate limit status
+- [ ] Display API error rates
+- [ ] Show API endpoint health (plugins vs. themes)
+- [ ] Add "Test All Endpoints" action
+- [ ] Log API downtime/issues
+- [ ] Show recommendations for rate limit adjustments
+
+**API Health Display:**
+```
+WordPress.org API Status: ✓ Healthy
+
+Response Times (avg):
+  - Plugins API: 245ms
+  - Themes API: 189ms
+  - Downloads: 1.2s
+
+Rate Limiting:
+  - Current: 3 concurrent downloads
+  - Recommended: 3 (optimal)
+  - Status: ✓ Within limits
+
+24h Statistics:
+  - Total Requests: 2,450
+  - Errors: 12 (0.5%)
+  - 5xx Errors: 0
+  - Timeouts: 2
+```
+
+**Validation:**
+- [ ] Metrics accurate
+- [ ] Recommendations sensible
+- [ ] Test endpoint works
+
+---
+
+#### Phase 18.6: System Health Check
+
+**Tasks:**
+- [ ] Check PHP memory limit vs. usage
+- [ ] Check PHP max execution time
+- [ ] Verify Action Scheduler is running correctly
+- [ ] Check WordPress cron status
+- [ ] Verify wp-content/uploads is writable
+- [ ] Check for required PHP extensions
+- [ ] Show WordPress debug mode status
+- [ ] Display server load/CPU usage (if available)
+
+**System Health Display:**
+```
+System Requirements: ✓ All met
+
+PHP Configuration:
+  - Version: 8.4.2 ✓
+  - Memory Limit: 512M (using: 128M)
+  - Max Execution: 300s
+  - Extensions: ✓ curl, ✓ zip, ✓ json
+
+WordPress:
+  - Version: 6.9.1 ✓
+  - Cron: ✓ Running
+  - Debug Mode: ✓ Enabled
+
+Filesystem:
+  - Uploads Dir: ✓ Writable
+  - Available Space: 344 GB
+
+Action Scheduler:
+  - Version: 3.7.1 ✓
+  - Status: ✓ Running
+  - Queue Runner: ✓ Active
+```
+
+**Validation:**
+- [ ] All checks accurate
+- [ ] Warnings shown when needed
+- [ ] Recommendations helpful
+
+---
+
+#### Phase 18.7: Export/Import Diagnostics
+
+**Tasks:**
+- [ ] Add "Export Debug Report" action (JSON/TXT)
+- [ ] Include all diagnostic data in export
+- [ ] Add system information
+- [ ] Include error logs (last 100 entries)
+- [ ] Add "Share Report" feature (anonymized)
+- [ ] Create "Import Configuration" tool
+- [ ] Add "Reset to Defaults" action
+
+**Export Contents:**
+```json
+{
+  "version": "0.1.0",
+  "export_date": "2026-01-31T15:30:00Z",
+  "system": { ... },
+  "database": { ... },
+  "scheduler": { ... },
+  "sync_status": { ... },
+  "queue_status": { ... },
+  "errors": [ ... ],
+  "settings": { ... }
+}
+```
+
+**Validation:**
+- [ ] Export generates valid JSON
+- [ ] Import restores settings correctly
+- [ ] Reset clears all data properly
+
+---
+
+### Implementation Priority
+
+**High Priority (Next Release):**
+1. Phase 18.3 - Sync Progress Dashboard
+2. Phase 18.4 - Download Queue Monitor
+3. Phase 18.6 - System Health Check
+
+**Medium Priority:**
+4. Phase 18.2 - Action Scheduler Deep Dive
+5. Phase 18.5 - API Health Monitor
+
+**Low Priority (Future):**
+6. Phase 18.1 - Enhanced Database Diagnostics
+7. Phase 18.7 - Export/Import Diagnostics
+
+---
+
+### Technical Notes
+
+**Performance Considerations:**
+- Use transient caching for expensive queries (5-minute cache)
+- Implement pagination for large result sets
+- Use AJAX for real-time updates
+- Avoid blocking queries during page load
+
+**Security:**
+- All debug tools require `WP_DEBUG` to be enabled
+- Additional capability check: `manage_options`
+- Nonce verification for all actions
+- Sanitize all output
+- Log all debug actions
+
+**UI/UX:**
+- Use WordPress admin colors and styles
+- Show loading indicators for long operations
+- Provide clear success/error messages
+- Add contextual help text
+- Make tools easily accessible but not intrusive
+
+---
+
 ## Notes
 
 - This roadmap is designed for maximum safety and validation

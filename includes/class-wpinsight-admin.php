@@ -260,7 +260,270 @@ final class WPInsight_Admin {
 				</tbody>
 			</table>
 		</div>
+
 		<?php
+		// Show Debug Tools only when WP_DEBUG is enabled.
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			self::render_debug_tools();
+		}
+		?>
+		<?php
+	}
+
+	/**
+	 * Render debug tools section.
+	 *
+	 * Only shown when WP_DEBUG is enabled. Provides tools for validating
+	 * and troubleshooting the plugin state.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function render_debug_tools(): void {
+		?>
+		<div class="wpinsight-system-status" style="margin-top: 30px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;">
+			<h3 style="margin-top: 0; color: #856404;">
+				🔧 <?php esc_html_e( 'Debug Tools', 'cloudfest-wporgdownload' ); ?>
+				<small style="font-weight: normal; color: #666;">(<?php esc_html_e( 'Only visible when WP_DEBUG is enabled', 'cloudfest-wporgdownload' ); ?>)</small>
+			</h3>
+
+			<?php
+			// Handle debug actions.
+			if ( isset( $_POST['wpinsight_debug_action'] ) && check_admin_referer( 'wpinsight_debug_tools' ) ) {
+				$action = sanitize_text_field( wp_unslash( $_POST['wpinsight_debug_action'] ) );
+				self::handle_debug_action( $action );
+			}
+			?>
+
+			<table class="widefat striped" style="margin-top: 15px;">
+				<thead>
+					<tr>
+						<th style="width: 30%;"><?php esc_html_e( 'Tool', 'cloudfest-wporgdownload' ); ?></th>
+						<th style="width: 45%;"><?php esc_html_e( 'Status', 'cloudfest-wporgdownload' ); ?></th>
+						<th style="width: 25%;"><?php esc_html_e( 'Action', 'cloudfest-wporgdownload' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<!-- Database Tables Check -->
+					<tr>
+						<th><?php esc_html_e( 'Database Tables', 'cloudfest-wporgdownload' ); ?></th>
+						<td><?php echo wp_kses_post( self::check_database_tables() ); ?></td>
+						<td>
+							<form method="post" style="display: inline;">
+								<?php wp_nonce_field( 'wpinsight_debug_tools' ); ?>
+								<input type="hidden" name="wpinsight_debug_action" value="check_db" />
+								<button type="submit" class="button button-small"><?php esc_html_e( 'Verify', 'cloudfest-wporgdownload' ); ?></button>
+							</form>
+						</td>
+					</tr>
+
+					<!-- Action Scheduler Jobs -->
+					<tr>
+						<th><?php esc_html_e( 'Scheduled Jobs', 'cloudfest-wporgdownload' ); ?></th>
+						<td><?php echo wp_kses_post( self::check_scheduled_jobs() ); ?></td>
+						<td>
+							<form method="post" style="display: inline;">
+								<?php wp_nonce_field( 'wpinsight_debug_tools' ); ?>
+								<input type="hidden" name="wpinsight_debug_action" value="reset_jobs" />
+								<button type="submit" class="button button-small button-link-delete" onclick="return confirm('<?php esc_attr_e( 'This will unschedule all current jobs and reschedule them. Continue?', 'cloudfest-wporgdownload' ); ?>');"><?php esc_html_e( 'Reset Jobs', 'cloudfest-wporgdownload' ); ?></button>
+							</form>
+						</td>
+					</tr>
+
+					<!-- CPT Counts -->
+					<tr>
+						<th><?php esc_html_e( 'Plugin/Theme Posts', 'cloudfest-wporgdownload' ); ?></th>
+						<td><?php echo wp_kses_post( self::get_cpt_counts() ); ?></td>
+						<td>-</td>
+					</tr>
+
+					<!-- WordPress.org API -->
+					<tr>
+						<th><?php esc_html_e( 'WordPress.org API', 'cloudfest-wporgdownload' ); ?></th>
+						<td><?php echo wp_kses_post( self::check_api_connection() ); ?></td>
+						<td>
+							<form method="post" style="display: inline;">
+								<?php wp_nonce_field( 'wpinsight_debug_tools' ); ?>
+								<input type="hidden" name="wpinsight_debug_action" value="test_api" />
+								<button type="submit" class="button button-small"><?php esc_html_e( 'Test', 'cloudfest-wporgdownload' ); ?></button>
+							</form>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<p style="margin-top: 15px; color: #856404; font-size: 0.9em;">
+				<strong><?php esc_html_e( 'Note:', 'cloudfest-wporgdownload' ); ?></strong>
+				<?php esc_html_e( 'These tools are only available when WP_DEBUG is enabled in wp-config.php. Additional diagnostic tools will be added in future phases.', 'cloudfest-wporgdownload' ); ?>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Check database tables status.
+	 *
+	 * @since 0.1.0
+	 * @return string HTML status message.
+	 */
+	private static function check_database_tables(): string {
+		global $wpdb;
+
+		$tables = [
+			'sync_state',
+			'zip_queue',
+			'artifacts',
+		];
+
+		$missing = [];
+		foreach ( $tables as $table_key ) {
+			$table_name = WPInsight_DB::get_table_name( $table_key );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) );
+			if ( ! $exists ) {
+				$missing[] = $table_name;
+			}
+		}
+
+		if ( empty( $missing ) ) {
+			return '<span style="color: green;">✓ ' . esc_html__( 'All tables exist', 'cloudfest-wporgdownload' ) . '</span>';
+		}
+
+		return '<span style="color: red;">✗ ' . esc_html__( 'Missing tables:', 'cloudfest-wporgdownload' ) . ' ' . esc_html( implode( ', ', $missing ) ) . '</span>';
+	}
+
+	/**
+	 * Check scheduled jobs status.
+	 *
+	 * @since 0.1.0
+	 * @return string HTML status message.
+	 */
+	private static function check_scheduled_jobs(): string {
+		if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
+			return '<span style="color: orange;">⚠ ' . esc_html__( 'Action Scheduler not available', 'cloudfest-wporgdownload' ) . '</span>';
+		}
+
+		$sync_jobs = as_get_scheduled_actions(
+			[
+				'hook'   => WPINSIGHT_SYNC_TICK_ACTION,
+				'status' => 'pending',
+				'group'  => WPINSIGHT_AS_GROUP,
+			],
+			'ids'
+		);
+
+		$zip_jobs = as_get_scheduled_actions(
+			[
+				'hook'   => WPINSIGHT_ZIP_WORKER_TICK_ACTION,
+				'status' => 'pending',
+				'group'  => WPINSIGHT_AS_GROUP,
+			],
+			'ids'
+		);
+
+		$sync_count = count( $sync_jobs );
+		$zip_count  = count( $zip_jobs );
+
+		if ( $sync_count > 0 || $zip_count > 0 ) {
+			return sprintf(
+				'<span style="color: green;">✓ %s</span> (Sync: %d, ZIP: %d)',
+				esc_html__( 'Jobs scheduled', 'cloudfest-wporgdownload' ),
+				$sync_count,
+				$zip_count
+			);
+		}
+
+		return '<span style="color: orange;">⚠ ' . esc_html__( 'No jobs scheduled', 'cloudfest-wporgdownload' ) . '</span>';
+	}
+
+	/**
+	 * Get CPT counts.
+	 *
+	 * @since 0.1.0
+	 * @return string HTML with counts.
+	 */
+	private static function get_cpt_counts(): string {
+		$plugin_count = wp_count_posts( WPInsight_CPT::get_plugin_post_type() );
+		$theme_count  = wp_count_posts( WPInsight_CPT::get_theme_post_type() );
+
+		return sprintf(
+			'%s: <strong>%d</strong> | %s: <strong>%d</strong>',
+			esc_html__( 'Plugins', 'cloudfest-wporgdownload' ),
+			isset( $plugin_count->publish ) ? (int) $plugin_count->publish : 0,
+			esc_html__( 'Themes', 'cloudfest-wporgdownload' ),
+			isset( $theme_count->publish ) ? (int) $theme_count->publish : 0
+		);
+	}
+
+	/**
+	 * Check API connection.
+	 *
+	 * @since 0.1.0
+	 * @return string HTML status message.
+	 */
+	private static function check_api_connection(): string {
+		$is_accessible = WPInsight_WPOrg_Client::is_api_accessible();
+
+		if ( $is_accessible ) {
+			return '<span style="color: green;">✓ ' . esc_html__( 'API accessible', 'cloudfest-wporgdownload' ) . '</span>';
+		}
+
+		return '<span style="color: red;">✗ ' . esc_html__( 'API not accessible', 'cloudfest-wporgdownload' ) . '</span>';
+	}
+
+	/**
+	 * Handle debug action.
+	 *
+	 * @since 0.1.0
+	 * @param string $action Action to perform.
+	 * @return void
+	 */
+	private static function handle_debug_action( string $action ): void {
+		switch ( $action ) {
+			case 'check_db':
+				// Database check is always fresh, just show notice.
+				add_settings_error(
+					'wpinsight_debug',
+					'db_checked',
+					__( 'Database tables verified.', 'cloudfest-wporgdownload' ),
+					'success'
+				);
+				break;
+
+			case 'reset_jobs':
+				// Unschedule all existing jobs.
+				if ( function_exists( 'as_unschedule_all_actions' ) ) {
+					as_unschedule_all_actions( WPINSIGHT_SYNC_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
+					as_unschedule_all_actions( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
+
+					add_settings_error(
+						'wpinsight_debug',
+						'jobs_reset',
+						__( 'All scheduled jobs have been unscheduled. Jobs will be rescheduled automatically on next plugin load or you can deactivate/reactivate the plugin.', 'cloudfest-wporgdownload' ),
+						'success'
+					);
+				}
+				break;
+
+			case 'test_api':
+				$is_accessible = WPInsight_WPOrg_Client::is_api_accessible();
+				if ( $is_accessible ) {
+					add_settings_error(
+						'wpinsight_debug',
+						'api_test',
+						__( 'WordPress.org API is accessible and responding correctly.', 'cloudfest-wporgdownload' ),
+						'success'
+					);
+				} else {
+					add_settings_error(
+						'wpinsight_debug',
+						'api_test',
+						__( 'WordPress.org API is not accessible. Check your network connection and firewall settings.', 'cloudfest-wporgdownload' ),
+						'error'
+					);
+				}
+				break;
+		}
 	}
 
 	/**
