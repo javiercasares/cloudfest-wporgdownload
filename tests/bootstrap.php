@@ -135,6 +135,44 @@ if ( ! function_exists( 'update_option' ) ) {
 	}
 }
 
+if ( ! function_exists( 'delete_option' ) ) {
+	/**
+	 * Stub for delete_option() WordPress function.
+	 *
+	 * @param string $option Option name.
+	 * @return bool True.
+	 */
+	function delete_option( $option ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $option );
+		return true;
+	}
+}
+
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	/**
+	 * Stub for sanitize_text_field() WordPress function.
+	 *
+	 * @param string $text Text to sanitize.
+	 * @return string Sanitized text.
+	 */
+	function sanitize_text_field( $text ) {
+		return trim( strip_tags( $text ) );
+	}
+}
+
+if ( ! function_exists( 'sanitize_file_name' ) ) {
+	/**
+	 * Stub for sanitize_file_name() WordPress function.
+	 *
+	 * @param string $filename Filename to sanitize.
+	 * @return string Sanitized filename.
+	 */
+	function sanitize_file_name( $filename ) {
+		return preg_replace( '/[^a-zA-Z0-9_\-.]/', '', $filename );
+	}
+}
+
 if ( ! defined( 'ABSPATH' ) ) {
 	/**
 	 * Stub for ABSPATH constant.

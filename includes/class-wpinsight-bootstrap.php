@@ -57,9 +57,11 @@ final class WPInsight_Bootstrap {
 		// Load database class (Phase 2).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-db.php';
 
+		// Load settings class (Phase 2).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-settings.php';
+
 		// TODO: Load remaining class files (Phase 3+).
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cpt.php'.
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-settings.php'.
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-admin.php'.
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-wporg-client.php'.
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-sync.php'.
