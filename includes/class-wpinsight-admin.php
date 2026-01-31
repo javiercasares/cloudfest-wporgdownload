@@ -95,6 +95,17 @@ final class WPInsight_Admin {
 			self::SETTINGS_PAGE_SLUG,                                // Menu slug.
 			[ __CLASS__, 'render_settings_page' ]                    // Callback.
 		);
+
+		// Add Error Log page (only visible when WP_DEBUG is enabled).
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			add_management_page(
+				__( 'WPInsight Error Log', 'cloudfest-wporgdownload' ), // Page title.
+				__( 'WPInsight Errors', 'cloudfest-wporgdownload' ),    // Menu title.
+				'manage_options',                                         // Capability.
+				'wpinsight-error-log',                                    // Menu slug.
+				[ __CLASS__, 'render_error_log_page' ]                    // Callback.
+			);
+		}
 	}
 
 	/**
@@ -419,7 +430,7 @@ final class WPInsight_Admin {
 
 				<div style="background: #fff; padding: 20px; border-left: 4px solid #d63638; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
 					<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Storage Used', 'cloudfest-wporgdownload' ); ?></h3>
-					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( size_format( $storage_size, 2 ) ); ?></div>
+					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( (string) size_format( $storage_size, 2 ) ); ?></div>
 				</div>
 			</div>
 
@@ -539,6 +550,10 @@ final class WPInsight_Admin {
 				</div>
 			</div>
 
+		<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin: 20px 0;">
+			<!-- Recent Errors -->
+			<?php self::render_recent_errors_card(); ?>
+
 			<!-- Quick Links -->
 			<div class="card">
 				<h2><?php esc_html_e( 'Quick Links', 'cloudfest-wporgdownload' ); ?></h2>
@@ -558,6 +573,311 @@ final class WPInsight_Admin {
 						</a>
 					<?php endif; ?>
 				</p>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render recent errors card.
+	 *
+	 * Displays the 10 most recent error log entries on the dashboard.
+	 * Color-coded by severity with truncated messages.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	private static function render_recent_errors_card(): void {
+		$recent_errors = WPInsight_Logger::get_recent_errors( 10 );
+		?>
+		<div class="card">
+			<h2><?php esc_html_e( 'Recent Errors', 'cloudfest-wporgdownload' ); ?></h2>
+
+			<?php if ( empty( $recent_errors ) ) : ?>
+				<p style="color: #00a32a;">
+					<span style="font-size: 20px;">✓</span>
+					<strong><?php esc_html_e( 'No recent errors', 'cloudfest-wporgdownload' ); ?></strong>
+				</p>
+			<?php else : ?>
+				<table class="widefat striped" style="font-size: 0.9em;">
+					<thead>
+						<tr>
+							<th style="width: 15%;"><?php esc_html_e( 'Severity', 'cloudfest-wporgdownload' ); ?></th>
+							<th style="width: 20%;"><?php esc_html_e( 'Time', 'cloudfest-wporgdownload' ); ?></th>
+							<th style="width: 65%;"><?php esc_html_e( 'Message', 'cloudfest-wporgdownload' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $recent_errors as $error ) : ?>
+							<tr>
+								<td><?php echo wp_kses_post( self::get_severity_badge_html( $error['severity'] ) ); ?></td>
+								<td style="font-size: 0.85em; color: #646970;">
+									<?php
+									echo esc_html(
+										human_time_diff(
+											strtotime( $error['created_at'] ),
+											time()
+										)
+									);
+									?>
+									<?php esc_html_e( 'ago', 'cloudfest-wporgdownload' ); ?>
+								</td>
+								<td style="font-size: 0.9em;">
+									<?php
+									$message = strlen( $error['message'] ) > 150
+										? substr( $error['message'], 0, 150 ) . '...'
+										: $error['message'];
+									echo esc_html( $message );
+									?>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+
+				<?php if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) : ?>
+					<p style="margin-top: 10px;">
+						<a href="<?php echo esc_url( admin_url( 'tools.php?page=wpinsight-error-log' ) ); ?>" class="button button-small">
+							<?php esc_html_e( 'View Full Error Log', 'cloudfest-wporgdownload' ); ?>
+						</a>
+					</p>
+				<?php endif; ?>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get colored severity badge HTML.
+	 *
+	 * Returns HTML for a color-coded severity badge based on log level.
+	 *
+	 * @since 1.1.0
+	 * @param string $severity Severity level (emergency, error, warning, info, debug).
+	 * @return string HTML badge markup.
+	 */
+	private static function get_severity_badge_html( string $severity ): string {
+		$colors = [
+			'emergency' => '#d63638', // Red.
+			'error'     => '#d63638', // Red.
+			'warning'   => '#f0b849', // Orange.
+			'info'      => '#2271b1', // Blue.
+			'debug'     => '#646970', // Gray.
+		];
+
+		$color = $colors[ $severity ] ?? '#646970';
+
+		return sprintf(
+			'<span style="display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 0.75em; font-weight: 600; text-transform: uppercase; background-color: %s; color: #fff;">%s</span>',
+			esc_attr( $color ),
+			esc_html( $severity )
+		);
+	}
+
+	/**
+	 * Render error log page.
+	 *
+	 * Displays the full error log with filtering and pagination.
+	 * Only accessible when WP_DEBUG is enabled.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	public static function render_error_log_page(): void {
+		// Check user capabilities.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'cloudfest-wporgdownload' ) );
+		}
+
+		// Handle clear logs action.
+		if ( isset( $_POST['wpinsight_clear_logs'] ) && check_admin_referer( 'wpinsight_clear_logs' ) ) {
+			$days    = isset( $_POST['days'] ) ? absint( $_POST['days'] ) : 30;
+			$deleted = WPInsight_Logger::clear_old_logs( $days );
+
+			add_settings_error(
+				'wpinsight_error_log',
+				'logs_cleared',
+				sprintf(
+					/* translators: %d: number of logs deleted */
+					__( '%d log entries deleted.', 'cloudfest-wporgdownload' ),
+					$deleted
+				),
+				'success'
+			);
+		}
+
+		// Get filter parameters.
+		$severity = isset( $_GET['severity'] ) ? sanitize_text_field( wp_unslash( $_GET['severity'] ) ) : null;
+		$per_page = 50;
+		$page_num = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
+		$offset   = ( $page_num - 1 ) * $per_page;
+
+		// Get total count for pagination.
+		global $wpdb;
+		$table = WPInsight_DB::get_table_name( 'error_log' );
+
+		if ( null !== $severity ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$total = $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT COUNT(*) FROM %i WHERE severity = %s',
+					$table,
+					$severity
+				)
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$total = $wpdb->get_var(
+				$wpdb->prepare( 'SELECT COUNT(*) FROM %i', $table )
+			);
+		}
+
+		$total_pages = (int) ceil( $total / $per_page );
+
+		// Get logs for current page.
+		if ( null !== $severity ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$logs = $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT id, severity, message, context, created_at
+					FROM %i
+					WHERE severity = %s
+					ORDER BY created_at DESC
+					LIMIT %d OFFSET %d',
+					$table,
+					$severity,
+					$per_page,
+					$offset
+				),
+				ARRAY_A
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$logs = $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT id, severity, message, context, created_at
+					FROM %i
+					ORDER BY created_at DESC
+					LIMIT %d OFFSET %d',
+					$table,
+					$per_page,
+					$offset
+				),
+				ARRAY_A
+			);
+		}
+
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+
+			<?php settings_errors( 'wpinsight_error_log' ); ?>
+
+			<div class="card">
+				<h2><?php esc_html_e( 'Filter Logs', 'cloudfest-wporgdownload' ); ?></h2>
+				<form method="get">
+					<input type="hidden" name="page" value="wpinsight-error-log" />
+					<label for="severity"><?php esc_html_e( 'Severity:', 'cloudfest-wporgdownload' ); ?></label>
+					<select name="severity" id="severity">
+						<option value=""><?php esc_html_e( 'All Levels', 'cloudfest-wporgdownload' ); ?></option>
+						<option value="emergency" <?php selected( $severity, 'emergency' ); ?>><?php esc_html_e( 'Emergency', 'cloudfest-wporgdownload' ); ?></option>
+						<option value="error" <?php selected( $severity, 'error' ); ?>><?php esc_html_e( 'Error', 'cloudfest-wporgdownload' ); ?></option>
+						<option value="warning" <?php selected( $severity, 'warning' ); ?>><?php esc_html_e( 'Warning', 'cloudfest-wporgdownload' ); ?></option>
+						<option value="info" <?php selected( $severity, 'info' ); ?>><?php esc_html_e( 'Info', 'cloudfest-wporgdownload' ); ?></option>
+						<option value="debug" <?php selected( $severity, 'debug' ); ?>><?php esc_html_e( 'Debug', 'cloudfest-wporgdownload' ); ?></option>
+					</select>
+					<button type="submit" class="button"><?php esc_html_e( 'Filter', 'cloudfest-wporgdownload' ); ?></button>
+
+					<?php if ( null !== $severity ) : ?>
+						<a href="<?php echo esc_url( admin_url( 'tools.php?page=wpinsight-error-log' ) ); ?>" class="button">
+							<?php esc_html_e( 'Clear Filter', 'cloudfest-wporgdownload' ); ?>
+						</a>
+					<?php endif; ?>
+				</form>
+			</div>
+
+			<div class="card" style="margin-top: 20px;">
+				<h2>
+					<?php esc_html_e( 'Error Log', 'cloudfest-wporgdownload' ); ?>
+					<span style="font-weight: normal; color: #646970;">
+						(<?php echo esc_html( number_format_i18n( $total ) ); ?> <?php esc_html_e( 'entries', 'cloudfest-wporgdownload' ); ?>)
+					</span>
+				</h2>
+
+				<?php if ( empty( $logs ) ) : ?>
+					<p><?php esc_html_e( 'No log entries found.', 'cloudfest-wporgdownload' ); ?></p>
+				<?php else : ?>
+					<table class="widefat striped">
+						<thead>
+							<tr>
+								<th style="width: 5%;"><?php esc_html_e( 'ID', 'cloudfest-wporgdownload' ); ?></th>
+								<th style="width: 10%;"><?php esc_html_e( 'Severity', 'cloudfest-wporgdownload' ); ?></th>
+								<th style="width: 15%;"><?php esc_html_e( 'Time', 'cloudfest-wporgdownload' ); ?></th>
+								<th style="width: 70%;"><?php esc_html_e( 'Message', 'cloudfest-wporgdownload' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php foreach ( $logs as $log ) : ?>
+								<tr>
+									<td><?php echo esc_html( $log['id'] ); ?></td>
+									<td><?php echo wp_kses_post( self::get_severity_badge_html( $log['severity'] ) ); ?></td>
+									<td style="font-size: 0.9em; color: #646970;">
+										<?php echo esc_html( (string) wp_date( 'Y-m-d H:i:s', strtotime( $log['created_at'] ) ) ); ?>
+									</td>
+									<td>
+										<div style="word-break: break-word;">
+											<?php echo esc_html( $log['message'] ); ?>
+										</div>
+										<?php if ( ! empty( $log['context'] ) ) : ?>
+											<details style="margin-top: 5px;">
+												<summary style="cursor: pointer; color: #2271b1; font-size: 0.9em;">
+													<?php esc_html_e( 'Show Context', 'cloudfest-wporgdownload' ); ?>
+												</summary>
+												<pre style="background: #f6f7f7; padding: 10px; margin-top: 5px; overflow-x: auto; font-size: 0.85em;"><?php echo esc_html( $log['context'] ); ?></pre>
+											</details>
+										<?php endif; ?>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+
+					<?php if ( $total_pages > 1 ) : ?>
+						<div style="margin-top: 15px;">
+							<?php
+							echo wp_kses_post(
+								paginate_links(
+									[
+										'base'      => add_query_arg( 'paged', '%#%' ),
+										'format'    => '',
+										'current'   => $page_num,
+										'total'     => $total_pages,
+										'prev_text' => __( '&laquo; Previous', 'cloudfest-wporgdownload' ),
+										'next_text' => __( 'Next &raquo;', 'cloudfest-wporgdownload' ),
+									]
+								)
+							);
+							?>
+						</div>
+					<?php endif; ?>
+				<?php endif; ?>
+			</div>
+
+			<div class="card" style="margin-top: 20px;">
+				<h2><?php esc_html_e( 'Maintenance', 'cloudfest-wporgdownload' ); ?></h2>
+				<form method="post">
+					<?php wp_nonce_field( 'wpinsight_clear_logs' ); ?>
+					<p>
+						<label for="days">
+							<?php esc_html_e( 'Delete logs older than:', 'cloudfest-wporgdownload' ); ?>
+						</label>
+						<input type="number" name="days" id="days" value="30" min="1" max="365" class="small-text" />
+						<?php esc_html_e( 'days', 'cloudfest-wporgdownload' ); ?>
+					</p>
+					<button type="submit" name="wpinsight_clear_logs" class="button button-secondary" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to delete old logs?', 'cloudfest-wporgdownload' ); ?>');">
+						<?php esc_html_e( 'Clear Old Logs', 'cloudfest-wporgdownload' ); ?>
+					</button>
+				</form>
 			</div>
 		</div>
 		<?php
@@ -1375,9 +1695,9 @@ final class WPInsight_Admin {
 
 		$table = WPInsight_DB::get_table_name( 'artifacts' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$total = $wpdb->get_var(
-			"SELECT SUM(file_size) FROM {$table}"
+			$wpdb->prepare( 'SELECT SUM(file_size) FROM %i', $table )
 		);
 
 		return is_numeric( $total ) ? (int) $total : 0;
