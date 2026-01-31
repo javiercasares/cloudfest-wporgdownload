@@ -42,13 +42,6 @@ final class WPInsight_DB {
 	 */
 	private const SCHEMA_VERSION = '1.0.0';
 
-	/**
-	 * WordPress option name for storing schema version.
-	 *
-	 * @since 0.1.0
-	 * @var string VERSION_OPTION_NAME Option name for schema version.
-	 */
-	private const VERSION_OPTION_NAME = 'wpinsight_db_version';
 
 	/**
 	 * Get current schema version.
@@ -81,7 +74,7 @@ final class WPInsight_DB {
 		self::create_tables();
 
 		// Store schema version.
-		update_option( self::VERSION_OPTION_NAME, self::SCHEMA_VERSION );
+		update_option( WPINSIGHT_DB_VERSION_OPTION, self::SCHEMA_VERSION );
 	}
 
 	/**
@@ -185,7 +178,7 @@ final class WPInsight_DB {
 	 * @return void
 	 */
 	public static function maybe_upgrade(): void {
-		$stored_version = get_option( self::VERSION_OPTION_NAME, '0.0.0' );
+		$stored_version = get_option( WPINSIGHT_DB_VERSION_OPTION, '0.0.0' );
 
 		// Compare stored version with current version.
 		if ( version_compare( $stored_version, self::SCHEMA_VERSION, '<' ) ) {
@@ -211,7 +204,7 @@ final class WPInsight_DB {
 		self::create_tables();
 
 		// Update stored version.
-		update_option( self::VERSION_OPTION_NAME, self::SCHEMA_VERSION );
+		update_option( WPINSIGHT_DB_VERSION_OPTION, self::SCHEMA_VERSION );
 
 		// Future: Add version-specific migrations here.
 		// Example:

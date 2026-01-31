@@ -142,7 +142,7 @@ final class WPInsight_Bootstrap {
 		// WPInsight_Zip_Queue::ensure_scheduled().
 
 		// Set activation timestamp for future reference.
-		update_option( 'wpinsight_activated_at', current_time( 'mysql' ) );
+		update_option( WPINSIGHT_ACTIVATED_AT_OPTION, current_time( 'mysql' ) );
 	}
 
 	/**
@@ -170,10 +170,10 @@ final class WPInsight_Bootstrap {
 		// Unschedule all Action Scheduler jobs.
 		if ( function_exists( 'as_unschedule_all_actions' ) ) {
 			// Unschedule sync tick (runs every 5 minutes).
-			as_unschedule_all_actions( 'wpinsight_sync_tick', array(), 'wpinsight' );
+			as_unschedule_all_actions( WPINSIGHT_SYNC_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
 
 			// Unschedule ZIP worker tick (runs every 1 minute).
-			as_unschedule_all_actions( 'wpinsight_zip_worker_tick', array(), 'wpinsight' );
+			as_unschedule_all_actions( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
 		}
 
 		// Note: We intentionally do NOT delete any data here.

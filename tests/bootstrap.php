@@ -182,6 +182,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 	define( 'ABSPATH', dirname( __DIR__ ) . '/' );
 }
 
+if ( ! function_exists( 'current_time' ) ) {
+	/**
+	 * Stub for current_time() WordPress function.
+	 *
+	 * @param string $type Type of time to retrieve (mysql or timestamp).
+	 * @return string|int Current time.
+	 */
+	function current_time( $type ) {
+		if ( 'mysql' === $type ) {
+			return gmdate( 'Y-m-d H:i:s' );
+		}
+		return time();
+	}
+}
+
 // Load plugin main file (defines constants).
 require_once dirname( __DIR__ ) . '/cloudfest-wporgdownload.php';
 

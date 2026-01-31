@@ -30,14 +30,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class WPInsight_Settings {
 
 	/**
-	 * WordPress option name for storing all plugin settings.
-	 *
-	 * @since 0.1.0
-	 * @var string OPTION_NAME Option name for settings storage.
-	 */
-	private const OPTION_NAME = 'wpinsight_settings';
-
-	/**
 	 * Get the WordPress option name used for settings storage.
 	 *
 	 * Returns the option name constant used to store all plugin settings
@@ -47,7 +39,7 @@ final class WPInsight_Settings {
 	 * @return string Option name (e.g., 'wpinsight_settings').
 	 */
 	public static function get_option_name(): string {
-		return self::OPTION_NAME;
+		return WPINSIGHT_SETTINGS_OPTION;
 	}
 
 	/**
@@ -119,7 +111,7 @@ final class WPInsight_Settings {
 	 * @return array<string,mixed> All settings merged with defaults.
 	 */
 	public static function get_all(): array {
-		$stored   = get_option( self::OPTION_NAME, array() );
+		$stored   = get_option( WPINSIGHT_SETTINGS_OPTION, array() );
 		$defaults = self::get_defaults();
 
 		// Merge stored settings over defaults.
@@ -149,7 +141,7 @@ final class WPInsight_Settings {
 			$settings[ $key ] = $validated_value;
 
 			// Save to database.
-			return update_option( self::OPTION_NAME, $settings );
+			return update_option( WPINSIGHT_SETTINGS_OPTION, $settings );
 
 		} catch ( InvalidArgumentException $e ) {
 			// Validation failed - return false.
@@ -182,7 +174,7 @@ final class WPInsight_Settings {
 			$settings = array_merge( $settings, $validated );
 
 			// Save to database.
-			return update_option( self::OPTION_NAME, $settings );
+			return update_option( WPINSIGHT_SETTINGS_OPTION, $settings );
 
 		} catch ( InvalidArgumentException $e ) {
 			// Validation failed - return false.
@@ -200,7 +192,7 @@ final class WPInsight_Settings {
 	 * @return bool True on success, false on failure.
 	 */
 	public static function delete(): bool {
-		return delete_option( self::OPTION_NAME );
+		return delete_option( WPINSIGHT_SETTINGS_OPTION );
 	}
 
 	/**
