@@ -1494,44 +1494,73 @@ final class WPInsight_Admin {
 			'sync_themes_enabled',
 			'download_plugin_zips_enabled',
 			'download_theme_zips_enabled',
+			'admin_email_notifications_enabled', // v1.1.0+.
 		];
 		foreach ( $checkboxes as $key ) {
 			$sanitized[ $key ] = isset( $input[ $key ] ) && '1' === $input[ $key ];
 		}
 
-		// Validate and sanitize number fields using Settings class.
+		// Validate and sanitize number fields using Settings validation only.
+		// IMPORTANT: Do NOT call WPInsight_Settings::update() here as it causes infinite loop.
 		$number_fields = [
 			'max_concurrent_downloads',
 			'sync_interval',
 			'zip_worker_interval',
 			'max_retries',
+			'log_retention_days',
 		];
 
 		foreach ( $number_fields as $key ) {
 			if ( isset( $input[ $key ] ) ) {
-				// Try to validate using Settings class.
-				try {
-					$validated_value = (int) $input[ $key ];
-					// Use update to trigger validation.
-					if ( WPInsight_Settings::update( $key, $validated_value ) ) {
-						$sanitized[ $key ] = $validated_value;
-					} else {
-						// Validation failed, keep current value.
-						$sanitized[ $key ] = WPInsight_Settings::get( $key );
-						add_settings_error(
-							WPINSIGHT_SETTINGS_OPTION,
-							'invalid_' . $key,
-							sprintf(
-								/* translators: %s: Setting name */
-								__( 'Invalid value for %s. Previous value restored.', 'cloudfest-wporgdownload' ),
-								$key
-							)
-						);
-					}
-				} catch ( Exception $e ) {
-					// Keep current value on exception.
-					$sanitized[ $key ] = WPInsight_Settings::get( $key );
+				// Cast to int and validate directly without calling update().
+				$value = (int) $input[ $key ];
+
+				// Simple inline validation (Settings::validate() does more, but we can't call update()).
+				$is_valid = false;
+
+				switch ( $key ) {
+					case 'max_concurrent_downloads':
+						$is_valid = ( $value >= 1 && $value <= 5 );
+						break;
+					case 'sync_interval':
+					case 'zip_worker_interval':
+						$is_valid = ( $value >= 60 );
+						break;
+					case 'max_retries':
+						$is_valid = ( $value >= 1 && $value <= 10 );
+						break;
+					case 'log_retention_days':
+						$is_valid = ( $value >= 1 && $value <= 365 );
+						break;
+					default:
+						$is_valid = true;
 				}
+
+				if ( $is_valid ) {
+					$sanitized[ $key ] = $value;
+				} else {
+					// Validation failed, keep current value.
+					$sanitized[ $key ] = WPInsight_Settings::get( $key );
+					add_settings_error(
+						WPINSIGHT_SETTINGS_OPTION,
+						'invalid_' . $key,
+						sprintf(
+							/* translators: %s: Setting name */
+							__( 'Invalid value for %s. Previous value restored.', 'cloudfest-wporgdownload' ),
+							$key
+						)
+					);
+				}
+			}
+		}
+
+		// Sanitize email field (v1.1.0+).
+		if ( isset( $input['admin_notification_email'] ) ) {
+			$email = sanitize_email( $input['admin_notification_email'] );
+			if ( is_email( $email ) ) {
+				$sanitized['admin_notification_email'] = $email;
+			} else {
+				$sanitized['admin_notification_email'] = get_option( 'admin_email' );
 			}
 		}
 

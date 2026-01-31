@@ -419,6 +419,7 @@ final class WPInsight_Logger {
 	 * Display admin notices for recent critical errors.
 	 *
 	 * Shows a dismissible notice if there are recent EMERGENCY or ERROR logs.
+	 * The notice stays dismissed until NEW errors occur.
 	 *
 	 * @since 1.1.0
 	 * @return void
@@ -430,7 +431,23 @@ final class WPInsight_Logger {
 			return;
 		}
 
-		// Check for recent critical errors (last 1 hour).
+		// Get latest error timestamp.
+		$latest_error_time = self::get_latest_error_timestamp();
+		if ( ! $latest_error_time ) {
+			return; // No errors.
+		}
+
+		// Check if user dismissed errors before this latest error.
+		$user_id             = get_current_user_id();
+		$dismissed_at        = get_user_meta( $user_id, 'wpinsight_errors_dismissed_at', true );
+		$dismissed_timestamp = $dismissed_at ? strtotime( $dismissed_at ) : 0;
+
+		// Only show if latest error is newer than dismiss action.
+		if ( $dismissed_timestamp && $latest_error_time <= $dismissed_timestamp ) {
+			return; // User already dismissed these errors.
+		}
+
+		// Count recent critical errors (last 1 hour).
 		global $wpdb;
 
 		$table = WPInsight_DB::get_table_name( 'error_log' );
@@ -449,7 +466,8 @@ final class WPInsight_Logger {
 
 		if ( $error_count > 0 ) {
 			printf(
-				'<div class="notice notice-error is-dismissible"><p><strong>%s</strong> %s <a href="%s">%s</a></p></div>',
+				'<div class="notice notice-error is-dismissible" data-wpinsight-notice="errors" data-latest-error="%s"><p><strong>%s</strong> %s <a href="%s">%s</a></p></div>',
+				esc_attr( gmdate( 'Y-m-d H:i:s', $latest_error_time ) ),
 				esc_html__( 'WPInsight Error:', 'cloudfest-wporgdownload' ),
 				esc_html(
 					sprintf(
@@ -467,5 +485,61 @@ final class WPInsight_Logger {
 				esc_html__( 'View Error Log', 'cloudfest-wporgdownload' )
 			);
 		}
+	}
+
+	/**
+	 * Get the timestamp of the latest critical error.
+	 *
+	 * Returns the created_at timestamp of the most recent EMERGENCY or ERROR log entry.
+	 *
+	 * @since 1.1.0
+	 * @return int|false Unix timestamp of latest error, or false if none.
+	 */
+	private static function get_latest_error_timestamp(): int|false {
+		global $wpdb;
+
+		$table = WPInsight_DB::get_table_name( 'error_log' );
+
+		// Safety check: Verify table exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		if ( ! $table_exists ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$latest = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT UNIX_TIMESTAMP(created_at) FROM %i
+				WHERE severity IN (%s, %s)
+				ORDER BY created_at DESC
+				LIMIT 1',
+				$table,
+				self::EMERGENCY,
+				self::ERROR
+			)
+		);
+
+		return $latest ? (int) $latest : false;
+	}
+
+	/**
+	 * Handle AJAX request to dismiss error notice.
+	 *
+	 * Stores the current timestamp in user meta so the notice won't appear
+	 * again until NEW errors occur.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	public static function ajax_dismiss_errors(): void {
+		// Verify nonce.
+		check_ajax_referer( 'wpinsight_dismiss_errors', 'nonce' );
+
+		// Store current timestamp as dismiss time.
+		$user_id = get_current_user_id();
+		update_user_meta( $user_id, 'wpinsight_errors_dismissed_at', gmdate( 'Y-m-d H:i:s' ) );
+
+		wp_send_json_success();
 	}
 }

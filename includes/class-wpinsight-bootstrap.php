@@ -87,6 +87,12 @@ final class WPInsight_Bootstrap {
 		// Initialize logger (Phase 5: v1.1.0+).
 		WPInsight_Logger::init();
 
+		// Register AJAX handler for dismissing error notices (Phase 5: v1.1.0+).
+		add_action( 'wp_ajax_wpinsight_dismiss_errors', [ 'WPInsight_Logger', 'ajax_dismiss_errors' ] );
+
+		// Enqueue admin JavaScript for notice handling (Phase 5: v1.1.0+).
+		add_action( 'admin_enqueue_scripts', [ 'WPInsight_Bootstrap', 'enqueue_admin_scripts' ] );
+
 		// Initialize admin UI (Phase 4).
 		WPInsight_Admin::init();
 
@@ -255,5 +261,38 @@ final class WPInsight_Bootstrap {
 		$message .= '<p>' . esc_html__( 'Once Action Scheduler is installed and activated, you can activate this plugin.', 'cloudfest-wporgdownload' ) . '</p>';
 
 		return $message;
+	}
+
+	/**
+	 * Enqueue admin scripts for notice handling.
+	 *
+	 * Loads JavaScript for dismissible error notices with persistent state.
+	 *
+	 * @since 1.1.0
+	 * @param string $hook_suffix Current admin page hook suffix.
+	 * @return void
+	 */
+	public static function enqueue_admin_scripts( string $hook_suffix ): void {
+		// Only load on WPInsight admin pages.
+		if ( false === strpos( $hook_suffix, 'wpinsight' ) ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'wpinsight-admin',
+			plugins_url( 'assets/admin.js', WPINSIGHT_PLUGIN_FILE ),
+			[ 'jquery' ],
+			WPINSIGHT_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'wpinsight-admin',
+			'wpinsightAdmin',
+			[
+				'ajaxUrl'            => admin_url( 'admin-ajax.php' ),
+				'dismissErrorsNonce' => wp_create_nonce( 'wpinsight_dismiss_errors' ),
+			]
+		);
 	}
 }
