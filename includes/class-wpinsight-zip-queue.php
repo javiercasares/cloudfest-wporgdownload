@@ -65,7 +65,7 @@ final class WPInsight_Zip_Queue {
 	 */
 	public static function init(): void {
 		// Register ZIP worker tick handler.
-		add_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [ __CLASS__, 'worker_tick' ] );
+		add_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array( __CLASS__, 'worker_tick' ) );
 	}
 
 	/**
@@ -84,7 +84,7 @@ final class WPInsight_Zip_Queue {
 		}
 
 		// Check if already scheduled.
-		$next_run = as_next_scheduled_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
+		$next_run = as_next_scheduled_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
 		if ( false !== $next_run ) {
 			return; // Already scheduled.
 		}
@@ -95,7 +95,7 @@ final class WPInsight_Zip_Queue {
 			time(),
 			$interval,
 			WPINSIGHT_ZIP_WORKER_TICK_ACTION,
-			[],
+			array(),
 			WPINSIGHT_AS_GROUP
 		);
 	}
@@ -150,7 +150,7 @@ final class WPInsight_Zip_Queue {
 
 		$table = WPInsight_DB::get_table_name( 'zip_queue' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Count active downloads. Table name from get_table_name() is safe.
 		$count = $wpdb->get_var(
 			"SELECT COUNT(*) FROM {$table} WHERE status = 'processing'" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		);
@@ -172,16 +172,18 @@ final class WPInsight_Zip_Queue {
 		$table = WPInsight_DB::get_table_name( 'zip_queue' );
 
 		// Start transaction to prevent race conditions.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction required for atomic queue operations.
 		$wpdb->query( 'START TRANSACTION' );
 
 		// Get next pending job (highest priority, oldest first).
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Select next pending job from queue. Table name from get_table_name() is safe.
 		$job = $wpdb->get_row(
 			"SELECT * FROM {$table} WHERE status = 'pending' ORDER BY priority DESC, queued_at ASC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			ARRAY_A
 		);
 
 		if ( ! $job ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit required.
 			$wpdb->query( 'COMMIT' );
 			return null;
 		}
@@ -190,16 +192,17 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			$table,
-			[
+			array(
 				'status'       => 'processing',
 				'started_at'   => current_time( 'mysql', true ),
 				'last_attempt' => current_time( 'mysql', true ),
-			],
-			[ 'id' => $job['id'] ],
-			[ '%s', '%s', '%s' ],
-			[ '%d' ]
+			),
+			array( 'id' => $job['id'] ),
+			array( '%s', '%s', '%s' ),
+			array( '%d' )
 		);
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit required.
 		$wpdb->query( 'COMMIT' );
 
 		return $job;
@@ -246,11 +249,11 @@ final class WPInsight_Zip_Queue {
 		// Download the file.
 		$response = wp_remote_get(
 			$url,
-			[
+			array(
 				'timeout'  => self::DOWNLOAD_TIMEOUT,
 				'stream'   => true,
 				'filename' => $dest_file,
-			]
+			)
 		);
 
 		// Check for errors.
@@ -317,7 +320,7 @@ final class WPInsight_Zip_Queue {
 		$queue_table = WPInsight_DB::get_table_name( 'zip_queue' );
 
 		// Get job details.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Get job by ID with prepared statement. Table name from get_table_name() is safe.
 		$job = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$queue_table} WHERE id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -334,13 +337,13 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			$queue_table,
-			[
+			array(
 				'status'       => 'completed',
 				'completed_at' => current_time( 'mysql', true ),
-			],
-			[ 'id' => $job_id ],
-			[ '%s', '%s' ],
-			[ '%d' ]
+			),
+			array( 'id' => $job_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
 		);
 
 		// Create artifact record.
@@ -349,7 +352,7 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->insert(
 			$artifacts_table,
-			[
+			array(
 				'artifact_type'    => $job['artifact_type'],
 				'artifact_slug'    => $job['artifact_slug'],
 				'artifact_version' => $job['artifact_version'],
@@ -358,8 +361,8 @@ final class WPInsight_Zip_Queue {
 				'file_size'        => $file_size,
 				'file_hash'        => hash_file( 'sha256', $file_path ),
 				'downloaded_at'    => current_time( 'mysql', true ),
-			],
-			[ '%s', '%s', '%s', '%d', '%s', '%d', '%s', '%s' ]
+			),
+			array( '%s', '%s', '%s', '%d', '%s', '%d', '%s', '%s' )
 		);
 	}
 
@@ -388,30 +391,30 @@ final class WPInsight_Zip_Queue {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$table,
-				[
+				array(
 					'status'       => 'failed',
 					'attempts'     => $attempts,
 					'last_error'   => $error,
 					'last_attempt' => current_time( 'mysql', true ),
-				],
-				[ 'id' => $job_id ],
-				[ '%s', '%d', '%s', '%s' ],
-				[ '%d' ]
+				),
+				array( 'id' => $job_id ),
+				array( '%s', '%d', '%s', '%s' ),
+				array( '%d' )
 			);
 		} else {
 			// Retry available, requeue as pending.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$table,
-				[
+				array(
 					'status'       => 'pending',
 					'attempts'     => $attempts,
 					'last_error'   => $error,
 					'last_attempt' => current_time( 'mysql', true ),
-				],
-				[ 'id' => $job_id ],
-				[ '%s', '%d', '%s', '%s' ],
-				[ '%d' ]
+				),
+				array( 'id' => $job_id ),
+				array( '%s', '%d', '%s', '%s' ),
+				array( '%d' )
 			);
 		}
 	}
@@ -463,19 +466,19 @@ final class WPInsight_Zip_Queue {
 
 		$table = WPInsight_DB::get_table_name( 'zip_queue' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Get queue statistics grouped by status. Table name from get_table_name() is safe.
 		$results = $wpdb->get_results(
 			"SELECT status, COUNT(*) as count FROM {$table} GROUP BY status", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			ARRAY_A
 		);
 
-		$stats = [
+		$stats = array(
 			'pending'    => 0,
 			'processing' => 0,
 			'completed'  => 0,
 			'failed'     => 0,
 			'total'      => 0,
-		];
+		);
 
 		foreach ( $results as $row ) {
 			$status           = $row['status'];
@@ -502,7 +505,7 @@ final class WPInsight_Zip_Queue {
 
 		$table = WPInsight_DB::get_table_name( 'zip_queue' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reset failed jobs to pending with prepared statement. Table name from get_table_name() is safe.
 		$result = $wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$table} SET status = 'pending', attempts = 0, last_error = '' WHERE status = 'failed' LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -530,7 +533,7 @@ final class WPInsight_Zip_Queue {
 
 		$cutoff_date = gmdate( 'Y-m-d H:i:s', strtotime( "-{$older_than_days} days" ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Delete old completed jobs with prepared statement. Table name from get_table_name() is safe.
 		$result = $wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$table} WHERE status = 'completed' AND completed_at < %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

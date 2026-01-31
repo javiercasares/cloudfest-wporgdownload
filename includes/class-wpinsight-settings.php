@@ -52,7 +52,7 @@ final class WPInsight_Settings {
 	 * @return array<string,mixed> Associative array of default settings.
 	 */
 	public static function get_defaults(): array {
-		return [
+		return array(
 			// Data management.
 			'delete_on_uninstall'          => false, // Preserve data by default.
 
@@ -80,7 +80,7 @@ final class WPInsight_Settings {
 			// Download behavior.
 			'download_plugin_zips_enabled' => true,  // Download plugin ZIP files.
 			'download_theme_zips_enabled'  => true,  // Download theme ZIP files.
-		];
+		);
 	}
 
 	/**
@@ -115,7 +115,7 @@ final class WPInsight_Settings {
 	 * @return array<string,mixed> All settings merged with defaults.
 	 */
 	public static function get_all(): array {
-		$stored   = get_option( WPINSIGHT_SETTINGS_OPTION, [] );
+		$stored   = get_option( WPINSIGHT_SETTINGS_OPTION, array() );
 		$defaults = self::get_defaults();
 
 		// Merge stored settings over defaults.
@@ -166,7 +166,7 @@ final class WPInsight_Settings {
 	public static function update_all( array $new_settings ): bool {
 		try {
 			// Validate all values first (fail fast).
-			$validated = [];
+			$validated = array();
 			foreach ( $new_settings as $key => $value ) {
 				$validated[ $key ] = self::validate( $key, $value );
 			}

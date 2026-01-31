@@ -79,7 +79,7 @@ final class WPInsight_Sync {
 	 */
 	public static function init(): void {
 		// Register sync tick handler.
-		add_action( WPINSIGHT_SYNC_TICK_ACTION, [ __CLASS__, 'sync_tick' ] );
+		add_action( WPINSIGHT_SYNC_TICK_ACTION, array( __CLASS__, 'sync_tick' ) );
 	}
 
 	/**
@@ -98,7 +98,7 @@ final class WPInsight_Sync {
 		}
 
 		// Check if already scheduled.
-		$next_run = as_next_scheduled_action( WPINSIGHT_SYNC_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
+		$next_run = as_next_scheduled_action( WPINSIGHT_SYNC_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
 		if ( false !== $next_run ) {
 			return; // Already scheduled.
 		}
@@ -109,7 +109,7 @@ final class WPInsight_Sync {
 			time(),
 			$interval,
 			WPINSIGHT_SYNC_TICK_ACTION,
-			[],
+			array(),
 			WPINSIGHT_AS_GROUP
 		);
 	}
@@ -154,7 +154,7 @@ final class WPInsight_Sync {
 		$state = self::get_sync_state( 'plugin' );
 
 		// Skip if already completed or in error state.
-		if ( in_array( $state['status'], [ self::STATE_COMPLETED, self::STATE_ERROR ], true ) ) {
+		if ( in_array( $state['status'], array( self::STATE_COMPLETED, self::STATE_ERROR ), true ) ) {
 			return false;
 		}
 
@@ -164,11 +164,11 @@ final class WPInsight_Sync {
 		// Fetch plugins from API.
 		$per_page = WPInsight_Settings::get( 'per_page', 100 );
 		$response = WPInsight_WPOrg_Client::query_plugins(
-			[
+			array(
 				'browse'   => 'updated',
 				'page'     => $state['page'],
 				'per_page' => $per_page,
-			]
+			)
 		);
 
 		// Handle API error.
@@ -216,7 +216,7 @@ final class WPInsight_Sync {
 		$state = self::get_sync_state( 'theme' );
 
 		// Skip if already completed or in error state.
-		if ( in_array( $state['status'], [ self::STATE_COMPLETED, self::STATE_ERROR ], true ) ) {
+		if ( in_array( $state['status'], array( self::STATE_COMPLETED, self::STATE_ERROR ), true ) ) {
 			return false;
 		}
 
@@ -226,11 +226,11 @@ final class WPInsight_Sync {
 		// Fetch themes from API.
 		$per_page = WPInsight_Settings::get( 'per_page', 100 );
 		$response = WPInsight_WPOrg_Client::query_themes(
-			[
+			array(
 				'browse'   => 'updated',
 				'page'     => $state['page'],
 				'per_page' => $per_page,
-			]
+			)
 		);
 
 		// Handle API error.
@@ -354,7 +354,7 @@ final class WPInsight_Sync {
 
 		foreach ( $versions as $version => $download_url ) {
 			// Skip if already in queue.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Check if version exists in queue. Table name from get_table_name() is safe.
 			$exists = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT id FROM {$table} WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -372,7 +372,7 @@ final class WPInsight_Sync {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->insert(
 				$table,
-				[
+				array(
 					'artifact_type'    => 'plugin',
 					'artifact_slug'    => $slug,
 					'artifact_version' => $version,
@@ -382,8 +382,8 @@ final class WPInsight_Sync {
 					'priority'         => 50, // Normal priority.
 					'attempts'         => 0,
 					'queued_at'        => current_time( 'mysql', true ),
-				],
-				[ '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s' ]
+				),
+				array( '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s' )
 			);
 		}
 	}
@@ -406,7 +406,7 @@ final class WPInsight_Sync {
 
 		foreach ( $versions as $version => $download_url ) {
 			// Skip if already in queue.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Check if version exists in queue. Table name from get_table_name() is safe.
 			$exists = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT id FROM {$table} WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -424,7 +424,7 @@ final class WPInsight_Sync {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->insert(
 				$table,
-				[
+				array(
 					'artifact_type'    => 'theme',
 					'artifact_slug'    => $slug,
 					'artifact_version' => $version,
@@ -434,8 +434,8 @@ final class WPInsight_Sync {
 					'priority'         => 50, // Normal priority.
 					'attempts'         => 0,
 					'queued_at'        => current_time( 'mysql', true ),
-				],
-				[ '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s' ]
+				),
+				array( '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s' )
 			);
 		}
 	}
@@ -461,7 +461,7 @@ final class WPInsight_Sync {
 
 		$table = WPInsight_DB::get_table_name( 'sync_state' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Get latest sync state. Table name from get_table_name() is safe.
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$table} WHERE sync_type = %s ORDER BY id DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -472,20 +472,20 @@ final class WPInsight_Sync {
 
 		if ( ! $row ) {
 			// No state yet, return defaults.
-			return [
+			return array(
 				'status'     => self::STATE_IDLE,
 				'page'       => 1,
 				'last_error' => '',
 				'updated_at' => current_time( 'mysql', true ),
-			];
+			);
 		}
 
-		return [
+		return array(
 			'status'     => $row['status'],
 			'page'       => (int) $row['page'],
 			'last_error' => $row['last_error'] ?? '',
 			'updated_at' => $row['updated_at'],
-		];
+		);
 	}
 
 	/**
@@ -508,14 +508,14 @@ final class WPInsight_Sync {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->replace(
 			$table,
-			[
+			array(
 				'sync_type'  => $type,
 				'status'     => $status,
 				'page'       => $page,
 				'last_error' => $last_error,
 				'updated_at' => current_time( 'mysql', true ),
-			],
-			[ '%s', '%s', '%d', '%s', '%s' ]
+			),
+			array( '%s', '%s', '%d', '%s', '%s' )
 		);
 
 		return false !== $result;

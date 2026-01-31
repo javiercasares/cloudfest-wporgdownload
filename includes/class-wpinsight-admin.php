@@ -64,9 +64,9 @@ final class WPInsight_Admin {
 	 * @return void
 	 */
 	public static function init(): void {
-		add_action( 'admin_menu', [ __CLASS__, 'add_admin_menu' ] );
-		add_action( 'admin_init', [ __CLASS__, 'register_settings' ] );
-		add_action( 'admin_init', [ __CLASS__, 'handle_dashboard_actions' ] );
+		add_action( 'admin_menu', array( __CLASS__, 'add_admin_menu' ) );
+		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
+		add_action( 'admin_init', array( __CLASS__, 'handle_dashboard_actions' ) );
 	}
 
 	/**
@@ -84,7 +84,7 @@ final class WPInsight_Admin {
 			__( 'WPInsight', 'cloudfest-wporgdownload' ),            // Menu title.
 			'manage_options',                                         // Capability.
 			self::DASHBOARD_PAGE_SLUG,                                // Menu slug.
-			[ __CLASS__, 'render_dashboard_page' ]                    // Callback.
+			array( __CLASS__, 'render_dashboard_page' )                    // Callback.
 		);
 
 		// Add Settings page under Settings menu.
@@ -93,7 +93,7 @@ final class WPInsight_Admin {
 			__( 'WPInsight', 'cloudfest-wporgdownload' ),           // Menu title.
 			'manage_options',                                        // Capability.
 			self::SETTINGS_PAGE_SLUG,                                // Menu slug.
-			[ __CLASS__, 'render_settings_page' ]                    // Callback.
+			array( __CLASS__, 'render_settings_page' )                    // Callback.
 		);
 	}
 
@@ -110,17 +110,17 @@ final class WPInsight_Admin {
 		register_setting(
 			self::SETTINGS_GROUP,
 			WPINSIGHT_SETTINGS_OPTION,
-			[
+			array(
 				'type'              => 'array',
-				'sanitize_callback' => [ __CLASS__, 'sanitize_settings' ],
-			]
+				'sanitize_callback' => array( __CLASS__, 'sanitize_settings' ),
+			)
 		);
 
 		// General Settings Section.
 		add_settings_section(
 			'wpinsight_general',
 			__( 'General Settings', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_section_general' ],
+			array( __CLASS__, 'render_section_general' ),
 			self::SETTINGS_PAGE_SLUG
 		);
 
@@ -128,7 +128,7 @@ final class WPInsight_Admin {
 		add_settings_section(
 			'wpinsight_sync',
 			__( 'Sync Settings', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_section_sync' ],
+			array( __CLASS__, 'render_section_sync' ),
 			self::SETTINGS_PAGE_SLUG
 		);
 
@@ -136,7 +136,7 @@ final class WPInsight_Admin {
 		add_settings_section(
 			'wpinsight_rate_limiting',
 			__( 'Rate Limiting', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_section_rate_limiting' ],
+			array( __CLASS__, 'render_section_rate_limiting' ),
 			self::SETTINGS_PAGE_SLUG
 		);
 
@@ -144,7 +144,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'delete_on_uninstall',
 			__( 'Delete Data on Uninstall', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_field_delete_on_uninstall' ],
+			array( __CLASS__, 'render_field_delete_on_uninstall' ),
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_general'
 		);
@@ -153,7 +153,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'auto_sync_enabled',
 			__( 'Enable Auto Sync', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_field_auto_sync_enabled' ],
+			array( __CLASS__, 'render_field_auto_sync_enabled' ),
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -161,7 +161,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'sync_plugins_enabled',
 			__( 'Sync Plugins', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_field_sync_plugins_enabled' ],
+			array( __CLASS__, 'render_field_sync_plugins_enabled' ),
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -169,7 +169,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'sync_themes_enabled',
 			__( 'Sync Themes', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_field_sync_themes_enabled' ],
+			array( __CLASS__, 'render_field_sync_themes_enabled' ),
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -177,7 +177,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'download_plugin_zips_enabled',
 			__( 'Download Plugin ZIPs', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_field_download_plugin_zips_enabled' ],
+			array( __CLASS__, 'render_field_download_plugin_zips_enabled' ),
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -185,7 +185,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'download_theme_zips_enabled',
 			__( 'Download Theme ZIPs', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_field_download_theme_zips_enabled' ],
+			array( __CLASS__, 'render_field_download_theme_zips_enabled' ),
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -193,7 +193,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'sync_interval',
 			__( 'Sync Interval (seconds)', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_field_sync_interval' ],
+			array( __CLASS__, 'render_field_sync_interval' ),
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -202,7 +202,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'max_concurrent_downloads',
 			__( 'Max Concurrent Downloads', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_field_max_concurrent_downloads' ],
+			array( __CLASS__, 'render_field_max_concurrent_downloads' ),
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
@@ -210,7 +210,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'zip_worker_interval',
 			__( 'ZIP Worker Interval (seconds)', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_field_zip_worker_interval' ],
+			array( __CLASS__, 'render_field_zip_worker_interval' ),
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
@@ -218,7 +218,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'max_retries',
 			__( 'Max Download Retries', 'cloudfest-wporgdownload' ),
-			[ __CLASS__, 'render_field_max_retries' ],
+			array( __CLASS__, 'render_field_max_retries' ),
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
@@ -346,8 +346,8 @@ final class WPInsight_Admin {
 		$theme_count  = wp_count_posts( WPInsight_CPT::get_theme_post_type() )->publish ?? 0;
 
 		$artifacts_table = WPInsight_DB::get_table_name( 'artifacts' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$artifact_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$artifacts_table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Simple COUNT query on custom table for dashboard statistics. Table name from get_table_name() is safe.
+		$artifact_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$artifacts_table}" );
 
 		$upload_dir   = wp_upload_dir();
 		$base_path    = WPInsight_Settings::get( 'storage_base_path', 'wpinsight' );
@@ -694,13 +694,13 @@ final class WPInsight_Admin {
 	private static function check_database_tables(): string {
 		global $wpdb;
 
-		$tables = [
+		$tables = array(
 			'sync_state',
 			'zip_queue',
 			'artifacts',
-		];
+		);
 
-		$missing = [];
+		$missing = array();
 		foreach ( $tables as $table_key ) {
 			$table_name = WPInsight_DB::get_table_name( $table_key );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -729,20 +729,20 @@ final class WPInsight_Admin {
 		}
 
 		$sync_jobs = as_get_scheduled_actions(
-			[
+			array(
 				'hook'   => WPINSIGHT_SYNC_TICK_ACTION,
 				'status' => 'pending',
 				'group'  => WPINSIGHT_AS_GROUP,
-			],
+			),
 			'ids'
 		);
 
 		$zip_jobs = as_get_scheduled_actions(
-			[
+			array(
 				'hook'   => WPINSIGHT_ZIP_WORKER_TICK_ACTION,
 				'status' => 'pending',
 				'group'  => WPINSIGHT_AS_GROUP,
-			],
+			),
 			'ids'
 		);
 
@@ -818,8 +818,8 @@ final class WPInsight_Admin {
 			case 'reset_jobs':
 				// Unschedule all existing jobs.
 				if ( function_exists( 'as_unschedule_all_actions' ) ) {
-					as_unschedule_all_actions( WPINSIGHT_SYNC_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
-					as_unschedule_all_actions( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
+					as_unschedule_all_actions( WPINSIGHT_SYNC_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
+					as_unschedule_all_actions( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
 
 					add_settings_error(
 						'wpinsight_debug',
@@ -1068,28 +1068,28 @@ final class WPInsight_Admin {
 	 * @return array<string, mixed> Sanitized settings.
 	 */
 	public static function sanitize_settings( array $input ): array {
-		$sanitized = [];
+		$sanitized = array();
 
-		// Convert checkbox values (empty = false, '1' = true).
-		$checkboxes = [
+		// Convert checkbox values: empty strings become false, '1' becomes true.
+		$checkboxes = array(
 			'delete_on_uninstall',
 			'auto_sync_enabled',
 			'sync_plugins_enabled',
 			'sync_themes_enabled',
 			'download_plugin_zips_enabled',
 			'download_theme_zips_enabled',
-		];
+		);
 		foreach ( $checkboxes as $key ) {
 			$sanitized[ $key ] = isset( $input[ $key ] ) && '1' === $input[ $key ];
 		}
 
 		// Validate and sanitize number fields using Settings class.
-		$number_fields = [
+		$number_fields = array(
 			'max_concurrent_downloads',
 			'sync_interval',
 			'zip_worker_interval',
 			'max_retries',
-		];
+		);
 
 		foreach ( $number_fields as $key ) {
 			if ( isset( $input[ $key ] ) ) {
