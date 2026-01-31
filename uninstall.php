@@ -29,28 +29,53 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-/**
- * Option name for the "delete data on uninstall" setting.
- *
- * This option is stored in wp_options and controls whether plugin data
- * should be deleted when the plugin is uninstalled.
- *
- * @var string Option name in database.
+/*
+ * ============================================================================
+ * LOAD PLUGIN CLASSES AND CONSTANTS
+ * ============================================================================
  */
-define( 'WPINSIGHT_DELETE_ON_UNINSTALL_OPTION', 'wpinsight_delete_on_uninstall' );
 
-/**
- * Settings option name.
- *
- * Contains all plugin settings including the delete_on_uninstall preference.
- *
- * @var string Settings option name in database.
+// Define plugin constants (same as main plugin file).
+if ( ! defined( 'WPINSIGHT_PLUGIN_DIR' ) ) {
+	define( 'WPINSIGHT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+}
+
+if ( ! defined( 'WPINSIGHT_SETTINGS_OPTION' ) ) {
+	define( 'WPINSIGHT_SETTINGS_OPTION', 'wpinsight_settings' );
+}
+
+if ( ! defined( 'WPINSIGHT_DB_VERSION_OPTION' ) ) {
+	define( 'WPINSIGHT_DB_VERSION_OPTION', 'wpinsight_db_version' );
+}
+
+if ( ! defined( 'WPINSIGHT_ACTIVATED_AT_OPTION' ) ) {
+	define( 'WPINSIGHT_ACTIVATED_AT_OPTION', 'wpinsight_activated_at' );
+}
+
+if ( ! defined( 'WPINSIGHT_AS_GROUP' ) ) {
+	define( 'WPINSIGHT_AS_GROUP', 'wpinsight' );
+}
+
+if ( ! defined( 'WPINSIGHT_SYNC_TICK_ACTION' ) ) {
+	define( 'WPINSIGHT_SYNC_TICK_ACTION', 'wpinsight_sync_tick' );
+}
+
+if ( ! defined( 'WPINSIGHT_ZIP_WORKER_TICK_ACTION' ) ) {
+	define( 'WPINSIGHT_ZIP_WORKER_TICK_ACTION', 'wpinsight_zip_worker_tick' );
+}
+
+// Load required classes.
+require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-settings.php';
+require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-db.php';
+
+/*
+ * ============================================================================
+ * CHECK USER PREFERENCE FOR DATA DELETION
+ * ============================================================================
  */
-define( 'WPINSIGHT_SETTINGS_OPTION', 'wpinsight_settings' );
 
-// Get the user's preference for data deletion.
-$wpinsight_settings    = get_option( WPINSIGHT_SETTINGS_OPTION, array() );
-$wpinsight_delete_data = isset( $wpinsight_settings['delete_on_uninstall'] ) ? (bool) $wpinsight_settings['delete_on_uninstall'] : false;
+// Get the user's preference for data deletion using Settings class.
+$wpinsight_delete_data = WPInsight_Settings::get( 'delete_on_uninstall', false );
 
 // If user has NOT opted in to delete data, exit early and preserve everything.
 if ( ! $wpinsight_delete_data ) {
@@ -104,24 +129,20 @@ foreach ( $theme_posts as $post_id ) {
  * ----------------------------------------------------------------------------
  * 2. DROP CUSTOM DATABASE TABLES
  * ----------------------------------------------------------------------------
- * Remove all custom tables created by the plugin.
- * TODO: Implement after database class is created in Phase 2.
+ * Remove all custom tables created by the plugin using DB class.
  */
 
-// TODO: Drop wpinsight_sync_state table.
-// TODO: Drop wpinsight_zip_queue table.
-// TODO: Drop wpinsight_artifacts table.
-// Example implementation (to be uncommented when database tables exist).
+// Get table names using DB class helper method.
+$table_sync_state = WPInsight_DB::get_table_name( 'sync_state' );
+$table_zip_queue  = WPInsight_DB::get_table_name( 'zip_queue' );
+$table_artifacts  = WPInsight_DB::get_table_name( 'artifacts' );
 
-/*
-$table_sync_state = $wpdb->prefix . 'wpinsight_sync_state';
-$table_zip_queue  = $wpdb->prefix . 'wpinsight_zip_queue';
-$table_artifacts  = $wpdb->prefix . 'wpinsight_artifacts';
-
-$wpdb->query( "DROP TABLE IF EXISTS {$table_sync_state}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-$wpdb->query( "DROP TABLE IF EXISTS {$table_zip_queue}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-$wpdb->query( "DROP TABLE IF EXISTS {$table_artifacts}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-*/
+// Drop all custom tables.
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_sync_state ) );
+$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_zip_queue ) );
+$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_artifacts ) );
+// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 
 /*
  * ----------------------------------------------------------------------------
@@ -130,14 +151,14 @@ $wpdb->query( "DROP TABLE IF EXISTS {$table_artifacts}" ); // phpcs:ignore WordP
  * Remove all options stored by the plugin in wp_options table.
  */
 
-// Delete main settings option.
-delete_option( WPINSIGHT_SETTINGS_OPTION );
+// Delete main settings option using Settings class.
+WPInsight_Settings::delete();
 
 // Delete database version option (used for schema upgrades).
-delete_option( 'wpinsight_db_version' );
+delete_option( WPINSIGHT_DB_VERSION_OPTION );
 
-// Delete activation timestamp (if we add it later).
-delete_option( 'wpinsight_activated_at' );
+// Delete activation timestamp.
+delete_option( WPINSIGHT_ACTIVATED_AT_OPTION );
 
 // Delete any full sync status options.
 delete_option( 'wpinsight_full_sync_running' );
@@ -195,12 +216,12 @@ if ( file_exists( $wpinsight_dir ) && is_dir( $wpinsight_dir ) ) {
 
 // Unschedule sync tick (runs every 5 minutes).
 if ( function_exists( 'as_unschedule_all_actions' ) ) {
-	as_unschedule_all_actions( 'wpinsight_sync_tick', array(), 'wpinsight' );
+	as_unschedule_all_actions( WPINSIGHT_SYNC_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
 }
 
 // Unschedule ZIP worker tick (runs every 1 minute).
 if ( function_exists( 'as_unschedule_all_actions' ) ) {
-	as_unschedule_all_actions( 'wpinsight_zip_worker_tick', array(), 'wpinsight' );
+	as_unschedule_all_actions( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
 }
 
 /*
