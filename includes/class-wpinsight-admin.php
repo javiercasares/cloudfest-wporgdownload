@@ -1064,8 +1064,8 @@ final class WPInsight_Admin {
 	 * Invalid values will be rejected and the field will keep its previous value.
 	 *
 	 * @since 0.1.0
-	 * @param array $input Raw input from settings form.
-	 * @return array Sanitized settings.
+	 * @param array<string, mixed> $input Raw input from settings form.
+	 * @return array<string, mixed> Sanitized settings.
 	 */
 	public static function sanitize_settings( array $input ): array {
 		$sanitized = [];

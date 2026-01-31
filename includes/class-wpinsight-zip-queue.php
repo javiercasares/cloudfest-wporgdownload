@@ -164,7 +164,7 @@ final class WPInsight_Zip_Queue {
 	 * Fetches the highest priority pending job and marks it as processing.
 	 *
 	 * @since 0.1.0
-	 * @return array|null Job data or null if no jobs available.
+	 * @return array<string, mixed>|null Job data or null if no jobs available.
 	 */
 	private static function get_next_job(): ?array {
 		global $wpdb;
@@ -212,7 +212,7 @@ final class WPInsight_Zip_Queue {
 	 * Updates queue status and creates artifact record on success.
 	 *
 	 * @since 0.1.0
-	 * @param array $job Job data from queue.
+	 * @param array<string, mixed> $job Job data from queue.
 	 * @return bool True on success, false on failure.
 	 */
 	private static function process_job( array $job ): bool {
@@ -448,7 +448,7 @@ final class WPInsight_Zip_Queue {
 	 * Returns counts for each queue status.
 	 *
 	 * @since 0.1.0
-	 * @return array {
+	 * @return array<string, int> {
 	 *     Queue statistics.
 	 *
 	 *     @type int $pending    Pending jobs.

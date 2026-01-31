@@ -101,7 +101,7 @@ final class WPInsight_DB {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		// SQL statements for all tables.
-		$sql = array();
+		$sql = [];
 
 		// Table 1: Sync State - tracks pagination cursor and sync status.
 		$sql[] = 'CREATE TABLE ' . self::get_table_name( 'sync_state' ) . " (

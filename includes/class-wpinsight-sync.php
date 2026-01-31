@@ -278,7 +278,7 @@ final class WPInsight_Sync {
 	 * Creates or updates the plugin CPT and enqueues ZIP downloads if enabled.
 	 *
 	 * @since 0.1.0
-	 * @param array $plugin Plugin data from API.
+	 * @param array<string, mixed> $plugin Plugin data from API.
 	 * @return bool True on success, false on failure.
 	 */
 	private static function process_plugin( array $plugin ): bool {
@@ -314,7 +314,7 @@ final class WPInsight_Sync {
 	 * Creates or updates the theme CPT and enqueues ZIP downloads if enabled.
 	 *
 	 * @since 0.1.0
-	 * @param array $theme Theme data from API.
+	 * @param array<string, mixed> $theme Theme data from API.
 	 * @return bool True on success, false on failure.
 	 */
 	private static function process_theme( array $theme ): bool {

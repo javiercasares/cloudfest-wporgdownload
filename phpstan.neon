@@ -14,6 +14,8 @@ parameters:
     ignoreErrors:
         # PHPDoc @var tags on define() constants don't need variable names
         - '#PHPDoc tag @var does not specify variable name#'
+        # WP_CLI is an external dependency not available during static analysis
+        - '#Call to static method .* on an unknown class WP_CLI#'
     scanDirectories:
         - vendor/
     scanFiles: []

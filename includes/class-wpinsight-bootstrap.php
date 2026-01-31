@@ -76,10 +76,10 @@ final class WPInsight_Bootstrap {
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php';
 
 		// Register CPTs on init hook (Phase 3).
-		add_action( 'init', array( 'WPInsight_CPT', 'register' ) );
+		add_action( 'init', [ 'WPInsight_CPT', 'register' ] );
 
 		// Hook database upgrade checker (Phase 2).
-		add_action( 'admin_init', array( 'WPInsight_DB', 'maybe_upgrade' ) );
+		add_action( 'admin_init', [ 'WPInsight_DB', 'maybe_upgrade' ] );
 
 		// Initialize admin UI (Phase 4).
 		WPInsight_Admin::init();
@@ -126,10 +126,10 @@ final class WPInsight_Bootstrap {
 			wp_die(
 				wp_kses_post( self::get_action_scheduler_error_message() ),
 				esc_html__( 'Plugin Activation Failed', 'cloudfest-wporgdownload' ),
-				array(
+				[
 					'back_link' => true,
 					'response'  => 500,
-				)
+				]
 			);
 		}
 
@@ -179,10 +179,10 @@ final class WPInsight_Bootstrap {
 		// Unschedule all Action Scheduler jobs.
 		if ( function_exists( 'as_unschedule_all_actions' ) ) {
 			// Unschedule sync tick (runs every 5 minutes).
-			as_unschedule_all_actions( WPINSIGHT_SYNC_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
+			as_unschedule_all_actions( WPINSIGHT_SYNC_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
 
 			// Unschedule ZIP worker tick (runs every 1 minute).
-			as_unschedule_all_actions( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
+			as_unschedule_all_actions( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
 		}
 
 		// Note: We intentionally do NOT delete any data here.

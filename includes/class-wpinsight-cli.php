@@ -68,8 +68,8 @@ final class WPInsight_CLI {
 	 *     wp wpinsight sync --type=themes --reset
 	 *
 	 * @since 0.1.0
-	 * @param array $args       Positional arguments.
-	 * @param array $assoc_args Associative arguments.
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
 	 * @return void
 	 */
 	public static function sync( array $args, array $assoc_args ): void {
@@ -153,8 +153,8 @@ final class WPInsight_CLI {
 	 *     wp wpinsight zip --limit=10
 	 *
 	 * @since 0.1.0
-	 * @param array $args       Positional arguments.
-	 * @param array $assoc_args Associative arguments.
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
 	 * @return void
 	 */
 	public static function zip( array $args, array $assoc_args ): void {
@@ -220,8 +220,8 @@ final class WPInsight_CLI {
 	 *     wp wpinsight stats
 	 *
 	 * @since 0.1.0
-	 * @param array $args       Positional arguments.
-	 * @param array $assoc_args Associative arguments.
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
 	 * @return void
 	 */
 	public static function stats( array $args, array $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
@@ -321,8 +321,8 @@ final class WPInsight_CLI {
 	 *     wp wpinsight queue clear --days=30
 	 *
 	 * @since 0.1.0
-	 * @param array $args       Positional arguments.
-	 * @param array $assoc_args Associative arguments.
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
 	 * @return void
 	 */
 	public static function queue( array $args, array $assoc_args ): void {
@@ -381,8 +381,8 @@ final class WPInsight_CLI {
 	 *     wp wpinsight reset --type=both --confirm
 	 *
 	 * @since 0.1.0
-	 * @param array $args       Positional arguments.
-	 * @param array $assoc_args Associative arguments.
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
 	 * @return void
 	 */
 	public static function reset( array $args, array $assoc_args ): void {

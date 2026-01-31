@@ -105,7 +105,7 @@ final class WPInsight_CPT {
 	 * @return void
 	 */
 	private static function register_plugin_cpt(): void {
-		$labels = array(
+		$labels = [
 			'name'                  => _x( 'Plugins', 'Post type general name', 'cloudfest-wporgdownload' ),
 			'singular_name'         => _x( 'Plugin', 'Post type singular name', 'cloudfest-wporgdownload' ),
 			'menu_name'             => _x( 'WP.org Plugins', 'Admin Menu text', 'cloudfest-wporgdownload' ),
@@ -122,9 +122,9 @@ final class WPInsight_CPT {
 			'filter_items_list'     => _x( 'Filter plugins list', 'Screen reader text', 'cloudfest-wporgdownload' ),
 			'items_list_navigation' => _x( 'Plugins list navigation', 'Screen reader text', 'cloudfest-wporgdownload' ),
 			'items_list'            => _x( 'Plugins list', 'Screen reader text', 'cloudfest-wporgdownload' ),
-		);
+		];
 
-		$args = array(
+		$args = [
 			'labels'             => $labels,
 			'description'        => __( 'WordPress.org plugins from the plugin repository', 'cloudfest-wporgdownload' ),
 			'public'             => false,
@@ -138,9 +138,9 @@ final class WPInsight_CPT {
 			'capability_type'    => 'post',
 			'has_archive'        => false,
 			'hierarchical'       => false,
-			'supports'           => array( 'title', 'custom-fields' ),
+			'supports'           => [ 'title', 'custom-fields' ],
 			'show_in_rest'       => false,
-		);
+		];
 
 		register_post_type( self::PLUGIN_POST_TYPE, $args );
 	}
@@ -161,7 +161,7 @@ final class WPInsight_CPT {
 	 * @return void
 	 */
 	private static function register_theme_cpt(): void {
-		$labels = array(
+		$labels = [
 			'name'                  => _x( 'Themes', 'Post type general name', 'cloudfest-wporgdownload' ),
 			'singular_name'         => _x( 'Theme', 'Post type singular name', 'cloudfest-wporgdownload' ),
 			'menu_name'             => _x( 'WP.org Themes', 'Admin Menu text', 'cloudfest-wporgdownload' ),
@@ -178,9 +178,9 @@ final class WPInsight_CPT {
 			'filter_items_list'     => _x( 'Filter themes list', 'Screen reader text', 'cloudfest-wporgdownload' ),
 			'items_list_navigation' => _x( 'Themes list navigation', 'Screen reader text', 'cloudfest-wporgdownload' ),
 			'items_list'            => _x( 'Themes list', 'Screen reader text', 'cloudfest-wporgdownload' ),
-		);
+		];
 
-		$args = array(
+		$args = [
 			'labels'             => $labels,
 			'description'        => __( 'WordPress.org themes from the theme repository', 'cloudfest-wporgdownload' ),
 			'public'             => false,
@@ -194,9 +194,9 @@ final class WPInsight_CPT {
 			'capability_type'    => 'post',
 			'has_archive'        => false,
 			'hierarchical'       => false,
-			'supports'           => array( 'title', 'custom-fields' ),
+			'supports'           => [ 'title', 'custom-fields' ],
 			'show_in_rest'       => false,
-		);
+		];
 
 		register_post_type( self::THEME_POST_TYPE, $args );
 	}
@@ -215,13 +215,13 @@ final class WPInsight_CPT {
 	public static function find_or_create_plugin( string $slug, string $name ): int {
 		// Try to find existing post by slug (post_name).
 		$existing = get_posts(
-			array(
+			[
 				'post_type'      => self::PLUGIN_POST_TYPE,
 				'name'           => $slug,
 				'posts_per_page' => 1,
 				'fields'         => 'ids',
 				'post_status'    => 'any',
-			)
+			]
 		);
 
 		if ( ! empty( $existing ) ) {
@@ -230,12 +230,12 @@ final class WPInsight_CPT {
 
 		// Create new post.
 		$post_id = wp_insert_post(
-			array(
+			[
 				'post_type'   => self::PLUGIN_POST_TYPE,
 				'post_title'  => $name,
 				'post_name'   => $slug,
 				'post_status' => 'publish',
-			)
+			]
 		);
 
 		if ( is_wp_error( $post_id ) ) {
@@ -259,13 +259,13 @@ final class WPInsight_CPT {
 	public static function find_or_create_theme( string $slug, string $name ): int {
 		// Try to find existing post by slug (post_name).
 		$existing = get_posts(
-			array(
+			[
 				'post_type'      => self::THEME_POST_TYPE,
 				'name'           => $slug,
 				'posts_per_page' => 1,
 				'fields'         => 'ids',
 				'post_status'    => 'any',
-			)
+			]
 		);
 
 		if ( ! empty( $existing ) ) {
@@ -274,12 +274,12 @@ final class WPInsight_CPT {
 
 		// Create new post.
 		$post_id = wp_insert_post(
-			array(
+			[
 				'post_type'   => self::THEME_POST_TYPE,
 				'post_title'  => $name,
 				'post_name'   => $slug,
 				'post_status' => 'publish',
-			)
+			]
 		);
 
 		if ( is_wp_error( $post_id ) ) {
@@ -306,7 +306,7 @@ final class WPInsight_CPT {
 		}
 
 		// Map of API field => meta key.
-		$meta_map = array(
+		$meta_map = [
 			'slug'              => '_wpinsight_slug',
 			'author'            => '_wpinsight_author',
 			'version'           => '_wpinsight_version',
@@ -322,7 +322,7 @@ final class WPInsight_CPT {
 			'download_link'     => '_wpinsight_download_url',
 			'short_description' => '_wpinsight_short_description',
 			'description'       => '_wpinsight_description',
-		);
+		];
 
 		// Save scalar fields.
 		foreach ( $meta_map as $api_field => $meta_key ) {
@@ -332,13 +332,13 @@ final class WPInsight_CPT {
 		}
 
 		// Save array fields (serialized).
-		$array_fields = array(
+		$array_fields = [
 			'sections' => '_wpinsight_sections',
 			'tags'     => '_wpinsight_tags',
 			'versions' => '_wpinsight_versions',
 			'banners'  => '_wpinsight_banners',
 			'icons'    => '_wpinsight_icons',
-		);
+		];
 
 		foreach ( $array_fields as $api_field => $meta_key ) {
 			if ( isset( $data[ $api_field ] ) && is_array( $data[ $api_field ] ) ) {
@@ -366,7 +366,7 @@ final class WPInsight_CPT {
 		}
 
 		// Map of API field => meta key.
-		$meta_map = array(
+		$meta_map = [
 			'slug'          => '_wpinsight_slug',
 			'author'        => '_wpinsight_author',
 			'version'       => '_wpinsight_version',
@@ -379,7 +379,7 @@ final class WPInsight_CPT {
 			'homepage'      => '_wpinsight_homepage',
 			'download_link' => '_wpinsight_download_url',
 			'description'   => '_wpinsight_description',
-		);
+		];
 
 		// Save scalar fields.
 		foreach ( $meta_map as $api_field => $meta_key ) {
@@ -389,11 +389,11 @@ final class WPInsight_CPT {
 		}
 
 		// Save array fields (serialized).
-		$array_fields = array(
+		$array_fields = [
 			'tags'           => '_wpinsight_tags',
 			'versions'       => '_wpinsight_versions',
 			'screenshot_url' => '_wpinsight_screenshot_url',
-		);
+		];
 
 		foreach ( $array_fields as $api_field => $meta_key ) {
 			if ( isset( $data[ $api_field ] ) ) {
@@ -411,14 +411,14 @@ final class WPInsight_CPT {
 	 *
 	 * @since 0.1.0
 	 * @param int $post_id Plugin post ID.
-	 * @return array Associative array of plugin metadata.
+	 * @return array<string, mixed> Associative array of plugin metadata.
 	 */
 	public static function get_plugin_meta( int $post_id ): array {
 		if ( empty( $post_id ) ) {
-			return array();
+			return [];
 		}
 
-		$meta_keys = array(
+		$meta_keys = [
 			'slug',
 			'author',
 			'version',
@@ -439,9 +439,9 @@ final class WPInsight_CPT {
 			'versions',
 			'banners',
 			'icons',
-		);
+		];
 
-		$meta = array();
+		$meta = [];
 		foreach ( $meta_keys as $key ) {
 			$meta_value = get_post_meta( $post_id, '_wpinsight_' . $key, true );
 			if ( ! empty( $meta_value ) ) {
@@ -459,14 +459,14 @@ final class WPInsight_CPT {
 	 *
 	 * @since 0.1.0
 	 * @param int $post_id Theme post ID.
-	 * @return array Associative array of theme metadata.
+	 * @return array<string, mixed> Associative array of theme metadata.
 	 */
 	public static function get_theme_meta( int $post_id ): array {
 		if ( empty( $post_id ) ) {
-			return array();
+			return [];
 		}
 
-		$meta_keys = array(
+		$meta_keys = [
 			'slug',
 			'author',
 			'version',
@@ -482,9 +482,9 @@ final class WPInsight_CPT {
 			'tags',
 			'versions',
 			'screenshot_url',
-		);
+		];
 
-		$meta = array();
+		$meta = [];
 		foreach ( $meta_keys as $key ) {
 			$meta_value = get_post_meta( $post_id, '_wpinsight_' . $key, true );
 			if ( ! empty( $meta_value ) ) {
@@ -506,12 +506,12 @@ final class WPInsight_CPT {
 	 */
 	private static function setup_admin_columns(): void {
 		// Plugin columns.
-		add_filter( 'manage_' . self::PLUGIN_POST_TYPE . '_posts_columns', array( __CLASS__, 'plugin_columns' ) );
-		add_action( 'manage_' . self::PLUGIN_POST_TYPE . '_posts_custom_column', array( __CLASS__, 'plugin_column_content' ), 10, 2 );
+		add_filter( 'manage_' . self::PLUGIN_POST_TYPE . '_posts_columns', [ __CLASS__, 'plugin_columns' ] );
+		add_action( 'manage_' . self::PLUGIN_POST_TYPE . '_posts_custom_column', [ __CLASS__, 'plugin_column_content' ], 10, 2 );
 
 		// Theme columns.
-		add_filter( 'manage_' . self::THEME_POST_TYPE . '_posts_columns', array( __CLASS__, 'theme_columns' ) );
-		add_action( 'manage_' . self::THEME_POST_TYPE . '_posts_custom_column', array( __CLASS__, 'theme_column_content' ), 10, 2 );
+		add_filter( 'manage_' . self::THEME_POST_TYPE . '_posts_columns', [ __CLASS__, 'theme_columns' ] );
+		add_action( 'manage_' . self::THEME_POST_TYPE . '_posts_custom_column', [ __CLASS__, 'theme_column_content' ], 10, 2 );
 	}
 
 	/**
@@ -529,7 +529,7 @@ final class WPInsight_CPT {
 		unset( $columns['date'] );
 
 		// Build new column structure.
-		$new_columns = array(
+		$new_columns = [
 			'cb'              => $columns['cb'], // Checkbox.
 			'title'           => $columns['title'], // Title.
 			'slug'            => __( 'Slug', 'cloudfest-wporgdownload' ),
@@ -539,7 +539,7 @@ final class WPInsight_CPT {
 			'active_installs' => __( 'Active Installs', 'cloudfest-wporgdownload' ),
 			'rating'          => __( 'Rating', 'cloudfest-wporgdownload' ),
 			'last_updated'    => __( 'Last Updated', 'cloudfest-wporgdownload' ),
-		);
+		];
 
 		return $new_columns;
 	}
@@ -559,7 +559,7 @@ final class WPInsight_CPT {
 		unset( $columns['date'] );
 
 		// Build new column structure.
-		$new_columns = array(
+		$new_columns = [
 			'cb'           => $columns['cb'], // Checkbox.
 			'title'        => $columns['title'], // Title.
 			'slug'         => __( 'Slug', 'cloudfest-wporgdownload' ),
@@ -568,7 +568,7 @@ final class WPInsight_CPT {
 			'downloads'    => __( 'Downloads', 'cloudfest-wporgdownload' ),
 			'rating'       => __( 'Rating', 'cloudfest-wporgdownload' ),
 			'last_updated' => __( 'Last Updated', 'cloudfest-wporgdownload' ),
-		);
+		];
 
 		return $new_columns;
 	}
