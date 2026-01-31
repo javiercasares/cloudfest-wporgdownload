@@ -67,6 +67,7 @@ if ( ! defined( 'WPINSIGHT_ZIP_WORKER_TICK_ACTION' ) ) {
 // Load required classes.
 require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-settings.php';
 require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-db.php';
+require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cpt.php';
 
 /*
  * ============================================================================
@@ -98,32 +99,35 @@ global $wpdb;
  * 1. DELETE CUSTOM POST TYPES
  * ----------------------------------------------------------------------------
  * Remove all plugin/theme CPT posts and their associated post meta.
- * TODO: Implement after CPT class is created in Phase 3.
  */
 
-// TODO: Delete all 'wpinsight_plugin' posts.
-// TODO: Delete all 'wpinsight_theme' posts.
-// Example implementation (to be uncommented when CPT class exists).
+// Delete all wpinsight_plugin posts.
+$wpinsight_plugin_posts = get_posts(
+	array(
+		'post_type'      => WPInsight_CPT::get_plugin_post_type(),
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+		'post_status'    => 'any',
+	)
+);
 
-/*
-$plugin_posts = get_posts( array(
-	'post_type'      => 'wpinsight_plugin',
-	'posts_per_page' => -1,
-	'fields'         => 'ids',
-) );
-foreach ( $plugin_posts as $post_id ) {
-	wp_delete_post( $post_id, true ); // true = force delete, bypass trash.
+foreach ( $wpinsight_plugin_posts as $wpinsight_post_id ) {
+	wp_delete_post( $wpinsight_post_id, true ); // true = force delete, bypass trash.
 }
 
-$theme_posts = get_posts( array(
-	'post_type'      => 'wpinsight_theme',
-	'posts_per_page' => -1,
-	'fields'         => 'ids',
-) );
-foreach ( $theme_posts as $post_id ) {
-	wp_delete_post( $post_id, true );
+// Delete all wpinsight_theme posts.
+$wpinsight_theme_posts = get_posts(
+	array(
+		'post_type'      => WPInsight_CPT::get_theme_post_type(),
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+		'post_status'    => 'any',
+	)
+);
+
+foreach ( $wpinsight_theme_posts as $wpinsight_post_id ) {
+	wp_delete_post( $wpinsight_post_id, true ); // true = force delete, bypass trash.
 }
-*/
 
 /*
  * ----------------------------------------------------------------------------

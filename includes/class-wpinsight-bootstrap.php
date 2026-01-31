@@ -60,16 +60,18 @@ final class WPInsight_Bootstrap {
 		// Load settings class (Phase 2).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-settings.php';
 
-		// TODO: Load remaining class files (Phase 3+).
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cpt.php'.
+		// Load CPT class (Phase 3).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cpt.php';
+
+		// TODO: Load remaining class files (Phase 4+).
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-admin.php'.
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-wporg-client.php'.
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-sync.php'.
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php'.
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-storage.php'.
 
-		// TODO: Register CPTs (Phase 3).
-		// WPInsight_CPT::register().
+		// Register CPTs on init hook (Phase 3).
+		add_action( 'init', array( 'WPInsight_CPT', 'register' ) );
 
 		// Hook database upgrade checker (Phase 2).
 		add_action( 'admin_init', array( 'WPInsight_DB', 'maybe_upgrade' ) );
@@ -130,10 +132,10 @@ final class WPInsight_Bootstrap {
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-db.php';
 		WPInsight_DB::install();
 
-		// TODO: Register CPTs and flush rewrite rules (Phase 3).
-		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cpt.php'.
-		// WPInsight_CPT::register().
-		// flush_rewrite_rules().
+		// Register CPTs and flush rewrite rules (Phase 3).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cpt.php';
+		WPInsight_CPT::register();
+		flush_rewrite_rules();
 
 		// TODO: Schedule recurring jobs (Phase 7, 8).
 		// require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-sync.php'.

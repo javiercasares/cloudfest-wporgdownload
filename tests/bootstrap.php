@@ -197,6 +197,52 @@ if ( ! function_exists( 'current_time' ) ) {
 	}
 }
 
+if ( ! function_exists( 'register_post_type' ) ) {
+	/**
+	 * Stub for register_post_type() WordPress function.
+	 *
+	 * @param string $post_type Post type name.
+	 * @param array  $args      Post type arguments.
+	 * @return bool True.
+	 */
+	function register_post_type( $post_type, $args = array() ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $post_type, $args );
+		return true;
+	}
+}
+
+if ( ! function_exists( '_x' ) ) {
+	/**
+	 * Stub for _x() WordPress function.
+	 *
+	 * @param string $text    Text to translate.
+	 * @param string $context Context information.
+	 * @param string $domain  Text domain.
+	 * @return string Translated text.
+	 */
+	function _x( $text, $context, $domain = 'default' ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $context, $domain );
+		return $text;
+	}
+}
+
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * Stub for __() WordPress function.
+	 *
+	 * @param string $text   Text to translate.
+	 * @param string $domain Text domain.
+	 * @return string Translated text.
+	 */
+	function __( $text, $domain = 'default' ) {
+		// Suppress unused parameter warnings in test stubs.
+		unset( $domain );
+		return $text;
+	}
+}
+
 // Load plugin main file (defines constants).
 require_once dirname( __DIR__ ) . '/cloudfest-wporgdownload.php';
 
