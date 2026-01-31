@@ -31,6 +31,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class WPInsight_Admin {
 
 	/**
+	 * Dashboard page slug.
+	 *
+	 * @since 0.1.0
+	 * @var string DASHBOARD_PAGE_SLUG Dashboard page menu slug.
+	 */
+	private const DASHBOARD_PAGE_SLUG = 'wpinsight-dashboard';
+
+	/**
 	 * Settings page slug.
 	 *
 	 * @since 0.1.0
@@ -58,23 +66,34 @@ final class WPInsight_Admin {
 	public static function init(): void {
 		add_action( 'admin_menu', [ __CLASS__, 'add_admin_menu' ] );
 		add_action( 'admin_init', [ __CLASS__, 'register_settings' ] );
+		add_action( 'admin_init', [ __CLASS__, 'handle_dashboard_actions' ] );
 	}
 
 	/**
 	 * Add admin menu items.
 	 *
-	 * Adds a settings page under the WordPress Settings menu.
+	 * Adds Dashboard and Settings pages to WordPress admin menu.
 	 *
 	 * @since 0.1.0
 	 * @return void
 	 */
 	public static function add_admin_menu(): void {
+		// Add main Dashboard page under Tools menu.
+		add_management_page(
+			__( 'WPInsight Dashboard', 'cloudfest-wporgdownload' ), // Page title.
+			__( 'WPInsight', 'cloudfest-wporgdownload' ),            // Menu title.
+			'manage_options',                                         // Capability.
+			self::DASHBOARD_PAGE_SLUG,                                // Menu slug.
+			[ __CLASS__, 'render_dashboard_page' ]                    // Callback.
+		);
+
+		// Add Settings page under Settings menu.
 		add_options_page(
 			__( 'WPInsight Settings', 'cloudfest-wporgdownload' ), // Page title.
 			__( 'WPInsight', 'cloudfest-wporgdownload' ),           // Menu title.
 			'manage_options',                                        // Capability.
 			self::SETTINGS_PAGE_SLUG,                                // Menu slug.
-			[ __CLASS__, 'render_settings_page' ]               // Callback.
+			[ __CLASS__, 'render_settings_page' ]                    // Callback.
 		);
 	}
 
@@ -203,6 +222,312 @@ final class WPInsight_Admin {
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
+	}
+
+	/**
+	 * Handle dashboard actions.
+	 *
+	 * Processes manual sync and queue management actions from the dashboard.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function handle_dashboard_actions(): void {
+		// Only process on dashboard page.
+		if ( ! isset( $_GET['page'] ) || self::DASHBOARD_PAGE_SLUG !== $_GET['page'] ) {
+			return;
+		}
+
+		// Check if action is set.
+		if ( ! isset( $_POST['wpinsight_action'] ) ) {
+			return;
+		}
+
+		// Verify nonce.
+		if ( ! isset( $_POST['wpinsight_dashboard_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wpinsight_dashboard_nonce'] ) ), 'wpinsight_dashboard_action' ) ) {
+			add_settings_error( 'wpinsight_dashboard', 'invalid_nonce', __( 'Security check failed.', 'cloudfest-wporgdownload' ), 'error' );
+			return;
+		}
+
+		// Check user capabilities.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			add_settings_error( 'wpinsight_dashboard', 'insufficient_permissions', __( 'You do not have sufficient permissions.', 'cloudfest-wporgdownload' ), 'error' );
+			return;
+		}
+
+		$action = sanitize_text_field( wp_unslash( $_POST['wpinsight_action'] ) );
+
+		switch ( $action ) {
+			case 'sync_plugins':
+				$result = WPInsight_Sync::sync_plugins();
+				if ( $result ) {
+					add_settings_error( 'wpinsight_dashboard', 'sync_success', __( 'Plugin sync completed successfully.', 'cloudfest-wporgdownload' ), 'success' );
+				} else {
+					add_settings_error( 'wpinsight_dashboard', 'sync_error', __( 'Plugin sync failed. Check logs for details.', 'cloudfest-wporgdownload' ), 'error' );
+				}
+				break;
+
+			case 'sync_themes':
+				$result = WPInsight_Sync::sync_themes();
+				if ( $result ) {
+					add_settings_error( 'wpinsight_dashboard', 'sync_success', __( 'Theme sync completed successfully.', 'cloudfest-wporgdownload' ), 'success' );
+				} else {
+					add_settings_error( 'wpinsight_dashboard', 'sync_error', __( 'Theme sync failed. Check logs for details.', 'cloudfest-wporgdownload' ), 'error' );
+				}
+				break;
+
+			case 'process_queue':
+				WPInsight_Zip_Queue::worker_tick();
+				add_settings_error( 'wpinsight_dashboard', 'queue_processed', __( 'Queue processed. Check statistics below.', 'cloudfest-wporgdownload' ), 'success' );
+				break;
+
+			case 'retry_failed':
+				$count = WPInsight_Zip_Queue::retry_failed_jobs( 100 );
+				add_settings_error(
+					'wpinsight_dashboard',
+					'retry_success',
+					sprintf(
+						/* translators: %d: number of jobs reset */
+						__( '%d failed jobs reset for retry.', 'cloudfest-wporgdownload' ),
+						$count
+					),
+					'success'
+				);
+				break;
+
+			case 'clear_completed':
+				$count = WPInsight_Zip_Queue::clear_completed_jobs( 7 );
+				add_settings_error(
+					'wpinsight_dashboard',
+					'clear_success',
+					sprintf(
+						/* translators: %d: number of jobs cleared */
+						__( '%d completed jobs cleared.', 'cloudfest-wporgdownload' ),
+						$count
+					),
+					'success'
+				);
+				break;
+
+			case 'reset_sync_plugins':
+				WPInsight_Sync::reset_sync_state( 'plugin' );
+				add_settings_error( 'wpinsight_dashboard', 'reset_success', __( 'Plugin sync state reset.', 'cloudfest-wporgdownload' ), 'success' );
+				break;
+
+			case 'reset_sync_themes':
+				WPInsight_Sync::reset_sync_state( 'theme' );
+				add_settings_error( 'wpinsight_dashboard', 'reset_success', __( 'Theme sync state reset.', 'cloudfest-wporgdownload' ), 'success' );
+				break;
+
+			default:
+				add_settings_error( 'wpinsight_dashboard', 'invalid_action', __( 'Invalid action.', 'cloudfest-wporgdownload' ), 'error' );
+				break;
+		}
+	}
+
+	/**
+	 * Render dashboard page.
+	 *
+	 * Displays the main dashboard with statistics, sync status, and action buttons.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function render_dashboard_page(): void {
+		global $wpdb;
+
+		// Check user capabilities.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'cloudfest-wporgdownload' ) );
+		}
+
+		// Get statistics.
+		$plugin_count = wp_count_posts( WPInsight_CPT::get_plugin_post_type() )->publish ?? 0;
+		$theme_count  = wp_count_posts( WPInsight_CPT::get_theme_post_type() )->publish ?? 0;
+
+		$artifacts_table = WPInsight_DB::get_table_name( 'artifacts' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$artifact_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$artifacts_table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$upload_dir   = wp_upload_dir();
+		$base_path    = WPInsight_Settings::get( 'storage_base_path', 'wpinsight' );
+		$storage_dir  = trailingslashit( $upload_dir['basedir'] ) . $base_path;
+		$storage_size = 0;
+		if ( is_dir( $storage_dir ) ) {
+			$storage_size = self::get_directory_size( $storage_dir );
+		}
+
+		$plugin_state = WPInsight_Sync::get_sync_state( 'plugin' );
+		$theme_state  = WPInsight_Sync::get_sync_state( 'theme' );
+		$queue_stats  = WPInsight_Zip_Queue::get_queue_stats();
+
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+
+			<?php settings_errors( 'wpinsight_dashboard' ); ?>
+
+			<!-- Statistics Overview -->
+			<div class="wpinsight-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
+				<div style="background: #fff; padding: 20px; border-left: 4px solid #2271b1; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+					<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Plugins', 'cloudfest-wporgdownload' ); ?></h3>
+					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( number_format_i18n( $plugin_count ) ); ?></div>
+				</div>
+
+				<div style="background: #fff; padding: 20px; border-left: 4px solid #2271b1; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+					<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Themes', 'cloudfest-wporgdownload' ); ?></h3>
+					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( number_format_i18n( $theme_count ) ); ?></div>
+				</div>
+
+				<div style="background: #fff; padding: 20px; border-left: 4px solid #00a32a; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+					<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Downloaded ZIPs', 'cloudfest-wporgdownload' ); ?></h3>
+					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( number_format_i18n( $artifact_count ) ); ?></div>
+				</div>
+
+				<div style="background: #fff; padding: 20px; border-left: 4px solid #d63638; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+					<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Storage Used', 'cloudfest-wporgdownload' ); ?></h3>
+					<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( size_format( $storage_size, 2 ) ); ?></div>
+				</div>
+			</div>
+
+			<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin: 20px 0;">
+				<!-- Sync Status -->
+				<div class="card">
+					<h2><?php esc_html_e( 'Sync Status', 'cloudfest-wporgdownload' ); ?></h2>
+					<table class="widefat striped">
+						<thead>
+							<tr>
+								<th><?php esc_html_e( 'Type', 'cloudfest-wporgdownload' ); ?></th>
+								<th><?php esc_html_e( 'Status', 'cloudfest-wporgdownload' ); ?></th>
+								<th><?php esc_html_e( 'Page', 'cloudfest-wporgdownload' ); ?></th>
+								<th><?php esc_html_e( 'Actions', 'cloudfest-wporgdownload' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td><strong><?php esc_html_e( 'Plugins', 'cloudfest-wporgdownload' ); ?></strong></td>
+								<td><code><?php echo esc_html( $plugin_state['status'] ); ?></code></td>
+								<td><?php echo esc_html( number_format_i18n( $plugin_state['page'] ) ); ?></td>
+								<td>
+									<form method="post" style="display: inline;">
+										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+										<input type="hidden" name="wpinsight_action" value="sync_plugins">
+										<button type="submit" class="button button-small"><?php esc_html_e( 'Sync Now', 'cloudfest-wporgdownload' ); ?></button>
+									</form>
+									<form method="post" style="display: inline;">
+										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+										<input type="hidden" name="wpinsight_action" value="reset_sync_plugins">
+										<button type="submit" class="button button-small" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to reset the sync state?', 'cloudfest-wporgdownload' ); ?>');"><?php esc_html_e( 'Reset', 'cloudfest-wporgdownload' ); ?></button>
+									</form>
+								</td>
+							</tr>
+							<tr>
+								<td><strong><?php esc_html_e( 'Themes', 'cloudfest-wporgdownload' ); ?></strong></td>
+								<td><code><?php echo esc_html( $theme_state['status'] ); ?></code></td>
+								<td><?php echo esc_html( number_format_i18n( $theme_state['page'] ) ); ?></td>
+								<td>
+									<form method="post" style="display: inline;">
+										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+										<input type="hidden" name="wpinsight_action" value="sync_themes">
+										<button type="submit" class="button button-small"><?php esc_html_e( 'Sync Now', 'cloudfest-wporgdownload' ); ?></button>
+									</form>
+									<form method="post" style="display: inline;">
+										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+										<input type="hidden" name="wpinsight_action" value="reset_sync_themes">
+										<button type="submit" class="button button-small" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to reset the sync state?', 'cloudfest-wporgdownload' ); ?>');"><?php esc_html_e( 'Reset', 'cloudfest-wporgdownload' ); ?></button>
+									</form>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<?php if ( ! empty( $plugin_state['last_error'] ) ) : ?>
+						<div class="notice notice-error inline" style="margin: 10px 0;">
+							<p><strong><?php esc_html_e( 'Plugin Sync Error:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( $plugin_state['last_error'] ); ?></p>
+						</div>
+					<?php endif; ?>
+					<?php if ( ! empty( $theme_state['last_error'] ) ) : ?>
+						<div class="notice notice-error inline" style="margin: 10px 0;">
+							<p><strong><?php esc_html_e( 'Theme Sync Error:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( $theme_state['last_error'] ); ?></p>
+						</div>
+					<?php endif; ?>
+				</div>
+
+				<!-- Download Queue -->
+				<div class="card">
+					<h2><?php esc_html_e( 'Download Queue', 'cloudfest-wporgdownload' ); ?></h2>
+					<table class="widefat striped">
+						<tbody>
+							<tr>
+								<th><?php esc_html_e( 'Pending', 'cloudfest-wporgdownload' ); ?>:</th>
+								<td><strong><?php echo esc_html( number_format_i18n( $queue_stats['pending'] ) ); ?></strong></td>
+							</tr>
+							<tr>
+								<th><?php esc_html_e( 'Processing', 'cloudfest-wporgdownload' ); ?>:</th>
+								<td><?php echo esc_html( number_format_i18n( $queue_stats['processing'] ) ); ?></td>
+							</tr>
+							<tr>
+								<th><?php esc_html_e( 'Completed', 'cloudfest-wporgdownload' ); ?>:</th>
+								<td style="color: #00a32a;"><strong><?php echo esc_html( number_format_i18n( $queue_stats['completed'] ) ); ?></strong></td>
+							</tr>
+							<tr>
+								<th><?php esc_html_e( 'Failed', 'cloudfest-wporgdownload' ); ?>:</th>
+								<td style="color: #d63638;"><strong><?php echo esc_html( number_format_i18n( $queue_stats['failed'] ) ); ?></strong></td>
+							</tr>
+							<tr>
+								<th><?php esc_html_e( 'Total', 'cloudfest-wporgdownload' ); ?>:</th>
+								<td><strong><?php echo esc_html( number_format_i18n( $queue_stats['total'] ) ); ?></strong></td>
+							</tr>
+						</tbody>
+					</table>
+
+					<div style="margin-top: 15px;">
+						<form method="post" style="display: inline;">
+							<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+							<input type="hidden" name="wpinsight_action" value="process_queue">
+							<button type="submit" class="button button-primary"><?php esc_html_e( 'Process Queue', 'cloudfest-wporgdownload' ); ?></button>
+						</form>
+
+						<?php if ( $queue_stats['failed'] > 0 ) : ?>
+							<form method="post" style="display: inline;">
+								<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+								<input type="hidden" name="wpinsight_action" value="retry_failed">
+								<button type="submit" class="button"><?php esc_html_e( 'Retry Failed', 'cloudfest-wporgdownload' ); ?></button>
+							</form>
+						<?php endif; ?>
+
+						<?php if ( $queue_stats['completed'] > 0 ) : ?>
+							<form method="post" style="display: inline;">
+								<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+								<input type="hidden" name="wpinsight_action" value="clear_completed">
+								<button type="submit" class="button"><?php esc_html_e( 'Clear Completed', 'cloudfest-wporgdownload' ); ?></button>
+							</form>
+						<?php endif; ?>
+					</div>
+				</div>
+			</div>
+
+			<!-- Quick Links -->
+			<div class="card">
+				<h2><?php esc_html_e( 'Quick Links', 'cloudfest-wporgdownload' ); ?></h2>
+				<p>
+					<a href="<?php echo esc_url( admin_url( 'options-general.php?page=' . self::SETTINGS_PAGE_SLUG ) ); ?>" class="button">
+						<?php esc_html_e( 'Settings', 'cloudfest-wporgdownload' ); ?>
+					</a>
+					<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . WPInsight_CPT::get_plugin_post_type() ) ); ?>" class="button">
+						<?php esc_html_e( 'View Plugins', 'cloudfest-wporgdownload' ); ?>
+					</a>
+					<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . WPInsight_CPT::get_theme_post_type() ) ); ?>" class="button">
+						<?php esc_html_e( 'View Themes', 'cloudfest-wporgdownload' ); ?>
+					</a>
+					<?php if ( defined( 'WP_CLI' ) && WP_CLI ) : ?>
+						<a href="<?php echo esc_url( admin_url( 'tools.php?page=' . self::DASHBOARD_PAGE_SLUG . '#cli-commands' ) ); ?>" class="button">
+							<?php esc_html_e( 'WP-CLI Commands', 'cloudfest-wporgdownload' ); ?>
+						</a>
+					<?php endif; ?>
+				</p>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
@@ -795,5 +1120,32 @@ final class WPInsight_Admin {
 		}
 
 		return $sanitized;
+	}
+
+	/**
+	 * Get total size of directory recursively.
+	 *
+	 * @since 0.1.0
+	 * @param string $path Directory path.
+	 * @return int Total size in bytes.
+	 */
+	private static function get_directory_size( string $path ): int {
+		$size = 0;
+
+		if ( ! is_dir( $path ) ) {
+			return 0;
+		}
+
+		$files = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS )
+		);
+
+		foreach ( $files as $file ) {
+			if ( $file->isFile() ) {
+				$size += $file->getSize();
+			}
+		}
+
+		return $size;
 	}
 }
