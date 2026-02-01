@@ -101,7 +101,7 @@ final class WPInsight_Logger {
 	 */
 	public static function init(): void {
 		// Display admin notices for recent errors.
-		add_action( 'admin_notices', [ self::class, 'display_admin_notices' ] );
+		add_action( 'admin_notices', array( self::class, 'display_admin_notices' ) );
 	}
 
 	/**
@@ -114,7 +114,7 @@ final class WPInsight_Logger {
 	 * @param array<string, mixed> $context Optional. Additional context data.
 	 * @return void
 	 */
-	public static function emergency( string $message, array $context = [] ): void {
+	public static function emergency( string $message, array $context = array() ): void {
 		self::log( self::EMERGENCY, $message, $context );
 	}
 
@@ -128,7 +128,7 @@ final class WPInsight_Logger {
 	 * @param array<string, mixed> $context Optional. Additional context data.
 	 * @return void
 	 */
-	public static function error( string $message, array $context = [] ): void {
+	public static function error( string $message, array $context = array() ): void {
 		self::log( self::ERROR, $message, $context );
 	}
 
@@ -142,7 +142,7 @@ final class WPInsight_Logger {
 	 * @param array<string, mixed> $context Optional. Additional context data.
 	 * @return void
 	 */
-	public static function warning( string $message, array $context = [] ): void {
+	public static function warning( string $message, array $context = array() ): void {
 		self::log( self::WARNING, $message, $context );
 	}
 
@@ -156,7 +156,7 @@ final class WPInsight_Logger {
 	 * @param array<string, mixed> $context Optional. Additional context data.
 	 * @return void
 	 */
-	public static function info( string $message, array $context = [] ): void {
+	public static function info( string $message, array $context = array() ): void {
 		self::log( self::INFO, $message, $context );
 	}
 
@@ -170,7 +170,7 @@ final class WPInsight_Logger {
 	 * @param array<string, mixed> $context Optional. Additional context data.
 	 * @return void
 	 */
-	public static function debug( string $message, array $context = [] ): void {
+	public static function debug( string $message, array $context = array() ): void {
 		// Only log debug messages when WP_DEBUG is enabled.
 		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
 			return;
@@ -198,7 +198,7 @@ final class WPInsight_Logger {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
 		if ( ! $table_exists ) {
-			return []; // Table doesn't exist yet, return empty array.
+			return array(); // Table doesn't exist yet, return empty array.
 		}
 
 		$limit = max( 1, min( $limit, 1000 ) ); // Clamp between 1 and 1000.
@@ -238,14 +238,14 @@ final class WPInsight_Logger {
 			foreach ( $results as &$row ) {
 				if ( ! empty( $row['context'] ) ) {
 					$decoded        = json_decode( $row['context'], true );
-					$row['context'] = is_array( $decoded ) ? $decoded : [];
+					$row['context'] = is_array( $decoded ) ? $decoded : array();
 				} else {
-					$row['context'] = [];
+					$row['context'] = array();
 				}
 			}
 		}
 
-		return is_array( $results ) ? $results : [];
+		return is_array( $results ) ? $results : array();
 	}
 
 	/**
@@ -294,7 +294,7 @@ final class WPInsight_Logger {
 	 * @param array<string, mixed> $context  Optional. Additional context data.
 	 * @return void
 	 */
-	private static function log( string $severity, string $message, array $context = [] ): void {
+	private static function log( string $severity, string $message, array $context = array() ): void {
 		global $wpdb;
 
 		// Prevent infinite recursion: if we're already logging, bail out.
@@ -305,7 +305,7 @@ final class WPInsight_Logger {
 		self::$is_logging = true;
 
 		// Validate severity.
-		$valid_severities = [ self::EMERGENCY, self::ERROR, self::WARNING, self::INFO, self::DEBUG ];
+		$valid_severities = array( self::EMERGENCY, self::ERROR, self::WARNING, self::INFO, self::DEBUG );
 		if ( ! in_array( $severity, $valid_severities, true ) ) {
 			$severity = self::ERROR;
 		}
@@ -324,13 +324,13 @@ final class WPInsight_Logger {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$wpdb->insert(
 				$table,
-				[
+				array(
 					'severity'   => $severity,
 					'message'    => $message,
 					'context'    => $context_json,
 					'created_at' => current_time( 'mysql' ),
-				],
-				[ '%s', '%s', '%s', '%s' ]
+				),
+				array( '%s', '%s', '%s', '%s' )
 			);
 		}
 
@@ -342,7 +342,7 @@ final class WPInsight_Logger {
 		}
 
 		// Send email notification for critical errors.
-		if ( in_array( $severity, [ self::EMERGENCY, self::ERROR ], true ) ) {
+		if ( in_array( $severity, array( self::EMERGENCY, self::ERROR ), true ) ) {
 			self::maybe_send_email_notification( $severity, $message, $context );
 		}
 
@@ -361,9 +361,9 @@ final class WPInsight_Logger {
 	 * @param array<string, mixed> $context  Optional. Additional context data.
 	 * @return void
 	 */
-	private static function maybe_send_email_notification( string $severity, string $message, array $context = [] ): void {
+	private static function maybe_send_email_notification( string $severity, string $message, array $context = array() ): void {
 		// Check if email notifications are enabled.
-		$settings = get_option( WPINSIGHT_SETTINGS_OPTION, [] );
+		$settings = get_option( WPINSIGHT_SETTINGS_OPTION, array() );
 
 		if ( empty( $settings['admin_email_notifications_enabled'] ) ) {
 			return;

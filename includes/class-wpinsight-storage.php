@@ -282,12 +282,13 @@ class WPInsight_Storage {
 
 		$file_size = file_exists( $path ) ? filesize( $path ) : 0;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Insert artifact record. Table name from get_table_name() is safe.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Insert artifact record. Table name from get_table_name() is safe.
 		$wpdb->query(
 			$wpdb->prepare(
-				"INSERT IGNORE INTO {$table}
+				'INSERT IGNORE INTO %i
 				(artifact_type, artifact_slug, artifact_version, file_path, file_size, sha256_hash, downloaded_at)
-				VALUES (%s, %s, %s, %s, %d, %s, %s)",
+				VALUES (%s, %s, %s, %s, %d, %s, %s)',
+				$table,
 				$entity_type,
 				$slug,
 				$version,
@@ -367,10 +368,11 @@ class WPInsight_Storage {
 		$table = WPInsight_DB::get_table_name( 'artifacts' );
 
 		// Get artifact record.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Get artifact record. Table name from get_table_name() is safe.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Get artifact record. Table name from get_table_name() is safe.
 		$artifact = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version = %s",
+				'SELECT * FROM %i WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version = %s',
+				$table,
 				$entity_type,
 				$slug,
 				$version
@@ -430,10 +432,11 @@ class WPInsight_Storage {
 
 		$table = WPInsight_DB::get_table_name( 'artifacts' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Get artifact record. Table name from get_table_name() is safe.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Get artifact record. Table name from get_table_name() is safe.
 		$artifact = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version = %s",
+				'SELECT * FROM %i WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version = %s',
+				$table,
 				$entity_type,
 				$slug,
 				$version

@@ -52,7 +52,7 @@ final class WPInsight_Settings {
 	 * @return array<string,mixed> Associative array of default settings.
 	 */
 	public static function get_defaults(): array {
-		return [
+		return array(
 			// Data management.
 			'delete_on_uninstall'               => false, // Preserve data by default.
 
@@ -85,7 +85,7 @@ final class WPInsight_Settings {
 			'admin_email_notifications_enabled' => false, // Email notifications for critical errors (opt-in).
 			'admin_notification_email'          => get_option( 'admin_email' ), // Email recipient.
 			'log_retention_days'                => 30, // Days to retain error logs.
-		];
+		);
 	}
 
 	/**
@@ -120,7 +120,7 @@ final class WPInsight_Settings {
 	 * @return array<string,mixed> All settings merged with defaults.
 	 */
 	public static function get_all(): array {
-		$stored   = get_option( WPINSIGHT_SETTINGS_OPTION, [] );
+		$stored   = get_option( WPINSIGHT_SETTINGS_OPTION, array() );
 		$defaults = self::get_defaults();
 
 		// Merge stored settings over defaults.
@@ -171,7 +171,7 @@ final class WPInsight_Settings {
 	public static function update_all( array $new_settings ): bool {
 		try {
 			// Validate all values first (fail fast).
-			$validated = [];
+			$validated = array();
 			foreach ( $new_settings as $key => $value ) {
 				$validated[ $key ] = self::validate( $key, $value );
 			}

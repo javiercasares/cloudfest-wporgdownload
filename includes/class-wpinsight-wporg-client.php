@@ -92,23 +92,23 @@ final class WPInsight_WPOrg_Client {
 	 *     }
 	 * }
 	 */
-	public static function query_plugins( array $args = [] ): array|false {
-		$defaults = [
+	public static function query_plugins( array $args = array() ): array|false {
+		$defaults = array(
 			'browse'   => 'updated',
 			'page'     => 1,
 			'per_page' => 100,
-		];
+		);
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$request_args = [
+		$request_args = array(
 			'action'  => 'query_plugins',
-			'request' => [
+			'request' => array(
 				'browse'   => $args['browse'],
 				'page'     => $args['page'],
 				'per_page' => $args['per_page'],
-			],
-		];
+			),
+		);
 
 		return self::make_request( self::PLUGINS_API_URL, $request_args );
 	}
@@ -129,11 +129,11 @@ final class WPInsight_WPOrg_Client {
 			return false;
 		}
 
-		$request_args = [
+		$request_args = array(
 			'action'  => 'plugin_information',
-			'request' => [
+			'request' => array(
 				'slug'   => $slug,
-				'fields' => [
+				'fields' => array(
 					'versions'                 => true,
 					'downloaded'               => true,
 					'active_installs'          => true,
@@ -150,9 +150,9 @@ final class WPInsight_WPOrg_Client {
 					'support_threads_resolved' => false,
 					'homepage'                 => true,
 					'donate_link'              => true,
-				],
-			],
-		];
+				),
+			),
+		);
 
 		return self::make_request( self::PLUGINS_API_URL, $request_args );
 	}
@@ -184,23 +184,23 @@ final class WPInsight_WPOrg_Client {
 	 *     }
 	 * }
 	 */
-	public static function query_themes( array $args = [] ): array|false {
-		$defaults = [
+	public static function query_themes( array $args = array() ): array|false {
+		$defaults = array(
 			'browse'   => 'updated',
 			'page'     => 1,
 			'per_page' => 100,
-		];
+		);
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$request_args = [
+		$request_args = array(
 			'action'  => 'query_themes',
-			'request' => [
+			'request' => array(
 				'browse'   => $args['browse'],
 				'page'     => $args['page'],
 				'per_page' => $args['per_page'],
-			],
-		];
+			),
+		);
 
 		return self::make_request( self::THEMES_API_URL, $request_args );
 	}
@@ -221,11 +221,11 @@ final class WPInsight_WPOrg_Client {
 			return false;
 		}
 
-		$request_args = [
+		$request_args = array(
 			'action'  => 'theme_information',
-			'request' => [
+			'request' => array(
 				'slug'   => $slug,
-				'fields' => [
+				'fields' => array(
 					'versions'        => true,
 					'downloaded'      => true,
 					'active_installs' => true,
@@ -238,9 +238,9 @@ final class WPInsight_WPOrg_Client {
 					'ratings'         => true,
 					'num_ratings'     => true,
 					'homepage'        => true,
-				],
-			],
-		];
+				),
+			),
+		);
 
 		return self::make_request( self::THEMES_API_URL, $request_args );
 	}
@@ -264,19 +264,19 @@ final class WPInsight_WPOrg_Client {
 
 			$json_body = wp_json_encode( $args );
 			if ( false === $json_body ) {
-				WPInsight_Logger::error( 'Failed to encode API request as JSON', [ 'args' => $args ] );
+				WPInsight_Logger::error( 'Failed to encode API request as JSON', array( 'args' => $args ) );
 				return false;
 			}
 
 			$response = wp_remote_post(
 				$url,
-				[
+				array(
 					'timeout' => self::HTTP_TIMEOUT,
-					'headers' => [
+					'headers' => array(
 						'Content-Type' => 'application/json',
-					],
+					),
 					'body'    => $json_body,
-				]
+				)
 			);
 
 			// Check for HTTP errors.
@@ -400,10 +400,10 @@ final class WPInsight_WPOrg_Client {
 	public static function is_api_accessible(): bool {
 		// Try to query first page of plugins.
 		$result = self::query_plugins(
-			[
+			array(
 				'page'     => 1,
 				'per_page' => 1,
-			]
+			)
 		);
 
 		return false !== $result;

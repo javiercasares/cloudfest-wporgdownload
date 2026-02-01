@@ -47,7 +47,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Start at version 0.1.0 and use SemVer - https://semver.org
  *
- * @var string WPINSIGHT_VERSION Plugin version number.
+ * @since 0.1.0
  */
 define( 'WPINSIGHT_VERSION', '0.1.0' );
 
@@ -56,7 +56,8 @@ define( 'WPINSIGHT_VERSION', '0.1.0' );
  *
  * Full path to the main plugin file. Used for activation/deactivation hooks.
  *
- * @var string WPINSIGHT_PLUGIN_FILE Absolute path to main plugin file.
+ * @since 0.1.0
+ Absolute path to main plugin file.
  */
 define( 'WPINSIGHT_PLUGIN_FILE', __FILE__ );
 
@@ -66,7 +67,8 @@ define( 'WPINSIGHT_PLUGIN_FILE', __FILE__ );
  * Full path to the plugin directory with trailing slash.
  * Used for requiring class files and accessing plugin resources.
  *
- * @var string WPINSIGHT_PLUGIN_DIR Absolute path to plugin directory.
+ * @since 0.1.0
+ Absolute path to plugin directory.
  */
 define( 'WPINSIGHT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
@@ -76,7 +78,8 @@ define( 'WPINSIGHT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
  * Full URL to the plugin directory with trailing slash.
  * Used for enqueueing assets (CSS, JS, images).
  *
- * @var string WPINSIGHT_PLUGIN_URL URL to plugin directory.
+ * @since 0.1.0
+ URL to plugin directory.
  */
 define( 'WPINSIGHT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -92,7 +95,8 @@ define( 'WPINSIGHT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
  * All plugin settings are stored in a single WordPress option for performance.
  * This constant is used by WPInsight_Settings class and uninstall.php.
  *
- * @var string WPINSIGHT_SETTINGS_OPTION Option name for settings storage.
+ * @since 0.1.0
+ Option name for settings storage.
  */
 define( 'WPINSIGHT_SETTINGS_OPTION', 'wpinsight_settings' );
 
@@ -102,7 +106,8 @@ define( 'WPINSIGHT_SETTINGS_OPTION', 'wpinsight_settings' );
  * Used to track database schema version for upgrades and migrations.
  * This constant is used by WPInsight_DB class.
  *
- * @var string WPINSIGHT_DB_VERSION_OPTION Option name for schema version.
+ * @since 0.1.0
+ Option name for schema version.
  */
 define( 'WPINSIGHT_DB_VERSION_OPTION', 'wpinsight_db_version' );
 
@@ -112,7 +117,8 @@ define( 'WPINSIGHT_DB_VERSION_OPTION', 'wpinsight_db_version' );
  * Stores the datetime when the plugin was first activated.
  * Useful for analytics and tracking plugin age.
  *
- * @var string WPINSIGHT_ACTIVATED_AT_OPTION Option name for activation timestamp.
+ * @since 0.1.0
+ Option name for activation timestamp.
  */
 define( 'WPINSIGHT_ACTIVATED_AT_OPTION', 'wpinsight_activated_at' );
 
@@ -129,7 +135,8 @@ define( 'WPINSIGHT_ACTIVATED_AT_OPTION', 'wpinsight_activated_at' );
  * Never set higher than 5 concurrent downloads.
  * Default is 3 for safety.
  *
- * @var int WPINSIGHT_MAX_CONCURRENT_DOWNLOADS Maximum concurrent downloads.
+ * @since 0.1.0
+ Maximum concurrent downloads.
  */
 define( 'WPINSIGHT_MAX_CONCURRENT_DOWNLOADS', 3 );
 
@@ -145,7 +152,8 @@ define( 'WPINSIGHT_MAX_CONCURRENT_DOWNLOADS', 3 );
  * How often the sync engine checks for new work.
  * Default: 300 seconds (5 minutes).
  *
- * @var int WPINSIGHT_SYNC_INTERVAL Sync check interval in seconds.
+ * @since 0.1.0
+ Sync check interval in seconds.
  */
 define( 'WPINSIGHT_SYNC_INTERVAL', 300 );
 
@@ -155,7 +163,8 @@ define( 'WPINSIGHT_SYNC_INTERVAL', 300 );
  * How often the ZIP download worker checks for pending jobs.
  * Default: 60 seconds (1 minute).
  *
- * @var int WPINSIGHT_ZIP_WORKER_INTERVAL ZIP worker interval in seconds.
+ * @since 0.1.0
+ ZIP worker interval in seconds.
  */
 define( 'WPINSIGHT_ZIP_WORKER_INTERVAL', 60 );
 
@@ -171,7 +180,8 @@ define( 'WPINSIGHT_ZIP_WORKER_INTERVAL', 60 );
  * All plugin background jobs are grouped under this name.
  * Used for easy filtering and bulk operations.
  *
- * @var string WPINSIGHT_AS_GROUP Action Scheduler group name.
+ * @since 0.1.0
+ Action Scheduler group name.
  */
 define( 'WPINSIGHT_AS_GROUP', 'wpinsight' );
 
@@ -180,7 +190,8 @@ define( 'WPINSIGHT_AS_GROUP', 'wpinsight' );
  *
  * Action Scheduler hook for the recurring sync check job.
  *
- * @var string WPINSIGHT_SYNC_TICK_ACTION Sync tick action hook.
+ * @since 0.1.0
+ Sync tick action hook.
  */
 define( 'WPINSIGHT_SYNC_TICK_ACTION', 'wpinsight_sync_tick' );
 
@@ -189,7 +200,8 @@ define( 'WPINSIGHT_SYNC_TICK_ACTION', 'wpinsight_sync_tick' );
  *
  * Action Scheduler hook for the recurring ZIP download worker job.
  *
- * @var string WPINSIGHT_ZIP_WORKER_TICK_ACTION ZIP worker tick action hook.
+ * @since 0.1.0
+ ZIP worker tick action hook.
  */
 define( 'WPINSIGHT_ZIP_WORKER_TICK_ACTION', 'wpinsight_zip_worker_tick' );
 
