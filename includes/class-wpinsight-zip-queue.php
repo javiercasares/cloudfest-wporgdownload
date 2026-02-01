@@ -89,6 +89,10 @@ final class WPInsight_Zip_Queue {
 	 * Called by Action Scheduler on schedule. Processes download jobs
 	 * while respecting concurrency limits.
 	 *
+	 * Strategy: Each worker processes only ONE job per tick to avoid race
+	 * conditions when multiple workers run simultaneously. The next tick
+	 * will check capacity again and process another job if available.
+	 *
 	 * @since 0.1.0
 	 * @return void
 	 */
@@ -104,19 +108,13 @@ final class WPInsight_Zip_Queue {
 		// Count active downloads.
 		$active_count = self::count_active_downloads();
 
-		// Process jobs while we have capacity.
-		while ( $active_count < $max_concurrent ) {
-			// Get next job.
+		// Only process if we have capacity.
+		// Process ONE job per tick to avoid race conditions with parallel workers.
+		if ( $active_count < $max_concurrent ) {
 			$job = self::get_next_job();
-			if ( ! $job ) {
-				break; // No more jobs.
+			if ( $job ) {
+				self::process_job( $job );
 			}
-
-			// Process the job.
-			self::process_job( $job );
-
-			// Increment active count.
-			++$active_count;
 		}
 	}
 
