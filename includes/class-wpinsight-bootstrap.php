@@ -163,6 +163,9 @@ final class WPInsight_Bootstrap {
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-db.php';
 		WPInsight_DB::install();
 
+		// Load settings class (required by Sync and Zip Queue).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-settings.php';
+
 		// Register CPTs and flush rewrite rules (Phase 3).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-cpt.php';
 		WPInsight_CPT::register();

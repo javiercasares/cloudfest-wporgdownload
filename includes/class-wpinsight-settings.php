@@ -64,7 +64,7 @@ final class WPInsight_Settings {
 			'zip_worker_interval'               => 60,  // 1 minute - ZIP download worker frequency.
 
 			// API pagination.
-			'per_page'                          => 100, // Items per page from WordPress.org API.
+			'per_page'                          => 250, // Items per page from WordPress.org API.
 
 			// Retry logic.
 			'max_retries'                       => 3,   // Maximum download retry attempts.

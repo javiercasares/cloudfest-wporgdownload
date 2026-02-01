@@ -77,7 +77,7 @@ final class WPInsight_WPOrg_Client {
 	 *
 	 *     @type string $browse  Browse type (updated, popular, new, favorites). Default 'updated'.
 	 *     @type int    $page    Page number (1-indexed). Default 1.
-	 *     @type int    $per_page Number of results per page. Default 100.
+	 *     @type int    $per_page Number of results per page. Default 250.
 	 * }
 	 * @return array<string, mixed>|false {
 	 *     API response data or false on failure.
@@ -96,21 +96,24 @@ final class WPInsight_WPOrg_Client {
 		$defaults = array(
 			'browse'   => 'updated',
 			'page'     => 1,
-			'per_page' => 100,
+			'per_page' => 250,
 		);
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$request_args = array(
-			'action'  => 'query_plugins',
-			'request' => array(
-				'browse'   => $args['browse'],
-				'page'     => $args['page'],
-				'per_page' => $args['per_page'],
+		// Build query string URL (GET method).
+		$url = add_query_arg(
+			array(
+				'action'                    => 'query_plugins',
+				'request[browse]'           => $args['browse'],
+				'request[page]'             => $args['page'],
+				'request[per_page]'         => $args['per_page'],
+				'request[fields][versions]' => '1',
 			),
+			self::PLUGINS_API_URL
 		);
 
-		return self::make_request( self::PLUGINS_API_URL, $request_args );
+		return self::make_get_request( $url );
 	}
 
 	/**
@@ -129,32 +132,32 @@ final class WPInsight_WPOrg_Client {
 			return false;
 		}
 
-		$request_args = array(
-			'action'  => 'plugin_information',
-			'request' => array(
-				'slug'   => $slug,
-				'fields' => array(
-					'versions'                 => true,
-					'downloaded'               => true,
-					'active_installs'          => true,
-					'description'              => true,
-					'short_description'        => true,
-					'sections'                 => false,
-					'compatibility'            => false,
-					'screenshots'              => false,
-					'tags'                     => true,
-					'rating'                   => true,
-					'ratings'                  => true,
-					'num_ratings'              => true,
-					'support_threads'          => false,
-					'support_threads_resolved' => false,
-					'homepage'                 => true,
-					'donate_link'              => true,
-				),
+		// Build query string URL (GET method).
+		$url = add_query_arg(
+			array(
+				'action'                             => 'plugin_information',
+				'request[slug]'                      => $slug,
+				'request[fields][versions]'          => '1',
+				'request[fields][downloaded]'        => '1',
+				'request[fields][active_installs]'   => '1',
+				'request[fields][description]'       => '1',
+				'request[fields][short_description]' => '1',
+				'request[fields][sections]'          => '0',
+				'request[fields][compatibility]'     => '0',
+				'request[fields][screenshots]'       => '0',
+				'request[fields][tags]'              => '1',
+				'request[fields][rating]'            => '1',
+				'request[fields][ratings]'           => '1',
+				'request[fields][num_ratings]'       => '1',
+				'request[fields][support_threads]'   => '0',
+				'request[fields][support_threads_resolved]' => '0',
+				'request[fields][homepage]'          => '1',
+				'request[fields][donate_link]'       => '1',
 			),
+			self::PLUGINS_API_URL
 		);
 
-		return self::make_request( self::PLUGINS_API_URL, $request_args );
+		return self::make_get_request( $url );
 	}
 
 	/**
@@ -169,7 +172,7 @@ final class WPInsight_WPOrg_Client {
 	 *
 	 *     @type string $browse  Browse type (updated, popular, new, featured). Default 'updated'.
 	 *     @type int    $page    Page number (1-indexed). Default 1.
-	 *     @type int    $per_page Number of results per page. Default 100.
+	 *     @type int    $per_page Number of results per page. Default 250.
 	 * }
 	 * @return array<string, mixed>|false {
 	 *     API response data or false on failure.
@@ -188,21 +191,24 @@ final class WPInsight_WPOrg_Client {
 		$defaults = array(
 			'browse'   => 'updated',
 			'page'     => 1,
-			'per_page' => 100,
+			'per_page' => 250,
 		);
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$request_args = array(
-			'action'  => 'query_themes',
-			'request' => array(
-				'browse'   => $args['browse'],
-				'page'     => $args['page'],
-				'per_page' => $args['per_page'],
+		// Build query string URL (GET method).
+		$url = add_query_arg(
+			array(
+				'action'                    => 'query_themes',
+				'request[browse]'           => $args['browse'],
+				'request[page]'             => $args['page'],
+				'request[per_page]'         => $args['per_page'],
+				'request[fields][versions]' => '1',
 			),
+			self::THEMES_API_URL
 		);
 
-		return self::make_request( self::THEMES_API_URL, $request_args );
+		return self::make_get_request( $url );
 	}
 
 	/**
@@ -221,75 +227,64 @@ final class WPInsight_WPOrg_Client {
 			return false;
 		}
 
-		$request_args = array(
-			'action'  => 'theme_information',
-			'request' => array(
-				'slug'   => $slug,
-				'fields' => array(
-					'versions'        => true,
-					'downloaded'      => true,
-					'active_installs' => true,
-					'description'     => true,
-					'sections'        => false,
-					'screenshot_url'  => false,
-					'screenshots'     => false,
-					'tags'            => true,
-					'rating'          => true,
-					'ratings'         => true,
-					'num_ratings'     => true,
-					'homepage'        => true,
-				),
+		// Build query string URL (GET method).
+		$url = add_query_arg(
+			array(
+				'action'                           => 'theme_information',
+				'request[slug]'                    => $slug,
+				'request[fields][versions]'        => '1',
+				'request[fields][downloaded]'      => '1',
+				'request[fields][active_installs]' => '1',
+				'request[fields][description]'     => '1',
+				'request[fields][sections]'        => '0',
+				'request[fields][screenshot_url]'  => '0',
+				'request[fields][screenshots]'     => '0',
+				'request[fields][tags]'            => '1',
+				'request[fields][rating]'          => '1',
+				'request[fields][ratings]'         => '1',
+				'request[fields][num_ratings]'     => '1',
+				'request[fields][homepage]'        => '1',
 			),
+			self::THEMES_API_URL
 		);
 
-		return self::make_request( self::THEMES_API_URL, $request_args );
+		return self::make_get_request( $url );
 	}
 
 	/**
-	 * Make HTTP request to WordPress.org API.
+	 * Make HTTP GET request to WordPress.org API.
 	 *
 	 * Handles the low-level HTTP communication with retry logic and error handling.
 	 * All API methods should use this method to make requests.
 	 *
 	 * @since 0.1.0
-	 * @param string               $url  API endpoint URL.
-	 * @param array<string, mixed> $args Request arguments to be JSON-encoded.
+	 * @param string $url Complete API URL with query string parameters.
 	 * @return array<string, mixed>|false Response data or false on failure.
 	 */
-	private static function make_request( string $url, array $args ): array|false {
+	private static function make_get_request( string $url ): array|false {
 		$attempt = 0;
 
 		while ( $attempt < self::MAX_RETRIES ) {
 			++$attempt;
 
-			$json_body = wp_json_encode( $args );
-			if ( false === $json_body ) {
-				WPInsight_Logger::error( 'Failed to encode API request as JSON', array( 'args' => $args ) );
-				return false;
-			}
-
-			$response = wp_remote_post(
+			$response = wp_remote_get(
 				$url,
 				array(
 					'timeout' => self::HTTP_TIMEOUT,
-					'headers' => array(
-						'Content-Type' => 'application/json',
-					),
-					'body'    => $json_body,
 				)
 			);
 
 			// Check for HTTP errors.
 			if ( is_wp_error( $response ) ) {
 				// Log error and retry.
-					self::log_error(
-						sprintf(
-							'WPInsight API Error (attempt %d/%d): %s',
-							$attempt,
-							self::MAX_RETRIES,
-							$response->get_error_message()
-						)
-					);
+				self::log_error(
+					sprintf(
+						'WPInsight API Error (attempt %d/%d): %s',
+						$attempt,
+						self::MAX_RETRIES,
+						$response->get_error_message()
+					)
+				);
 
 				if ( $attempt < self::MAX_RETRIES ) {
 					// Exponential backoff: 1s, 2s, 4s.
@@ -303,14 +298,14 @@ final class WPInsight_WPOrg_Client {
 			// Check HTTP status code.
 			$status_code = wp_remote_retrieve_response_code( $response );
 			if ( 200 !== $status_code ) {
-					self::log_error(
-						sprintf(
-							'WPInsight API Error (attempt %d/%d): HTTP %d',
-							$attempt,
-							self::MAX_RETRIES,
-							$status_code
-						)
-					);
+				self::log_error(
+					sprintf(
+						'WPInsight API Error (attempt %d/%d): HTTP %d',
+						$attempt,
+						self::MAX_RETRIES,
+						$status_code
+					)
+				);
 
 				if ( $attempt < self::MAX_RETRIES ) {
 					// Exponential backoff.
@@ -326,13 +321,13 @@ final class WPInsight_WPOrg_Client {
 			$data = json_decode( $body, true );
 
 			if ( null === $data ) {
-					self::log_error(
-						sprintf(
-							'WPInsight API Error (attempt %d/%d): Invalid JSON response',
-							$attempt,
-							self::MAX_RETRIES
-						)
-					);
+				self::log_error(
+					sprintf(
+						'WPInsight API Error (attempt %d/%d): Invalid JSON response',
+						$attempt,
+						self::MAX_RETRIES
+					)
+				);
 
 				if ( $attempt < self::MAX_RETRIES ) {
 					// Exponential backoff.

@@ -112,7 +112,7 @@ final class WPInsight_DB {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			sync_type varchar(20) NOT NULL DEFAULT 'plugin',
 			page int(11) unsigned NOT NULL DEFAULT 1,
-			per_page int(11) unsigned NOT NULL DEFAULT 100,
+			per_page int(11) unsigned NOT NULL DEFAULT 250,
 			total_items int(11) unsigned DEFAULT NULL,
 			total_pages int(11) unsigned DEFAULT NULL,
 			status varchar(20) NOT NULL DEFAULT 'idle',

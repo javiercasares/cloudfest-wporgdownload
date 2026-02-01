@@ -166,7 +166,7 @@ final class WPInsight_Sync {
 		self::update_sync_state( 'plugin', self::STATE_RUNNING, $state['page'] );
 
 		// Fetch plugins from API.
-		$per_page = WPInsight_Settings::get( 'per_page', 100 );
+		$per_page = WPInsight_Settings::get( 'per_page', 250 );
 		$response = WPInsight_WPOrg_Client::query_plugins(
 			array(
 				'browse'   => 'updated',
@@ -228,7 +228,7 @@ final class WPInsight_Sync {
 		self::update_sync_state( 'theme', self::STATE_RUNNING, $state['page'] );
 
 		// Fetch themes from API.
-		$per_page = WPInsight_Settings::get( 'per_page', 100 );
+		$per_page = WPInsight_Settings::get( 'per_page', 250 );
 		$response = WPInsight_WPOrg_Client::query_themes(
 			array(
 				'browse'   => 'updated',
@@ -703,7 +703,7 @@ final class WPInsight_Sync {
 		self::update_sync_state( $entity_type, self::STATE_RUNNING, $state['page'] );
 
 		// Get settings.
-		$per_page = WPInsight_Settings::get( 'per_page', 100 );
+		$per_page = WPInsight_Settings::get( 'per_page', 250 );
 
 		// Log start.
 		WPInsight_Logger::info(
