@@ -1986,6 +1986,309 @@ Action Scheduler:
 
 ---
 
+## Phase 19: Import/Export System
+
+**Goal:** Implement a simple import/export system for plugin and theme Custom Post Types to facilitate data portability, backups, and migrations.
+
+**Priority:** Medium (useful for disaster recovery and testing)
+
+**Dependencies:** Phase 3 (Custom Post Types)
+
+---
+
+### Step 19.1: Export CPT Data
+
+**File:** `includes/class-wpinsight-export.php`
+
+**Tasks:**
+- [ ] Create `WPInsight_Export` class with static methods
+- [ ] Implement `export_plugins()` method:
+  - Query all plugin CPT posts with meta
+  - Include: post title, slug, content, meta fields, taxonomies
+  - Format as JSON with schema version
+  - Return as downloadable file or JSON string
+- [ ] Implement `export_themes()` method (similar structure)
+- [ ] Implement `export_all()` method (combines plugins + themes)
+- [ ] Add filters for customizing export data:
+  - `wpinsight_export_plugin_data` - Filter individual plugin data
+  - `wpinsight_export_theme_data` - Filter individual theme data
+  - `wpinsight_export_format` - Filter export format (default: JSON)
+- [ ] Add compression option (gzip) for large exports
+- [ ] Include export metadata: timestamp, WP version, plugin version, counts
+
+**Export Format:**
+```json
+{
+  "schema_version": "1.0.0",
+  "exported_at": "2026-02-01 12:00:00",
+  "wp_version": "6.9",
+  "plugin_version": "0.1.0",
+  "plugins": {
+    "count": 1234,
+    "data": [
+      {
+        "post_id": 123,
+        "slug": "akismet",
+        "title": "Akismet Anti-spam",
+        "content": "...",
+        "meta": {...},
+        "taxonomies": {...}
+      }
+    ]
+  },
+  "themes": {
+    "count": 456,
+    "data": [...]
+  }
+}
+```
+
+**PHPDoc:**
+- Class description and purpose
+- Method parameters and return types
+- Exception documentation
+
+**Validation:**
+- [ ] Export generates valid JSON
+- [ ] Export includes all CPT fields
+- [ ] File download works correctly
+- [ ] Compressed export is smaller than uncompressed
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+
+---
+
+### Step 19.2: Import CPT Data
+
+**File:** `includes/class-wpinsight-import.php`
+
+**Tasks:**
+- [ ] Create `WPInsight_Import` class with static methods
+- [ ] Implement `import_from_file( string $file_path )` method:
+  - Validate file exists and is readable
+  - Detect compression (gzip) and decompress if needed
+  - Parse JSON with error handling
+  - Validate schema version compatibility
+  - Return parsed data array
+- [ ] Implement `import_plugins( array $data, array $options = [] )` method:
+  - Validate data structure
+  - Options: `skip_existing`, `update_existing`, `dry_run`
+  - Insert or update plugin CPTs
+  - Preserve relationships (meta, taxonomies)
+  - Track: imported, updated, skipped, failed counts
+  - Return detailed result array
+- [ ] Implement `import_themes( array $data, array $options = [] )` method
+- [ ] Implement `import_all( string $file_path, array $options = [] )` method
+- [ ] Add transaction support (rollback on critical errors)
+- [ ] Add filters for customizing import behavior:
+  - `wpinsight_import_plugin_data` - Filter before inserting plugin
+  - `wpinsight_import_theme_data` - Filter before inserting theme
+  - `wpinsight_import_skip_duplicate` - Control duplicate handling
+- [ ] Add validation for required fields
+- [ ] Log all import operations to WPInsight_Logger
+
+**Import Options:**
+```php
+$options = [
+    'skip_existing'   => true,  // Skip if slug already exists
+    'update_existing' => false, // Update if slug already exists
+    'dry_run'         => false, // Validate only, don't import
+    'batch_size'      => 100,   // Process in batches
+];
+```
+
+**Return Format:**
+```php
+[
+    'success'  => true,
+    'imported' => 120,
+    'updated'  => 30,
+    'skipped'  => 50,
+    'failed'   => 2,
+    'errors'   => [
+        'akismet' => 'Duplicate slug',
+    ],
+]
+```
+
+**PHPDoc:**
+- Complete method documentation
+- Parameter types and descriptions
+- Return value structure
+- Exception documentation
+
+**Validation:**
+- [ ] Import handles valid JSON correctly
+- [ ] Invalid JSON returns descriptive error
+- [ ] Duplicate handling works as expected
+- [ ] Dry run doesn't modify database
+- [ ] Batch processing works for large imports
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+
+---
+
+### Step 19.3: Admin UI for Import/Export
+
+**File:** `includes/class-wpinsight-admin.php` (add methods)
+
+**Tasks:**
+- [ ] Add "Import/Export" submenu under Tools menu:
+  - Menu title: "WPInsight Import/Export"
+  - Capability: `manage_options`
+  - Callback: `render_import_export_page()`
+- [ ] Create `render_import_export_page()` method
+- [ ] Add export form:
+  - Radio buttons: "Plugins Only", "Themes Only", "Both"
+  - Checkbox: "Compress with Gzip"
+  - Submit button: "Export Data"
+- [ ] Add import form:
+  - File upload field (accept: .json, .json.gz)
+  - Radio buttons: "Skip Existing", "Update Existing"
+  - Checkbox: "Dry Run (Preview Only)"
+  - Submit button: "Import Data"
+- [ ] Handle export form submission:
+  - Generate export file
+  - Set headers for file download
+  - Output JSON content
+  - Exit to prevent WordPress admin from rendering
+- [ ] Handle import form submission:
+  - Validate file upload
+  - Call import methods with selected options
+  - Display detailed results (counts, errors)
+  - Show admin notice with summary
+- [ ] Add security:
+  - Nonce verification for both forms
+  - File type validation (.json, .json.gz only)
+  - File size limit check (max 50MB)
+  - Capability check (`manage_options`)
+
+**UI/UX:**
+- Use WordPress admin card styles
+- Show clear instructions for each form
+- Display warnings for irreversible actions
+- Add confirmation dialog for imports
+- Show progress indicator for large operations
+- Format results in readable table
+
+**Validation:**
+- [ ] Export downloads correct file
+- [ ] Import accepts valid files only
+- [ ] Security checks pass (nonce, capability, file type)
+- [ ] Results displayed clearly
+- [ ] Errors handled gracefully
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+
+---
+
+### Step 19.4: WP-CLI Commands
+
+**File:** `includes/class-wpinsight-cli.php` (add methods)
+
+**Tasks:**
+- [ ] Add `wp wpinsight export` command:
+  - Synopsis: `[--type=<type>] [--output=<file>] [--compress]`
+  - `--type`: plugins|themes|all (default: all)
+  - `--output`: Output file path (default: stdout)
+  - `--compress`: Enable gzip compression
+  - Success message with file path and size
+- [ ] Add `wp wpinsight import` command:
+  - Synopsis: `<file> [--skip-existing] [--update-existing] [--dry-run]`
+  - `<file>`: Path to JSON file (required)
+  - `--skip-existing`: Skip if slug exists (default)
+  - `--update-existing`: Update if slug exists
+  - `--dry-run`: Preview without importing
+  - Show progress bar for large imports
+  - Display detailed results table
+
+**Examples:**
+```bash
+# Export all data
+wp wpinsight export --type=all --output=backup.json.gz --compress
+
+# Import with dry run
+wp wpinsight import backup.json.gz --dry-run
+
+# Import and update existing
+wp wpinsight import backup.json.gz --update-existing
+```
+
+**Validation:**
+- [ ] Commands registered correctly
+- [ ] Help text displays properly: `wp help wpinsight export`
+- [ ] Export creates valid file
+- [ ] Import processes file correctly
+- [ ] Progress bar shows for large operations
+- [ ] Error messages are clear
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+
+---
+
+### Step 19.5: Tests & Documentation
+
+**Files:** `tests/test-class-wpinsight-export.php`, `tests/test-class-wpinsight-import.php`
+
+**Tasks:**
+- [ ] Test export functionality:
+  - Export empty data (returns valid structure)
+  - Export single plugin
+  - Export multiple plugins/themes
+  - Export with compression
+  - Verify JSON schema
+- [ ] Test import functionality:
+  - Import valid JSON
+  - Import invalid JSON (error handling)
+  - Import with skip_existing option
+  - Import with update_existing option
+  - Import dry run (no database changes)
+  - Import compressed file
+- [ ] Test UI:
+  - Export form renders correctly
+  - Import form renders correctly
+  - Security checks work
+- [ ] Test WP-CLI:
+  - Export command outputs valid JSON
+  - Import command processes files
+- [ ] Update documentation:
+  - Add import/export section to README.md
+  - Document export format in docs/
+  - Add usage examples
+  - Document WP-CLI commands
+
+**Validation:**
+- [ ] All tests pass
+- [ ] Code coverage > 80%
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+- [ ] Documentation complete
+
+---
+
+### Priority Notes
+
+**When to implement:**
+- After Phase 3 (Custom Post Types) is complete
+- Before production deployment (for disaster recovery)
+- Can be implemented in parallel with other phases
+
+**Use cases:**
+- Backup before major updates
+- Migration between environments (dev/staging/prod)
+- Disaster recovery
+- Testing with realistic data
+- Sharing datasets between team members
+
+**Future enhancements:**
+- Selective export (by date range, specific slugs, etc.)
+- Scheduled automatic backups
+- Export to external storage (S3, FTP, etc.)
+- Import from WordPress.org API directly
+- Delta imports (only changes since last export)
+
+---
+
 ## Notes
 
 - This roadmap is designed for maximum safety and validation

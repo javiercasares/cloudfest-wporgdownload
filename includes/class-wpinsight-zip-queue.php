@@ -38,23 +38,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class WPInsight_Zip_Queue {
 
 	/**
-	 * Maximum file size for downloads (bytes).
-	 * Default: 500 MB per file.
-	 *
-	 * @since 0.1.0
-	 * @var int
-	 */
-	private const MAX_FILE_SIZE = 524288000; // 500 MB.
-
-	/**
-	 * Download timeout in seconds.
-	 *
-	 * @since 0.1.0
-	 * @var int
-	 */
-	private const DOWNLOAD_TIMEOUT = 300; // 5 minutes.
-
-	/**
 	 * Initialize the ZIP queue worker.
 	 *
 	 * Registers Action Scheduler hooks for background processing.
@@ -65,7 +48,7 @@ final class WPInsight_Zip_Queue {
 	 */
 	public static function init(): void {
 		// Register ZIP worker tick handler.
-		add_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [ __CLASS__, 'worker_tick' ] );
+		add_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array( __CLASS__, 'worker_tick' ) );
 	}
 
 	/**
@@ -84,7 +67,7 @@ final class WPInsight_Zip_Queue {
 		}
 
 		// Check if already scheduled.
-		$next_run = as_next_scheduled_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
+		$next_run = as_next_scheduled_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
 		if ( false !== $next_run ) {
 			return; // Already scheduled.
 		}
@@ -95,7 +78,7 @@ final class WPInsight_Zip_Queue {
 			time(),
 			$interval,
 			WPINSIGHT_ZIP_WORKER_TICK_ACTION,
-			[],
+			array(),
 			WPINSIGHT_AS_GROUP
 		);
 	}
@@ -195,7 +178,7 @@ final class WPInsight_Zip_Queue {
 		if ( $cleaned > 0 ) {
 			WPInsight_Logger::warning(
 				sprintf( 'Cleaned up %d stale processing locks', $cleaned ),
-				[ 'cleaned' => $cleaned ]
+				array( 'cleaned' => $cleaned )
 			);
 
 			// Invalidate cache.
@@ -239,14 +222,14 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			$table,
-			[
+			array(
 				'status'       => 'processing',
 				'started_at'   => current_time( 'mysql', true ),
 				'last_attempt' => current_time( 'mysql', true ),
-			],
-			[ 'id' => $job['id'] ],
-			[ '%s', '%s', '%s' ],
-			[ '%d' ]
+			),
+			array( 'id' => $job['id'] ),
+			array( '%s', '%s', '%s' ),
+			array( '%d' )
 		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit required.
@@ -258,8 +241,8 @@ final class WPInsight_Zip_Queue {
 	/**
 	 * Process a download job.
 	 *
-	 * Downloads the ZIP file and saves it to the filesystem.
-	 * Updates queue status and creates artifact record on success.
+	 * Downloads the ZIP file using the storage manager and updates queue status.
+	 * Delegates all storage operations to WPInsight_Storage class.
 	 *
 	 * @since 0.1.0
 	 * @param array<string, mixed> $job Job data from queue.
@@ -272,83 +255,18 @@ final class WPInsight_Zip_Queue {
 		$url     = $job['download_url'];
 		$job_id  = (int) $job['id'];
 
-		// Build destination path.
-		$upload_dir = wp_upload_dir();
-		$base_path  = WPInsight_Settings::get( 'storage_base_path', 'wpinsight' );
-		$dest_dir   = trailingslashit( $upload_dir['basedir'] ) . trailingslashit( $base_path ) . trailingslashit( $type ) . trailingslashit( $slug );
-		$dest_file  = $dest_dir . "{$slug}.{$version}.zip";
+		// Delegate download and storage to storage manager.
+		$result = WPInsight_Storage::download_and_store_zip( $type, $slug, $version, $url );
 
-		// Create directory if needed.
-		if ( ! file_exists( $dest_dir ) ) {
-			if ( ! wp_mkdir_p( $dest_dir ) ) {
-				self::mark_job_failed( $job_id, 'Failed to create destination directory' );
-				return false;
-			}
-		}
-
-		// Check if file already exists.
-		if ( file_exists( $dest_file ) ) {
-			// File already downloaded, mark as completed.
-			$file_size = filesize( $dest_file );
-			self::mark_job_completed( $job_id, $dest_file, false !== $file_size ? $file_size : 0 );
+		if ( $result['success'] ) {
+			// Success! Mark job as completed.
+			self::mark_job_completed( $job_id, $result['path'], $result['size'] );
 			return true;
-		}
-
-		// Download the file.
-		$response = wp_remote_get(
-			$url,
-			[
-				'timeout'  => self::DOWNLOAD_TIMEOUT,
-				'stream'   => true,
-				'filename' => $dest_file,
-			]
-		);
-
-		// Check for errors.
-		if ( is_wp_error( $response ) ) {
-			self::mark_job_failed( $job_id, $response->get_error_message(), (int) $job['attempts'] );
+		} else {
+			// Failed. Mark job as failed with error message.
+			self::mark_job_failed( $job_id, $result['error'], (int) $job['attempts'] );
 			return false;
 		}
-
-		// Check HTTP status.
-		$status_code = wp_remote_retrieve_response_code( $response );
-		if ( 200 !== $status_code ) {
-			self::mark_job_failed( $job_id, "HTTP {$status_code}", (int) $job['attempts'] );
-			return false;
-		}
-
-		// Verify file was created.
-		if ( ! file_exists( $dest_file ) ) {
-			self::mark_job_failed( $job_id, 'File not created after download', (int) $job['attempts'] );
-			return false;
-		}
-
-		// Verify file size.
-		$file_size = filesize( $dest_file );
-		if ( false === $file_size || 0 === $file_size ) {
-			wp_delete_file( $dest_file ); // Remove empty file.
-			self::mark_job_failed( $job_id, 'Downloaded file is empty or unreadable', (int) $job['attempts'] );
-			return false;
-		}
-
-		// Check max file size.
-		if ( $file_size > self::MAX_FILE_SIZE ) {
-			wp_delete_file( $dest_file ); // Remove oversized file.
-			self::mark_job_failed( $job_id, 'File exceeds maximum size limit', (int) $job['attempts'] );
-			return false;
-		}
-
-		// Verify it's a valid ZIP file.
-		if ( ! self::is_valid_zip( $dest_file ) ) {
-			wp_delete_file( $dest_file ); // Remove invalid file.
-			self::mark_job_failed( $job_id, 'Downloaded file is not a valid ZIP', (int) $job['attempts'] );
-			return false;
-		}
-
-		// Success! Mark as completed.
-		self::mark_job_completed( $job_id, $dest_file, $file_size );
-
-		return true;
 	}
 
 	/**
@@ -385,13 +303,13 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			$queue_table,
-			[
+			array(
 				'status'       => 'completed',
 				'completed_at' => current_time( 'mysql', true ),
-			],
-			[ 'id' => $job_id ],
-			[ '%s', '%s' ],
-			[ '%d' ]
+			),
+			array( 'id' => $job_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
 		);
 
 		// Invalidate queue stats cache.
@@ -403,7 +321,7 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->insert(
 			$artifacts_table,
-			[
+			array(
 				'artifact_type'    => $job['artifact_type'],
 				'artifact_slug'    => $job['artifact_slug'],
 				'artifact_version' => $job['artifact_version'],
@@ -412,8 +330,8 @@ final class WPInsight_Zip_Queue {
 				'file_size'        => $file_size,
 				'file_hash'        => hash_file( 'sha256', $file_path ),
 				'downloaded_at'    => current_time( 'mysql', true ),
-			],
-			[ '%s', '%s', '%s', '%d', '%s', '%d', '%s', '%s' ]
+			),
+			array( '%s', '%s', '%s', '%d', '%s', '%d', '%s', '%s' )
 		);
 	}
 
@@ -442,30 +360,30 @@ final class WPInsight_Zip_Queue {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$table,
-				[
+				array(
 					'status'       => 'failed',
 					'attempts'     => $attempts,
 					'last_error'   => $error,
 					'last_attempt' => current_time( 'mysql', true ),
-				],
-				[ 'id' => $job_id ],
-				[ '%s', '%d', '%s', '%s' ],
-				[ '%d' ]
+				),
+				array( 'id' => $job_id ),
+				array( '%s', '%d', '%s', '%s' ),
+				array( '%d' )
 			);
 		} else {
 			// Retry available, requeue as pending.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$table,
-				[
+				array(
 					'status'       => 'pending',
 					'attempts'     => $attempts,
 					'last_error'   => $error,
 					'last_attempt' => current_time( 'mysql', true ),
-				],
-				[ 'id' => $job_id ],
-				[ '%s', '%d', '%s', '%s' ],
-				[ '%d' ]
+				),
+				array( 'id' => $job_id ),
+				array( '%s', '%d', '%s', '%s' ),
+				array( '%d' )
 			);
 		}
 
@@ -473,31 +391,6 @@ final class WPInsight_Zip_Queue {
 		delete_transient( 'wpinsight_queue_stats' );
 	}
 
-	/**
-	 * Check if file is a valid ZIP.
-	 *
-	 * Uses ZipArchive to verify file integrity.
-	 *
-	 * @since 0.1.0
-	 * @param string $file_path Path to ZIP file.
-	 * @return bool True if valid ZIP, false otherwise.
-	 */
-	private static function is_valid_zip( string $file_path ): bool {
-		if ( ! class_exists( 'ZipArchive' ) ) {
-			// ZipArchive not available, assume valid.
-			return true;
-		}
-
-		$zip = new ZipArchive();
-		$res = $zip->open( $file_path, ZipArchive::CHECKCONS );
-
-		if ( true === $res ) {
-			$zip->close();
-			return true;
-		}
-
-		return false;
-	}
 
 	/**
 	 * Get queue statistics.
@@ -538,13 +431,13 @@ final class WPInsight_Zip_Queue {
 			ARRAY_A
 		);
 
-		$stats = [
+		$stats = array(
 			'pending'    => 0,
 			'processing' => 0,
 			'completed'  => 0,
 			'failed'     => 0,
 			'total'      => 0,
-		];
+		);
 
 		if ( is_array( $results ) ) {
 			foreach ( $results as $row ) {
