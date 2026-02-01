@@ -494,6 +494,11 @@ final class WPInsight_Admin {
 									<?php endif; ?>
 									<form method="post" style="display: inline;">
 										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+										<input type="hidden" name="wpinsight_action" value="full_sync_plugins">
+										<button type="submit" class="button button-small button-secondary" onclick="return confirm('<?php esc_attr_e( 'This will sync ALL plugins and ALL versions. This may take hours or days to complete. Continue?', 'cloudfest-wporgdownload' ); ?>');" title="<?php esc_attr_e( 'Download all plugins with full version history', 'cloudfest-wporgdownload' ); ?>"><?php esc_html_e( 'Full Sync', 'cloudfest-wporgdownload' ); ?></button>
+									</form>
+									<form method="post" style="display: inline;">
+										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
 										<input type="hidden" name="wpinsight_action" value="reset_sync_plugins">
 										<button type="submit" class="button button-small" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to reset the sync state?', 'cloudfest-wporgdownload' ); ?>');"><?php esc_html_e( 'Reset', 'cloudfest-wporgdownload' ); ?></button>
 									</form>
@@ -536,6 +541,11 @@ final class WPInsight_Admin {
 											<button type="submit" class="button button-small"><?php esc_html_e( 'Sync Now', 'cloudfest-wporgdownload' ); ?></button>
 										</form>
 									<?php endif; ?>
+									<form method="post" style="display: inline;">
+										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+										<input type="hidden" name="wpinsight_action" value="full_sync_themes">
+										<button type="submit" class="button button-small button-secondary" onclick="return confirm('<?php esc_attr_e( 'This will sync ALL themes and ALL versions. This may take several hours to complete. Continue?', 'cloudfest-wporgdownload' ); ?>');" title="<?php esc_attr_e( 'Download all themes with full version history', 'cloudfest-wporgdownload' ); ?>"><?php esc_html_e( 'Full Sync', 'cloudfest-wporgdownload' ); ?></button>
+									</form>
 									<form method="post" style="display: inline;">
 										<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
 										<input type="hidden" name="wpinsight_action" value="reset_sync_themes">

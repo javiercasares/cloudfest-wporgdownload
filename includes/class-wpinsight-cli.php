@@ -61,11 +61,28 @@ final class WPInsight_CLI {
 	 * [--reset]
 	 * : Reset sync state before starting (start from page 1).
 	 *
+	 * [--full]
+	 * : Perform full sync (all pages, all versions). This will take hours/days.
+	 *
+	 * [--max-pages=<number>]
+	 * : Maximum pages to process in full sync mode (0 = unlimited).
+	 * ---
+	 * default: 0
+	 * ---
+	 *
+	 * [--time-limit=<seconds>]
+	 * : Time limit in seconds for full sync (0 = no limit).
+	 * ---
+	 * default: 0
+	 * ---
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp wpinsight sync
 	 *     wp wpinsight sync --type=plugins
 	 *     wp wpinsight sync --type=themes --reset
+	 *     wp wpinsight sync --type=plugins --full
+	 *     wp wpinsight sync --type=plugins --full --max-pages=100
 	 *
 	 * @since 0.1.0
 	 * @param array<int, string>    $args       Positional arguments.
@@ -73,8 +90,11 @@ final class WPInsight_CLI {
 	 * @return void
 	 */
 	public static function sync( array $args, array $assoc_args ): void {
-		$type  = $assoc_args['type'] ?? 'both';
-		$reset = isset( $assoc_args['reset'] );
+		$type       = $assoc_args['type'] ?? 'both';
+		$reset      = isset( $assoc_args['reset'] );
+		$full       = isset( $assoc_args['full'] );
+		$max_pages  = isset( $assoc_args['max-pages'] ) ? (int) $assoc_args['max-pages'] : 0;
+		$time_limit = isset( $assoc_args['time-limit'] ) ? (int) $assoc_args['time-limit'] : 0;
 
 		// Validate type.
 		if ( ! in_array( $type, [ 'plugins', 'themes', 'both' ], true ) ) {
@@ -106,22 +126,54 @@ final class WPInsight_CLI {
 		}
 
 		// Run sync.
-		WP_CLI::log( 'Starting sync...' );
+		if ( $full ) {
+			WP_CLI::log( 'Starting FULL sync (this may take hours or days)...' );
+		} else {
+			WP_CLI::log( 'Starting sync...' );
+		}
 
 		$plugins_success = true;
 		$themes_success  = true;
 
 		if ( 'both' === $type || 'plugins' === $type ) {
 			if ( $sync_plugins_enabled ) {
-				WP_CLI::log( 'Syncing plugins...' );
-				$plugins_success = WPInsight_Sync::sync_plugins();
+				if ( $full ) {
+					WP_CLI::log( 'Syncing ALL plugins with full version history...' );
+					$result          = WPInsight_Sync::sync_full( 'plugin', $max_pages, $time_limit );
+					$plugins_success = $result['completed'] || 'running' === $result['status'];
+
+					WP_CLI::log( sprintf( 'Processed %d pages, %d plugins, %d versions enqueued', $result['pages_processed'], $result['items_processed'], $result['items_enqueued'] ) );
+
+					if ( $result['completed'] ) {
+						WP_CLI::success( 'Full plugin sync completed!' );
+					} else {
+						WP_CLI::warning( 'Full plugin sync paused. Run again to continue.' );
+					}
+				} else {
+					WP_CLI::log( 'Syncing plugins...' );
+					$plugins_success = WPInsight_Sync::sync_plugins();
+				}
 			}
 		}
 
 		if ( 'both' === $type || 'themes' === $type ) {
 			if ( $sync_themes_enabled ) {
-				WP_CLI::log( 'Syncing themes...' );
-				$themes_success = WPInsight_Sync::sync_themes();
+				if ( $full ) {
+					WP_CLI::log( 'Syncing ALL themes with full version history...' );
+					$result         = WPInsight_Sync::sync_full( 'theme', $max_pages, $time_limit );
+					$themes_success = $result['completed'] || 'running' === $result['status'];
+
+					WP_CLI::log( sprintf( 'Processed %d pages, %d themes, %d versions enqueued', $result['pages_processed'], $result['items_processed'], $result['items_enqueued'] ) );
+
+					if ( $result['completed'] ) {
+						WP_CLI::success( 'Full theme sync completed!' );
+					} else {
+						WP_CLI::warning( 'Full theme sync paused. Run again to continue.' );
+					}
+				} else {
+					WP_CLI::log( 'Syncing themes...' );
+					$themes_success = WPInsight_Sync::sync_themes();
+				}
 			}
 		}
 
