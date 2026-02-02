@@ -3,10 +3,10 @@ Contributors: javiercasares
 Tags: wordpress.org, plugins, themes, archive, mirror, backup, downloader
 Requires at least: 6.9
 Tested up to: 6.9
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 Requires PHP: 8.4
 Requires Plugins: action-scheduler
-Version: 1.2.0
+Version: 1.3.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -287,6 +287,33 @@ Yes! This plugin was developed during CloudFest Hackathon. Contributions welcome
 
 == Changelog ==
 
+= 1.3.0 - 2026-02-02 =
+
+**CPT Detail View Enhancement Release**
+
+* **CPT Detail Views**
+  * Plugin Information meta box with comprehensive read-only data
+  * Theme Information meta box with metadata display
+  * ZIP Downloads table showing all versions with status
+  * Quick Stats sidebar widget with active installs, downloads, rating
+  * Status badges (Downloaded, Pending, Failed, Processing)
+  * Public URL generation for downloaded ZIPs
+  * Version sorting (newest first)
+  * Human-readable dates and file sizes
+
+* **UX Improvements**
+  * WordPress admin table styling (.form-table)
+  * Color-coded status badges (green/yellow/red/blue)
+  * Star ratings display (★★★★★)
+  * Abbreviated numbers (1.2M, 500K)
+  * Responsive meta box layouts
+  * Side-by-side meta boxes on wide screens
+
+**Compatibility:**
+* WordPress: 6.9+
+* PHP: 8.4+
+* MariaDB: 10.6+
+
 = 1.2.0 - 2026-02-02 =
 
 **Import/Export System Release**
@@ -388,6 +415,9 @@ Full changelog with detailed changes available at:
 [CHANGELOG.md](https://github.com/javiercasares/cloudfest-wporgdownload/blob/main/CHANGELOG.md)
 
 == Upgrade Notice ==
+
+= 1.3.0 =
+Enhanced CPT detail views with comprehensive plugin/theme information, ZIP downloads table, quick stats widget, and public URLs. Major UX improvement for data visibility.
 
 = 1.2.0 =
 New import/export system for backing up and migrating plugin/theme metadata (without ZIP files). Includes admin UI and WP-CLI commands. Perfect for backups, migrations, and disaster recovery.

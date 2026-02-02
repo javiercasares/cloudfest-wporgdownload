@@ -63,6 +63,7 @@ final class WPInsight_CPT {
 		self::register_plugin_cpt();
 		self::register_theme_cpt();
 		self::setup_admin_columns();
+		self::setup_meta_boxes();
 	}
 
 	/**
@@ -697,4 +698,519 @@ final class WPInsight_CPT {
 				break;
 		}
 	}
+
+	/**
+	 * Setup custom meta boxes for CPT detail views.
+	 *
+	 * Registers meta boxes that display plugin/theme information,
+	 * ZIP downloads, and quick stats on CPT edit screens.
+	 *
+	 * @since 1.2.0
+	 * @return void
+	 */
+	private static function setup_meta_boxes(): void {
+		add_action( 'add_meta_boxes', array( __CLASS__, 'add_cpt_meta_boxes' ) );
+	}
+
+	/**
+	 * Add custom meta boxes to plugin and theme CPTs.
+	 *
+	 * Called by WordPress add_meta_boxes action hook.
+	 *
+	 * @since 1.2.0
+	 * @return void
+	 */
+	public static function add_cpt_meta_boxes(): void {
+		// Plugin Information meta box.
+		add_meta_box(
+			'wpinsight_plugin_info',
+			__( 'Plugin Information', 'cloudfest-wporgdownload' ),
+			array( __CLASS__, 'render_plugin_info_meta_box' ),
+			self::PLUGIN_POST_TYPE,
+			'normal',
+			'high'
+		);
+
+		// Theme Information meta box.
+		add_meta_box(
+			'wpinsight_theme_info',
+			__( 'Theme Information', 'cloudfest-wporgdownload' ),
+			array( __CLASS__, 'render_theme_info_meta_box' ),
+			self::THEME_POST_TYPE,
+			'normal',
+			'high'
+		);
+
+		// ZIP Downloads meta box (for both plugins and themes).
+		add_meta_box(
+			'wpinsight_zip_downloads',
+			__( 'ZIP Downloads', 'cloudfest-wporgdownload' ),
+			array( __CLASS__, 'render_zip_downloads_meta_box' ),
+			array( self::PLUGIN_POST_TYPE, self::THEME_POST_TYPE ),
+			'normal',
+			'high'
+		);
+
+		// Quick Stats meta box (for both plugins and themes).
+		add_meta_box(
+			'wpinsight_quick_stats',
+			__( 'Quick Stats', 'cloudfest-wporgdownload' ),
+			array( __CLASS__, 'render_quick_stats_meta_box' ),
+			array( self::PLUGIN_POST_TYPE, self::THEME_POST_TYPE ),
+			'side',
+			'default'
+		);
+	}
+
+	/**
+	 * Render Plugin Information meta box.
+	 *
+	 * Displays plugin metadata in read-only format.
+	 *
+	 * @since 1.2.0
+	 * @param WP_Post $post Current post object.
+	 * @return void
+	 */
+	public static function render_plugin_info_meta_box( $post ): void {
+		// Get plugin metadata.
+		$description  = get_post_meta( $post->ID, 'short_description', true );
+		$version      = get_post_meta( $post->ID, 'version', true );
+		$author       = get_post_meta( $post->ID, 'author', true );
+		$homepage     = get_post_meta( $post->ID, 'homepage', true );
+		$requires     = get_post_meta( $post->ID, 'requires', true );
+		$requires_php = get_post_meta( $post->ID, 'requires_php', true );
+		$tested       = get_post_meta( $post->ID, 'tested', true );
+		$tags         = get_post_meta( $post->ID, 'tags', true );
+
+		?>
+		<table class="form-table" role="presentation">
+			<tbody>
+				<?php if ( ! empty( $description ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Description', 'cloudfest-wporgdownload' ); ?></th>
+					<td><?php echo esc_html( $description ); ?></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $version ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Current Version', 'cloudfest-wporgdownload' ); ?></th>
+					<td><strong><?php echo esc_html( $version ); ?></strong></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $author ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Author', 'cloudfest-wporgdownload' ); ?></th>
+					<td><?php echo esc_html( $author ); ?></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $homepage ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Homepage', 'cloudfest-wporgdownload' ); ?></th>
+					<td><a href="<?php echo esc_url( $homepage ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $homepage ); ?></a></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $requires ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Requires WordPress', 'cloudfest-wporgdownload' ); ?></th>
+					<td><?php echo esc_html( $requires ); ?>+</td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $requires_php ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Requires PHP', 'cloudfest-wporgdownload' ); ?></th>
+					<td><?php echo esc_html( $requires_php ); ?>+</td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $tested ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Tested up to', 'cloudfest-wporgdownload' ); ?></th>
+					<td><?php echo esc_html( $tested ); ?></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $tags ) && is_array( $tags ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Tags', 'cloudfest-wporgdownload' ); ?></th>
+					<td><?php echo esc_html( implode( ', ', $tags ) ); ?></td>
+				</tr>
+				<?php endif; ?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Render Theme Information meta box.
+	 *
+	 * Displays theme metadata in read-only format.
+	 *
+	 * @since 1.2.0
+	 * @param WP_Post $post Current post object.
+	 * @return void
+	 */
+	public static function render_theme_info_meta_box( $post ): void {
+		// Get theme metadata.
+		$description = get_post_meta( $post->ID, 'description', true );
+		$version     = get_post_meta( $post->ID, 'version', true );
+		$author      = get_post_meta( $post->ID, 'author', true );
+		$theme_uri   = get_post_meta( $post->ID, 'theme_uri', true );
+		$tags        = get_post_meta( $post->ID, 'tags', true );
+
+		?>
+		<table class="form-table" role="presentation">
+			<tbody>
+				<?php if ( ! empty( $description ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Description', 'cloudfest-wporgdownload' ); ?></th>
+					<td><?php echo esc_html( $description ); ?></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $version ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Current Version', 'cloudfest-wporgdownload' ); ?></th>
+					<td><strong><?php echo esc_html( $version ); ?></strong></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $author ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Author', 'cloudfest-wporgdownload' ); ?></th>
+					<td><?php echo esc_html( $author ); ?></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $theme_uri ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Theme URI', 'cloudfest-wporgdownload' ); ?></th>
+					<td><a href="<?php echo esc_url( $theme_uri ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $theme_uri ); ?></a></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $tags ) && is_array( $tags ) ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Tags', 'cloudfest-wporgdownload' ); ?></th>
+					<td><?php echo esc_html( implode( ', ', $tags ) ); ?></td>
+				</tr>
+				<?php endif; ?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Render ZIP Downloads meta box.
+	 *
+	 * Displays table of all versions with download status and public URLs.
+	 *
+	 * @since 1.2.0
+	 * @param WP_Post $post Current post object.
+	 * @return void
+	 */
+	public static function render_zip_downloads_meta_box( $post ): void {
+		$slug        = $post->post_name;
+		$entity_type = ( self::PLUGIN_POST_TYPE === $post->post_type ) ? 'plugin' : 'theme';
+
+		// Get all versions from post meta.
+		$versions = get_post_meta( $post->ID, 'versions', true );
+
+		if ( empty( $versions ) || ! is_array( $versions ) ) {
+			echo '<p>' . esc_html__( 'No versions available.', 'cloudfest-wporgdownload' ) . '</p>';
+			return;
+		}
+
+		// Get artifact data (downloaded ZIPs).
+		$artifacts = self::get_artifact_data( $slug, $entity_type );
+
+		// Get queue data (pending/failed downloads).
+		$queue = self::get_queue_data( $slug, $entity_type );
+
+		// Combine data.
+		$version_data = array();
+		foreach ( $versions as $version => $download_url ) {
+			$status = 'not_queued';
+			$size   = null;
+			$date   = null;
+			$path   = null;
+
+			// Check if artifact exists.
+			if ( isset( $artifacts[ $version ] ) ) {
+				$status = 'downloaded';
+				$size   = $artifacts[ $version ]['filesize'];
+				$date   = $artifacts[ $version ]['downloaded_at'];
+				$path   = $artifacts[ $version ]['path'];
+			} elseif ( isset( $queue[ $version ] ) ) {
+				// Check queue status.
+				$status = $queue[ $version ]['status'];
+				$date   = $queue[ $version ]['queued_at'];
+			}
+
+			$version_data[ $version ] = array(
+				'status' => $status,
+				'size'   => $size,
+				'date'   => $date,
+				'path'   => $path,
+				'url'    => $download_url,
+			);
+		}
+
+		// Sort by version (descending).
+		uksort( $version_data, 'version_compare' );
+		$version_data = array_reverse( $version_data, true );
+
+		// Display table.
+		?>
+		<p><?php echo esc_html( sprintf( __( 'Total versions: %d', 'cloudfest-wporgdownload' ), count( $version_data ) ) ); ?></p>
+		<table class="widefat fixed" style="margin-top: 10px;">
+			<thead>
+				<tr>
+					<th style="width: 15%;"><?php esc_html_e( 'Version', 'cloudfest-wporgdownload' ); ?></th>
+					<th style="width: 20%;"><?php esc_html_e( 'Status', 'cloudfest-wporgdownload' ); ?></th>
+					<th style="width: 15%;"><?php esc_html_e( 'Size', 'cloudfest-wporgdownload' ); ?></th>
+					<th style="width: 20%;"><?php esc_html_e( 'Date', 'cloudfest-wporgdownload' ); ?></th>
+					<th style="width: 30%;"><?php esc_html_e( 'Actions', 'cloudfest-wporgdownload' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $version_data as $version => $data ) : ?>
+				<tr>
+					<td><strong><?php echo esc_html( $version ); ?></strong></td>
+					<td><?php echo wp_kses_post( self::get_status_badge( $data['status'] ) ); ?></td>
+					<td><?php echo $data['size'] ? esc_html( size_format( $data['size'], 2 ) ) : '—'; ?></td>
+					<td><?php echo $data['date'] ? esc_html( human_time_diff( strtotime( $data['date'] ), time() ) . ' ago' ) : '—'; ?></td>
+					<td>
+						<?php if ( 'downloaded' === $data['status'] && $data['path'] ) : ?>
+							<?php
+							$public_url = self::get_public_url( $data['path'] );
+							if ( $public_url ) :
+								?>
+								<a href="<?php echo esc_url( $public_url ); ?>" target="_blank" class="button button-small">
+									<?php esc_html_e( 'View URL', 'cloudfest-wporgdownload' ); ?>
+								</a>
+							<?php endif; ?>
+						<?php elseif ( 'failed' === $data['status'] ) : ?>
+							<button type="button" class="button button-small" disabled>
+								<?php esc_html_e( 'Retry (Not implemented)', 'cloudfest-wporgdownload' ); ?>
+							</button>
+						<?php elseif ( 'pending' === $data['status'] || 'queued' === $data['status'] ) : ?>
+							<span style="color: #999;">
+								<?php esc_html_e( 'In queue...', 'cloudfest-wporgdownload' ); ?>
+							</span>
+						<?php else : ?>
+							—
+						<?php endif; ?>
+					</td>
+				</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Render Quick Stats meta box.
+	 *
+	 * Displays quick statistics from WordPress.org API data.
+	 *
+	 * @since 1.2.0
+	 * @param WP_Post $post Current post object.
+	 * @return void
+	 */
+	public static function render_quick_stats_meta_box( $post ): void {
+		// Get stats from post meta.
+		$active_installs = get_post_meta( $post->ID, 'active_installs', true );
+		$downloaded      = get_post_meta( $post->ID, 'downloaded', true );
+		$rating          = get_post_meta( $post->ID, 'rating', true );
+		$num_ratings     = get_post_meta( $post->ID, 'num_ratings', true );
+		$last_updated    = get_post_meta( $post->ID, 'last_updated', true );
+
+		?>
+		<table class="form-table" role="presentation" style="margin: 0;">
+			<tbody>
+				<?php if ( ! empty( $active_installs ) ) : ?>
+				<tr>
+					<th scope="row" style="padding-left: 0;"><?php esc_html_e( 'Active Installs', 'cloudfest-wporgdownload' ); ?></th>
+					<td><strong><?php echo esc_html( WPInsight_Admin::format_number_abbreviated( $active_installs ) ); ?>+</strong></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $downloaded ) ) : ?>
+				<tr>
+					<th scope="row" style="padding-left: 0;"><?php esc_html_e( 'Downloads', 'cloudfest-wporgdownload' ); ?></th>
+					<td><strong><?php echo esc_html( WPInsight_Admin::format_number_abbreviated( $downloaded ) ); ?>+</strong></td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $rating ) && ! empty( $num_ratings ) ) : ?>
+				<tr>
+					<th scope="row" style="padding-left: 0;"><?php esc_html_e( 'Rating', 'cloudfest-wporgdownload' ); ?></th>
+					<td>
+						<?php
+						$stars = round( $rating / 20 ); // Rating is 0-100, convert to 0-5.
+						echo str_repeat( '★', $stars ) . str_repeat( '☆', 5 - $stars );
+						?>
+						(<?php echo esc_html( number_format_i18n( $rating / 20, 1 ) ); ?>)
+						<br />
+						<small><?php echo esc_html( sprintf( __( '%s reviews', 'cloudfest-wporgdownload' ), number_format_i18n( $num_ratings ) ) ); ?></small>
+					</td>
+				</tr>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $last_updated ) ) : ?>
+				<tr>
+					<th scope="row" style="padding-left: 0;"><?php esc_html_e( 'Last Updated', 'cloudfest-wporgdownload' ); ?></th>
+					<td>
+						<?php
+						$timestamp = strtotime( $last_updated );
+						if ( $timestamp ) {
+							echo esc_html( human_time_diff( $timestamp, time() ) . ' ago' );
+						} else {
+							echo esc_html( $last_updated );
+						}
+						?>
+					</td>
+				</tr>
+				<?php endif; ?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Get artifact data for a slug.
+	 *
+	 * Queries the artifacts table for downloaded ZIPs.
+	 *
+	 * @since 1.2.0
+	 * @param string $slug        Plugin or theme slug.
+	 * @param string $entity_type Entity type ('plugin' or 'theme').
+	 * @return array Array of artifacts keyed by version.
+	 */
+	private static function get_artifact_data( string $slug, string $entity_type ): array {
+		global $wpdb;
+		$table = WPInsight_DB::get_table_name( 'artifacts' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT version, filesize, sha256, path, downloaded_at
+				FROM %i
+				WHERE slug = %s AND entity_type = %s
+				ORDER BY downloaded_at DESC',
+				$table,
+				$slug,
+				$entity_type
+			),
+			ARRAY_A
+		);
+
+		$artifacts = array();
+		if ( is_array( $results ) ) {
+			foreach ( $results as $row ) {
+				$artifacts[ $row['version'] ] = $row;
+			}
+		}
+
+		return $artifacts;
+	}
+
+	/**
+	 * Get queue data for a slug.
+	 *
+	 * Queries the queue table for pending/failed downloads.
+	 *
+	 * @since 1.2.0
+	 * @param string $slug        Plugin or theme slug.
+	 * @param string $entity_type Entity type ('plugin' or 'theme').
+	 * @return array Array of queue jobs keyed by version.
+	 */
+	private static function get_queue_data( string $slug, string $entity_type ): array {
+		global $wpdb;
+		$table = WPInsight_DB::get_table_name( 'zip_queue' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT version, status, queued_at, started_at, finished_at
+				FROM %i
+				WHERE slug = %s AND entity_type = %s
+				AND status IN (%s, %s, %s, %s)
+				ORDER BY queued_at DESC',
+				$table,
+				$slug,
+				$entity_type,
+				'pending',
+				'queued',
+				'processing',
+				'failed'
+			),
+			ARRAY_A
+		);
+
+		$queue = array();
+		if ( is_array( $results ) ) {
+			foreach ( $results as $row ) {
+				$queue[ $row['version'] ] = $row;
+			}
+		}
+
+		return $queue;
+	}
+
+	/**
+	 * Get status badge HTML.
+	 *
+	 * Returns colored badge for different statuses.
+	 *
+	 * @since 1.2.0
+	 * @param string $status Status string.
+	 * @return string HTML for status badge.
+	 */
+	private static function get_status_badge( string $status ): string {
+		$badges = array(
+			'downloaded'  => '<span style="display: inline-block; padding: 3px 8px; background: #00a32a; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">✓ ' . __( 'Downloaded', 'cloudfest-wporgdownload' ) . '</span>',
+			'pending'     => '<span style="display: inline-block; padding: 3px 8px; background: #dba617; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">⏳ ' . __( 'Pending', 'cloudfest-wporgdownload' ) . '</span>',
+			'queued'      => '<span style="display: inline-block; padding: 3px 8px; background: #dba617; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">⏳ ' . __( 'Queued', 'cloudfest-wporgdownload' ) . '</span>',
+			'processing'  => '<span style="display: inline-block; padding: 3px 8px; background: #2271b1; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">⟳ ' . __( 'Processing', 'cloudfest-wporgdownload' ) . '</span>',
+			'failed'      => '<span style="display: inline-block; padding: 3px 8px; background: #d63638; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">✗ ' . __( 'Failed', 'cloudfest-wporgdownload' ) . '</span>',
+			'not_queued'  => '<span style="display: inline-block; padding: 3px 8px; background: #dcdcde; color: #50575e; border-radius: 3px; font-size: 11px; font-weight: 600;">—</span>',
+		);
+
+		return $badges[ $status ] ?? $badges['not_queued'];
+	}
+
+	/**
+	 * Get public URL for a filesystem path.
+	 *
+	 * Converts absolute filesystem path to public URL.
+	 *
+	 * @since 1.2.0
+	 * @param string $path Absolute filesystem path.
+	 * @return string Public URL or empty string if invalid.
+	 */
+	private static function get_public_url( string $path ): string {
+		// Get uploads directory info.
+		$uploads = wp_upload_dir();
+
+		// Validate path is within uploads directory.
+		if ( ! str_starts_with( $path, $uploads['basedir'] ) ) {
+			return '';
+		}
+
+		// Check if file exists.
+		if ( ! file_exists( $path ) ) {
+			return '';
+		}
+
+		// Convert path to URL.
+		$relative_path = str_replace( $uploads['basedir'], '', $path );
+		return $uploads['baseurl'] . $relative_path;
+	}
 }
+

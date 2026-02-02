@@ -7,6 +7,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-02-02
+
+_CPT Detail View Enhancement Release_
+
+### Highlights
+
+* Comprehensive CPT detail views for plugins and themes
+* ZIP downloads table with status tracking and public URLs
+* Quick stats sidebar widget with key metrics
+* Read-only metadata display with WordPress admin styling
+* Enhanced UX with color-coded badges and visual indicators
+
+### Added
+
+* **Custom Meta Boxes**
+  * "Plugin Information" meta box displaying:
+    - Description, Version, Author, Homepage
+    - Requires WordPress, Requires PHP, Tested up to
+    - Tags list
+  * "Theme Information" meta box displaying:
+    - Description, Version, Author, Theme URI
+    - Tags list
+  * "ZIP Downloads" meta box displaying:
+    - Table of all versions with status (Downloaded, Pending, Failed, Processing)
+    - File size for downloaded ZIPs
+    - Download date with human-readable format
+    - Public URLs for downloaded files with "View URL" button
+    - Version sorting (newest first)
+  * "Quick Stats" sidebar widget displaying:
+    - Active installs with abbreviated numbers
+    - Total downloads with abbreviated numbers
+    - Star rating (★★★★★) with numeric score
+    - Number of reviews
+    - Last updated date with human time diff
+
+* **Helper Methods**
+  * `get_artifact_data()` - Query downloaded ZIPs from artifacts table
+  * `get_queue_data()` - Query pending/failed downloads from queue table
+  * `get_status_badge()` - Generate color-coded status badges
+  * `get_public_url()` - Convert filesystem paths to public URLs
+
+* **Status Indicators**
+  * ✓ Downloaded (green badge)
+  * ⏳ Pending/Queued (yellow badge)
+  * ⟳ Processing (blue badge)
+  * ✗ Failed (red badge)
+  * — Not queued (gray badge)
+
+### Changed
+
+* CPT class now registers meta boxes on `add_meta_boxes` action
+* Meta boxes use WordPress admin table styling (`.form-table`)
+* Version lists sorted in descending order (newest first)
+
+### Security
+
+* All output properly escaped with `esc_html()`, `esc_url()`, `wp_kses_post()`
+* Public URL validation ensures paths are within uploads directory
+* File existence checks before generating URLs
+* Read-only display (no edit functionality)
+
+### Compatibility
+
+* WordPress: 6.9+
+* PHP: 8.4+
+* MariaDB: 10.6+
+* Action Scheduler: Latest version
+
+### UX Improvements
+
+* WordPress-native admin styling
+* Color-coded status badges for quick visual scanning
+* Star ratings with visual stars (★★★★★)
+* Abbreviated large numbers (1.2M, 500K) using existing `format_number_abbreviated()`
+* Human-readable dates ("2 hours ago")
+* Responsive table layouts
+* Side-by-side meta boxes on wide screens
+* Clear visual hierarchy with proper spacing
+
+### Performance
+
+* Database queries use prepared statements
+* Direct table queries for efficiency (no WP_Query overhead)
+* Results not cached (always fresh data on page load)
+
+### Tests
+
+* PHP syntax validation: ✓ Passed
+* All meta boxes render correctly
+* Status badges display with proper colors
+* Public URLs generate correctly
+* Data escaping verified
+
+---
+
 ## [1.2.0] - 2026-02-02
 
 _Import/Export System Release_
