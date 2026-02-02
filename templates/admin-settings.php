@@ -9,6 +9,10 @@
  * - $admin: WPInsight_Admin class for helper methods.
  * - $settings_group: Settings API group name.
  * - $settings_page_slug: Settings page slug.
+ * - $system_health: System health check data.
+ * - $overall_health: Overall health status summary.
+ * - $api_health: API health monitor data.
+ * - $size_stats: ZIP size statistics data.
  *
  * @package    CloudFest_WPOrgDownload
  * @subpackage Templates
@@ -64,6 +68,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</tr>
 		</tbody>
 	</table>
+
+	<hr style="margin: 30px 0;">
+
+	<!-- System Health Check (Phase 18.6) -->
+	<?php require WPINSIGHT_PLUGIN_DIR . 'templates/partials/system-health-check.php'; ?>
+
+	<!-- API Health Monitor (Phase 18.5) -->
+	<?php require WPINSIGHT_PLUGIN_DIR . 'templates/partials/api-health-monitor.php'; ?>
+
+	<!-- Storage Requirements Analysis -->
+	<?php require WPINSIGHT_PLUGIN_DIR . 'templates/partials/storage-requirements.php'; ?>
+
+	<!-- Export/Import Diagnostics (Phase 18.7) -->
+	<?php require WPINSIGHT_PLUGIN_DIR . 'templates/partials/diagnostic-tools.php'; ?>
+
 </div>
 
 <?php

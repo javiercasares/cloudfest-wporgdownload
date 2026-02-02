@@ -2015,6 +2015,24 @@ final class WPInsight_Admin {
 		$settings_group     = self::SETTINGS_GROUP;
 		$settings_page_slug = self::SETTINGS_PAGE_SLUG;
 
+		// Get health check data for settings page (with fallback to prevent errors).
+		try {
+			$system_health  = self::get_system_health_data();
+			$overall_health = self::get_overall_health_status( $system_health );
+			$api_health     = self::get_api_health_data();
+			$size_stats     = WPInsight_Zip_Queue::get_size_statistics();
+		} catch ( \Exception $e ) {
+			// If health check data fails, provide empty arrays to prevent template errors.
+			$system_health  = array();
+			$overall_health = array( 'status' => 'error', 'message' => 'Health check failed', 'error_count' => 0, 'warning_count' => 0 );
+			$api_health     = array();
+			$size_stats     = array(
+				'plugins' => array( 'detection_progress' => 0, 'downloaded_size' => 0, 'pending_size' => 0, 'total_size' => 0, 'count_with_size' => 0, 'total_count' => 0 ),
+				'themes'  => array( 'detection_progress' => 0, 'downloaded_size' => 0, 'pending_size' => 0, 'total_size' => 0, 'count_with_size' => 0, 'total_count' => 0 ),
+			);
+			error_log( 'WPInsight health check error: ' . $e->getMessage() );
+		}
+
 		// Load template.
 		require WPINSIGHT_PLUGIN_DIR . 'templates/admin-settings.php';
 	}

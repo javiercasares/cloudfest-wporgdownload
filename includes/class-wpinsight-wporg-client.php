@@ -405,6 +405,65 @@ final class WPInsight_WPOrg_Client {
 	}
 
 	/**
+	 * Check API health.
+	 *
+	 * Performs a lightweight health check on the WordPress.org API.
+	 * Returns response data or WP_Error on failure.
+	 *
+	 * @since 1.5.0
+	 * @return array<string, mixed>|WP_Error Response data or error.
+	 */
+	public static function check_api_health(): array|WP_Error {
+		// Make a minimal API request to check health.
+		$response = wp_remote_get(
+			self::PLUGINS_API_URL,
+			array(
+				'timeout' => 10,
+				'headers' => array(
+					'User-Agent' => 'WPInsight/' . WPINSIGHT_VERSION,
+				),
+				'body'    => array(
+					'action'  => 'query_plugins',
+					'request' => wp_json_encode(
+						array(
+							'browse'   => 'updated',
+							'page'     => 1,
+							'per_page' => 1,
+						)
+					),
+				),
+			)
+		);
+
+		// Check for errors.
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		// Check HTTP status.
+		$status_code = wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $status_code ) {
+			return new WP_Error(
+				'api_error',
+				sprintf( 'HTTP %d', $status_code )
+			);
+		}
+
+		// Try to decode JSON.
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( null === $data ) {
+			return new WP_Error(
+				'json_error',
+				'Invalid JSON response'
+			);
+		}
+
+		return $data;
+	}
+
+	/**
 	 * Log an error message.
 	 *
 	 * Only logs when WP_DEBUG is enabled to avoid polluting production logs.
