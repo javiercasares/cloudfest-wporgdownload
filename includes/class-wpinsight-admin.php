@@ -100,16 +100,8 @@ final class WPInsight_Admin {
 			array( __CLASS__, 'render_settings_page' )                    // Callback.
 		);
 
-		// Add Error Log page (only visible when WP_DEBUG is enabled).
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			add_management_page(
-				__( 'WPInsight Error Log', 'cloudfest-wporgdownload' ),                // Page title.
-				__( 'WPInsight Errors', 'cloudfest-wporgdownload' ) . $error_badge,    // Menu title with badge.
-				'manage_options',                                                        // Capability.
-				'wpinsight-error-log',                                                   // Menu slug.
-				array( __CLASS__, 'render_error_log_page' )                                   // Callback.
-			);
-		}
+		// Error logs are now integrated in the main dashboard.
+		// No separate menu entry needed.
 	}
 
 	/**
@@ -307,6 +299,12 @@ final class WPInsight_Admin {
 
 		switch ( $action ) {
 			case 'sync_plugins':
+				// Check current state and reset if completed/error.
+				$state = WPInsight_Sync::get_sync_state( 'plugin' );
+				if ( in_array( $state['status'], array( 'completed', 'error' ), true ) ) {
+					WPInsight_Sync::reset_sync_state( 'plugin' );
+				}
+
 				// Enqueue sync job in Action Scheduler (async).
 				if ( function_exists( 'as_enqueue_async_action' ) ) {
 					as_enqueue_async_action( 'wpinsight_sync_plugins', array(), WPINSIGHT_AS_GROUP );
@@ -317,6 +315,12 @@ final class WPInsight_Admin {
 				break;
 
 			case 'sync_themes':
+				// Check current state and reset if completed/error.
+				$state = WPInsight_Sync::get_sync_state( 'theme' );
+				if ( in_array( $state['status'], array( 'completed', 'error' ), true ) ) {
+					WPInsight_Sync::reset_sync_state( 'theme' );
+				}
+
 				// Enqueue sync job in Action Scheduler (async).
 				if ( function_exists( 'as_enqueue_async_action' ) ) {
 					as_enqueue_async_action( 'wpinsight_sync_themes', array(), WPINSIGHT_AS_GROUP );
@@ -384,13 +388,29 @@ final class WPInsight_Admin {
 				break;
 
 			case 'reset_sync_plugins':
+				// Reset sync state in database.
 				WPInsight_Sync::reset_sync_state( 'plugin' );
-				add_settings_error( 'wpinsight_dashboard', 'reset_success', __( 'Plugin sync state reset.', 'cloudfest-wporgdownload' ), 'success' );
+
+				// Cancel all pending Action Scheduler jobs for plugin sync.
+				if ( function_exists( 'as_unschedule_all_actions' ) ) {
+					as_unschedule_all_actions( 'wpinsight_sync_plugins', array(), WPINSIGHT_AS_GROUP );
+					as_unschedule_all_actions( 'wpinsight_full_sync_plugins', array(), WPINSIGHT_AS_GROUP );
+				}
+
+				add_settings_error( 'wpinsight_dashboard', 'reset_success', __( 'Plugin sync state reset and pending jobs cancelled.', 'cloudfest-wporgdownload' ), 'success' );
 				break;
 
 			case 'reset_sync_themes':
+				// Reset sync state in database.
 				WPInsight_Sync::reset_sync_state( 'theme' );
-				add_settings_error( 'wpinsight_dashboard', 'reset_success', __( 'Theme sync state reset.', 'cloudfest-wporgdownload' ), 'success' );
+
+				// Cancel all pending Action Scheduler jobs for theme sync.
+				if ( function_exists( 'as_unschedule_all_actions' ) ) {
+					as_unschedule_all_actions( 'wpinsight_sync_themes', array(), WPINSIGHT_AS_GROUP );
+					as_unschedule_all_actions( 'wpinsight_full_sync_themes', array(), WPINSIGHT_AS_GROUP );
+				}
+
+				add_settings_error( 'wpinsight_dashboard', 'reset_success', __( 'Theme sync state reset and pending jobs cancelled.', 'cloudfest-wporgdownload' ), 'success' );
 				break;
 
 			default:
@@ -437,6 +457,21 @@ final class WPInsight_Admin {
 
 		// Pass admin class reference for helper methods.
 		$admin = __CLASS__;
+
+		// Get recent error logs for dashboard (last 10 entries).
+		$logs_table = WPInsight_DB::get_table_name( 'error_log' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$recent_logs = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT id, severity, message, context, created_at
+				FROM %i
+				ORDER BY created_at DESC
+				LIMIT %d',
+				$logs_table,
+				10
+			),
+			ARRAY_A
+		);
 
 		// Load template.
 		require WPINSIGHT_PLUGIN_DIR . 'templates/admin-dashboard.php';
@@ -520,7 +555,7 @@ final class WPInsight_Admin {
 	 * @param string $severity Severity level (emergency, error, warning, info, debug).
 	 * @return string HTML badge markup.
 	 */
-	private static function get_severity_badge_html( string $severity ): string {
+	public static function get_severity_badge_html( string $severity ): string {
 		$colors = array(
 			'emergency' => '#d63638', // Red.
 			'error'     => '#d63638', // Red.
@@ -637,7 +672,7 @@ final class WPInsight_Admin {
 
 			<?php settings_errors( 'wpinsight_error_log' ); ?>
 
-			<div class="card">
+			<div class="card" style="max-width: 100%; width: 100%;">
 				<h2><?php esc_html_e( 'Filter Logs', 'cloudfest-wporgdownload' ); ?></h2>
 				<form method="get">
 					<input type="hidden" name="page" value="wpinsight-error-log" />
@@ -660,7 +695,7 @@ final class WPInsight_Admin {
 				</form>
 			</div>
 
-			<div class="card" style="margin-top: 20px;">
+			<div class="card" style="margin-top: 20px; max-width: 100%; width: 100%;">
 				<h2>
 					<?php esc_html_e( 'Error Log', 'cloudfest-wporgdownload' ); ?>
 					<span style="font-weight: normal; color: #646970;">
@@ -727,7 +762,7 @@ final class WPInsight_Admin {
 				<?php endif; ?>
 			</div>
 
-			<div class="card" style="margin-top: 20px;">
+			<div class="card" style="margin-top: 20px; max-width: 100%; width: 100%;">
 				<h2><?php esc_html_e( 'Maintenance', 'cloudfest-wporgdownload' ); ?></h2>
 				<form method="post">
 					<?php wp_nonce_field( 'wpinsight_clear_logs' ); ?>

@@ -13,6 +13,7 @@
  * - $plugin_state: Plugin sync state array.
  * - $theme_state: Theme sync state array.
  * - $queue_stats: Download queue statistics.
+ * - $recent_logs: Recent error logs array.
  * - $admin: WPInsight_Admin class for helper methods.
  *
  * @package    CloudFest_WPOrgDownload
@@ -27,6 +28,7 @@
  * @phpstan-var array{status: string, page: int, last_error: string, updated_at: string} $plugin_state
  * @phpstan-var array{status: string, page: int, last_error: string, updated_at: string} $theme_state
  * @phpstan-var array{total: int, pending: int, processing: int, completed: int, failed: int} $queue_stats
+ * @phpstan-var array<int, array{id: int, severity: string, message: string, created_at: string, context: string}> $recent_logs
  */
 
 // If this file is called directly, abort.
@@ -65,23 +67,196 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	</div>
 
-	<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin: 20px 0;">
-		<!-- Sync Status -->
-		<div class="card">
-			<h2><?php esc_html_e( 'Sync Status', 'cloudfest-wporgdownload' ); ?></h2>
-			<table class="widefat striped">
-				<thead>
-					<tr>
-						<th><?php esc_html_e( 'Type', 'cloudfest-wporgdownload' ); ?></th>
-						<th><?php esc_html_e( 'Status / Progress', 'cloudfest-wporgdownload' ); ?></th>
-						<th><?php esc_html_e( 'Last Run', 'cloudfest-wporgdownload' ); ?></th>
-						<th><?php esc_html_e( 'Actions', 'cloudfest-wporgdownload' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td><strong><?php esc_html_e( 'Plugins', 'cloudfest-wporgdownload' ); ?></strong></td>
-						<td>
+	<!-- Three Column Layout -->
+	<div style="display: grid; grid-template-columns: repeat(3, 1fr); margin: 20px 0;">
+
+		<!-- COLUMN 1 (33% - API) -->
+		<div>
+			<!-- API Sync Progress -->
+			<div class="card">
+				<h2><?php esc_html_e( 'API Sync Progress', 'cloudfest-wporgdownload' ); ?></h2>
+
+				<!-- Plugin Sync Progress -->
+				<div>
+						<h3 style="margin: 0 0 15px 0; font-size: 14px; color: #646970; text-transform: uppercase; letter-spacing: 0.5px;">
+							<?php esc_html_e( 'Plugin Sync', 'cloudfest-wporgdownload' ); ?>
+						</h3>
+						<?php if ( 'running' === $plugin_state['status'] || 'syncing' === $plugin_state['status'] ) : ?>
+							<?php
+							$plugin_progress    = 0;
+							$plugin_per_page    = isset( $plugin_state['per_page'] ) ? $plugin_state['per_page'] : 250;
+							$plugin_total_pages = isset( $plugin_state['total_pages'] ) ? $plugin_state['total_pages'] : null;
+							$plugin_total_items = isset( $plugin_state['total_items'] ) ? $plugin_state['total_items'] : null;
+
+							if ( $plugin_total_pages && $plugin_total_pages > 0 ) {
+								$plugin_progress = ( $plugin_state['page'] / $plugin_total_pages ) * 100;
+							}
+							$plugin_items_processed = $plugin_state['page'] * $plugin_per_page;
+							$plugin_items_remaining = $plugin_total_items ? $plugin_total_items - $plugin_items_processed : 0;
+							$plugin_pages_remaining = $plugin_total_pages ? $plugin_total_pages - $plugin_state['page'] : 0;
+							?>
+							<!-- Progress Bar -->
+							<div style="background: #e0e0e0; height: 24px; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+								<div style="background: linear-gradient(90deg, #2271b1, #135e96); height: 100%; width: <?php echo esc_attr( number_format( $plugin_progress, 1 ) ); ?>%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600; transition: width 0.3s ease;">
+									<?php echo esc_html( number_format( $plugin_progress, 1 ) ); ?>%
+								</div>
+							</div>
+
+							<!-- Stats Grid -->
+							<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+								<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+									<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Current Page', 'cloudfest-wporgdownload' ); ?></div>
+									<div style="font-weight: 600; font-size: 16px; color: #1d2327;">
+										<?php echo esc_html( number_format_i18n( $plugin_state['page'] ) ); ?>
+										<?php if ( $plugin_total_pages ) : ?>
+											<span style="font-size: 13px; color: #646970; font-weight: 400;">
+												/ <?php echo esc_html( number_format_i18n( $plugin_total_pages ) ); ?>
+											</span>
+										<?php endif; ?>
+									</div>
+								</div>
+
+								<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+									<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Pages Remaining', 'cloudfest-wporgdownload' ); ?></div>
+									<div style="font-weight: 600; font-size: 16px; color: #d63638;">
+										<?php echo esc_html( number_format_i18n( $plugin_pages_remaining ) ); ?>
+									</div>
+								</div>
+
+								<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+									<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Items Processed', 'cloudfest-wporgdownload' ); ?></div>
+									<div style="font-weight: 600; font-size: 16px; color: #1d2327;">
+										<?php echo esc_html( number_format_i18n( $plugin_items_processed ) ); ?>
+										<?php if ( $plugin_total_items ) : ?>
+											<span style="font-size: 13px; color: #646970; font-weight: 400;">
+												/ <?php echo esc_html( number_format_i18n( $plugin_total_items ) ); ?>
+											</span>
+										<?php endif; ?>
+									</div>
+								</div>
+
+								<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+									<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Items Remaining', 'cloudfest-wporgdownload' ); ?></div>
+									<div style="font-weight: 600; font-size: 16px; color: #d63638;">
+										<?php echo esc_html( number_format_i18n( $plugin_items_remaining ) ); ?>
+									</div>
+								</div>
+							</div>
+
+							<div style="margin-top: 10px; padding: 8px; background: #fff3cd; border-left: 3px solid #856404; font-size: 12px; color: #856404;">
+								<strong><?php esc_html_e( 'Sync in progress...', 'cloudfest-wporgdownload' ); ?></strong>
+								<?php esc_html_e( 'This page will auto-refresh every 10 seconds.', 'cloudfest-wporgdownload' ); ?>
+							</div>
+						<?php else : ?>
+							<div style="padding: 20px; text-align: center; background: #f0f0f1; border-radius: 4px; color: #646970;">
+								<div style="font-size: 14px;"><?php esc_html_e( 'No active sync', 'cloudfest-wporgdownload' ); ?></div>
+								<div style="font-size: 12px; margin-top: 5px;">
+									<?php esc_html_e( 'Click "Sync Now" or "Full Sync" to start', 'cloudfest-wporgdownload' ); ?>
+								</div>
+							</div>
+						<?php endif; ?>
+					</div>
+
+
+				<!-- Theme Sync Progress -->
+				<div style="margin-top: 30px;">
+						<h3 style="margin: 0 0 15px 0; font-size: 14px; color: #646970; text-transform: uppercase; letter-spacing: 0.5px;">
+							<?php esc_html_e( 'Theme Sync', 'cloudfest-wporgdownload' ); ?>
+						</h3>
+						<?php if ( 'running' === $theme_state['status'] || 'syncing' === $theme_state['status'] ) : ?>
+							<?php
+							$theme_progress    = 0;
+							$theme_per_page    = isset( $theme_state['per_page'] ) ? $theme_state['per_page'] : 250;
+							$theme_total_pages = isset( $theme_state['total_pages'] ) ? $theme_state['total_pages'] : null;
+							$theme_total_items = isset( $theme_state['total_items'] ) ? $theme_state['total_items'] : null;
+
+							if ( $theme_total_pages && $theme_total_pages > 0 ) {
+								$theme_progress = ( $theme_state['page'] / $theme_total_pages ) * 100;
+							}
+							$theme_items_processed = $theme_state['page'] * $theme_per_page;
+							$theme_items_remaining = $theme_total_items ? $theme_total_items - $theme_items_processed : 0;
+							$theme_pages_remaining = $theme_total_pages ? $theme_total_pages - $theme_state['page'] : 0;
+							?>
+							<!-- Progress Bar -->
+							<div style="background: #e0e0e0; height: 24px; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+								<div style="background: linear-gradient(90deg, #2271b1, #135e96); height: 100%; width: <?php echo esc_attr( number_format( $theme_progress, 1 ) ); ?>%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600; transition: width 0.3s ease;">
+									<?php echo esc_html( number_format( $theme_progress, 1 ) ); ?>%
+								</div>
+							</div>
+
+							<!-- Stats Grid -->
+							<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+								<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+									<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Current Page', 'cloudfest-wporgdownload' ); ?></div>
+									<div style="font-weight: 600; font-size: 16px; color: #1d2327;">
+										<?php echo esc_html( number_format_i18n( $theme_state['page'] ) ); ?>
+										<?php if ( $theme_total_pages ) : ?>
+											<span style="font-size: 13px; color: #646970; font-weight: 400;">
+												/ <?php echo esc_html( number_format_i18n( $theme_total_pages ) ); ?>
+											</span>
+										<?php endif; ?>
+									</div>
+								</div>
+
+								<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+									<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Pages Remaining', 'cloudfest-wporgdownload' ); ?></div>
+									<div style="font-weight: 600; font-size: 16px; color: #d63638;">
+										<?php echo esc_html( number_format_i18n( $theme_pages_remaining ) ); ?>
+									</div>
+								</div>
+
+								<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+									<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Items Processed', 'cloudfest-wporgdownload' ); ?></div>
+									<div style="font-weight: 600; font-size: 16px; color: #1d2327;">
+										<?php echo esc_html( number_format_i18n( $theme_items_processed ) ); ?>
+										<?php if ( $theme_total_items ) : ?>
+											<span style="font-size: 13px; color: #646970; font-weight: 400;">
+												/ <?php echo esc_html( number_format_i18n( $theme_total_items ) ); ?>
+											</span>
+										<?php endif; ?>
+									</div>
+								</div>
+
+								<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+									<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Items Remaining', 'cloudfest-wporgdownload' ); ?></div>
+									<div style="font-weight: 600; font-size: 16px; color: #d63638;">
+										<?php echo esc_html( number_format_i18n( $theme_items_remaining ) ); ?>
+									</div>
+								</div>
+							</div>
+
+							<div style="margin-top: 10px; padding: 8px; background: #fff3cd; border-left: 3px solid #856404; font-size: 12px; color: #856404;">
+								<strong><?php esc_html_e( 'Sync in progress...', 'cloudfest-wporgdownload' ); ?></strong>
+								<?php esc_html_e( 'This page will auto-refresh every 10 seconds.', 'cloudfest-wporgdownload' ); ?>
+							</div>
+						<?php else : ?>
+							<div style="padding: 20px; text-align: center; background: #f0f0f1; border-radius: 4px; color: #646970;">
+								<div style="font-size: 14px;"><?php esc_html_e( 'No active sync', 'cloudfest-wporgdownload' ); ?></div>
+								<div style="font-size: 12px; margin-top: 5px;">
+									<?php esc_html_e( 'Click "Sync Now" or "Full Sync" to start', 'cloudfest-wporgdownload' ); ?>
+								</div>
+							</div>
+						<?php endif; ?>
+				</div>
+			</div>
+
+
+			<!-- Sync Status -->
+			<div class="card">
+				<h2><?php esc_html_e( 'Sync Status', 'cloudfest-wporgdownload' ); ?></h2>
+				<table class="widefat striped">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Type', 'cloudfest-wporgdownload' ); ?></th>
+							<th><?php esc_html_e( 'Status / Progress', 'cloudfest-wporgdownload' ); ?></th>
+							<th><?php esc_html_e( 'Last Run', 'cloudfest-wporgdownload' ); ?></th>
+							<th><?php esc_html_e( 'Actions', 'cloudfest-wporgdownload' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><strong><?php esc_html_e( 'Plugins', 'cloudfest-wporgdownload' ); ?></strong></td>
+							<td>
 							<code><?php echo esc_html( $plugin_state['status'] ); ?></code>
 							<?php if ( 'running' === $plugin_state['status'] || 'syncing' === $plugin_state['status'] ) : ?>
 								<?php
@@ -93,8 +268,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 								}
 								?>
 							<?php endif; ?>
-						</td>
-						<td>
+							</td>
+							<td>
 							<?php
 							if ( ! empty( $plugin_state['updated_at'] ) ) {
 								$last_run = strtotime( $plugin_state['updated_at'] );
@@ -108,9 +283,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 								echo '<span style="color: #646970;">—</span>';
 							}
 							?>
-						</td>
-						<td>
-							<?php if ( 'error' === $plugin_state['status'] ) : ?>
+							</td>
+							<td>
+								<?php if ( 'error' === $plugin_state['status'] ) : ?>
 								<form method="post" style="display: inline;">
 									<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
 									<input type="hidden" name="wpinsight_action" value="sync_plugins">
@@ -122,8 +297,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 									<input type="hidden" name="wpinsight_action" value="sync_plugins">
 									<button type="submit" class="button button-small"><?php esc_html_e( 'Sync Now', 'cloudfest-wporgdownload' ); ?></button>
 								</form>
-							<?php endif; ?>
-							<form method="post" style="display: inline;">
+								<?php endif; ?>
+								<form method="post" style="display: inline;">
 								<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
 								<input type="hidden" name="wpinsight_action" value="full_sync_plugins">
 								<button type="submit" class="button button-small button-secondary" onclick="return confirm('<?php esc_attr_e( 'This will sync ALL plugins and ALL versions. This may take hours or days to complete. Continue?', 'cloudfest-wporgdownload' ); ?>');" title="<?php esc_attr_e( 'Download all plugins with full version history', 'cloudfest-wporgdownload' ); ?>"><?php esc_html_e( 'Full Sync', 'cloudfest-wporgdownload' ); ?></button>
@@ -149,8 +324,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 								}
 								?>
 							<?php endif; ?>
-						</td>
-						<td>
+							</td>
+							<td>
 							<?php
 							if ( ! empty( $theme_state['updated_at'] ) ) {
 								$last_run = strtotime( $theme_state['updated_at'] );
@@ -164,8 +339,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 								echo '<span style="color: #646970;">—</span>';
 							}
 							?>
-						</td>
-						<td>
+							</td>
+							<td>
 							<?php if ( 'error' === $theme_state['status'] ) : ?>
 								<form method="post" style="display: inline;">
 									<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
@@ -178,8 +353,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 									<input type="hidden" name="wpinsight_action" value="sync_themes">
 									<button type="submit" class="button button-small"><?php esc_html_e( 'Sync Now', 'cloudfest-wporgdownload' ); ?></button>
 								</form>
-							<?php endif; ?>
-							<form method="post" style="display: inline;">
+								<?php endif; ?>
+								<form method="post" style="display: inline;">
 								<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
 								<input type="hidden" name="wpinsight_action" value="full_sync_themes">
 								<button type="submit" class="button button-small button-secondary" onclick="return confirm('<?php esc_attr_e( 'This will sync ALL themes and ALL versions. This may take several hours to complete. Continue?', 'cloudfest-wporgdownload' ); ?>');" title="<?php esc_attr_e( 'Download all themes with full version history', 'cloudfest-wporgdownload' ); ?>"><?php esc_html_e( 'Full Sync', 'cloudfest-wporgdownload' ); ?></button>
@@ -193,20 +368,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</tr>
 				</tbody>
 			</table>
-			<?php if ( ! empty( $plugin_state['last_error'] ) ) : ?>
-				<div class="notice notice-error inline" style="margin: 10px 0;">
-					<p><strong><?php esc_html_e( 'Plugin Sync Error:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( $plugin_state['last_error'] ); ?></p>
-				</div>
-			<?php endif; ?>
-			<?php if ( ! empty( $theme_state['last_error'] ) ) : ?>
-				<div class="notice notice-error inline" style="margin: 10px 0;">
-					<p><strong><?php esc_html_e( 'Theme Sync Error:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( $theme_state['last_error'] ); ?></p>
-				</div>
-			<?php endif; ?>
+				<?php if ( ! empty( $plugin_state['last_error'] ) ) : ?>
+					<div class="notice notice-error inline" style="margin: 10px 0;">
+						<p><strong><?php esc_html_e( 'Plugin Sync Error:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( $plugin_state['last_error'] ); ?></p>
+					</div>
+				<?php endif; ?>
+				<?php if ( ! empty( $theme_state['last_error'] ) ) : ?>
+					<div class="notice notice-error inline" style="margin: 10px 0;">
+						<p><strong><?php esc_html_e( 'Theme Sync Error:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( $theme_state['last_error'] ); ?></p>
+					</div>
+				<?php endif; ?>
+			</div>
 		</div>
 
-		<!-- Download Queue -->
-		<div class="card">
+		<!-- COLUMN 2 (33% - Downloads) -->
+		<div>
+			<!-- Download Queue -->
+			<div class="card">
 			<h2><?php esc_html_e( 'Download Queue', 'cloudfest-wporgdownload' ); ?></h2>
 			<table class="widefat striped">
 				<tbody>
@@ -233,57 +411,90 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</tbody>
 			</table>
 
-			<div style="margin-top: 15px;">
-				<form method="post" style="display: inline;">
-					<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
-					<input type="hidden" name="wpinsight_action" value="process_queue">
-					<button type="submit" class="button button-primary"><?php esc_html_e( 'Process Queue', 'cloudfest-wporgdownload' ); ?></button>
-				</form>
-
-				<?php if ( $queue_stats['failed'] > 0 ) : ?>
+				<div style="margin-top: 15px;">
 					<form method="post" style="display: inline;">
 						<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
-						<input type="hidden" name="wpinsight_action" value="retry_failed">
-						<button type="submit" class="button"><?php esc_html_e( 'Retry Failed', 'cloudfest-wporgdownload' ); ?></button>
+						<input type="hidden" name="wpinsight_action" value="process_queue">
+						<button type="submit" class="button button-primary"><?php esc_html_e( 'Process Queue', 'cloudfest-wporgdownload' ); ?></button>
 					</form>
-				<?php endif; ?>
 
-				<?php if ( $queue_stats['completed'] > 0 ) : ?>
-					<form method="post" style="display: inline;">
-						<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
-						<input type="hidden" name="wpinsight_action" value="clear_completed">
-						<button type="submit" class="button"><?php esc_html_e( 'Clear Completed', 'cloudfest-wporgdownload' ); ?></button>
-					</form>
+					<?php if ( $queue_stats['failed'] > 0 ) : ?>
+						<form method="post" style="display: inline;">
+							<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+							<input type="hidden" name="wpinsight_action" value="retry_failed">
+							<button type="submit" class="button"><?php esc_html_e( 'Retry Failed', 'cloudfest-wporgdownload' ); ?></button>
+						</form>
+					<?php endif; ?>
+
+					<?php if ( $queue_stats['completed'] > 0 ) : ?>
+						<form method="post" style="display: inline;">
+							<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+							<input type="hidden" name="wpinsight_action" value="clear_completed">
+							<button type="submit" class="button"><?php esc_html_e( 'Clear Completed', 'cloudfest-wporgdownload' ); ?></button>
+						</form>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+
+		<!-- COLUMN 3 (33% - Logs) -->
+		<div>
+			<!-- Error Logs -->
+			<div class="card">
+				<h2><?php esc_html_e( 'Error Logs (Last 10)', 'cloudfest-wporgdownload' ); ?></h2>
+				<?php if ( empty( $recent_logs ) ) : ?>
+					<p><?php esc_html_e( 'No errors found.', 'cloudfest-wporgdownload' ); ?></p>
+				<?php else : ?>
+					<table class="widefat striped">
+						<thead>
+							<tr>
+								<th><?php esc_html_e( 'Severity', 'cloudfest-wporgdownload' ); ?></th>
+								<th><?php esc_html_e( 'Time', 'cloudfest-wporgdownload' ); ?></th>
+								<th><?php esc_html_e( 'Message', 'cloudfest-wporgdownload' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php foreach ( $recent_logs as $log ) : ?>
+								<tr>
+									<td><?php echo wp_kses_post( $admin::get_severity_badge_html( $log['severity'] ) ); ?></td>
+									<td style="font-size: 0.85em;">
+										<?php
+										echo esc_html(
+											human_time_diff(
+												strtotime( $log['created_at'] ),
+												time()
+											)
+										);
+										?>
+										<?php esc_html_e( 'ago', 'cloudfest-wporgdownload' ); ?>
+									</td>
+									<td><?php echo esc_html( wp_trim_words( $log['message'], 12 ) ); ?></td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
 				<?php endif; ?>
 			</div>
 		</div>
+
 	</div>
 
-	<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin: 20px 0;">
-		<!-- Recent Errors -->
-		<?php
-		// Phase 5.5: Add recent errors card here.
-		?>
-
-		<!-- Quick Links -->
-		<div class="card">
-			<h2><?php esc_html_e( 'Quick Links', 'cloudfest-wporgdownload' ); ?></h2>
-			<p>
-				<a href="<?php echo esc_url( admin_url( 'options-general.php?page=wpinsight-settings' ) ); ?>" class="button">
-					<?php esc_html_e( 'Settings', 'cloudfest-wporgdownload' ); ?>
-				</a>
-				<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . WPInsight_CPT::get_plugin_post_type() ) ); ?>" class="button">
-					<?php esc_html_e( 'View Plugins', 'cloudfest-wporgdownload' ); ?>
-				</a>
-				<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . WPInsight_CPT::get_theme_post_type() ) ); ?>" class="button">
-					<?php esc_html_e( 'View Themes', 'cloudfest-wporgdownload' ); ?>
-				</a>
-				<?php if ( defined( 'WP_CLI' ) && WP_CLI ) : ?>
-					<a href="<?php echo esc_url( admin_url( 'tools.php?page=wpinsight-dashboard#cli-commands' ) ); ?>" class="button">
-						<?php esc_html_e( 'WP-CLI Commands', 'cloudfest-wporgdownload' ); ?>
-					</a>
-				<?php endif; ?>
-			</p>
-		</div>
-	</div>
 </div>
+
+<script>
+(function() {
+	// Check if any sync is running
+	var pluginSyncRunning = <?php echo wp_json_encode( in_array( $plugin_state['status'], array( 'running', 'syncing' ), true ) ); ?>;
+	var themeSyncRunning = <?php echo wp_json_encode( in_array( $theme_state['status'], array( 'running', 'syncing' ), true ) ); ?>;
+	
+	if (pluginSyncRunning || themeSyncRunning) {
+		// Auto-refresh every 10 seconds when sync is active
+		setTimeout(function() {
+			window.location.reload();
+		}, 10000);
+		
+		// Add visual indicator
+		console.log('WPInsight: Sync in progress, auto-refresh in 10 seconds...');
+	}
+})();
+</script>
