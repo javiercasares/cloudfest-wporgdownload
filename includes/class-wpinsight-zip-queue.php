@@ -704,7 +704,7 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$plugin_downloaded = $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COALESCE(SUM(filesize), 0)
+				'SELECT COALESCE(SUM(file_size), 0)
 				FROM %i
 				WHERE item_type = %s',
 				$artifacts_table,
@@ -732,7 +732,7 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$theme_downloaded = $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COALESCE(SUM(filesize), 0)
+				'SELECT COALESCE(SUM(file_size), 0)
 				FROM %i
 				WHERE item_type = %s',
 				$artifacts_table,

@@ -518,6 +518,97 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<!-- COLUMN 2 (33% - Downloads) -->
 		<div>
+			<!-- ZIP Size Detection Progress -->
+			<div class="card">
+				<h2><?php esc_html_e( 'ZIP Size Detection Progress', 'cloudfest-wporgdownload' ); ?></h2>
+
+				<?php
+				$size_stats = WPInsight_Zip_Queue::get_size_statistics();
+				?>
+
+				<!-- Plugin Size Detection -->
+				<h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #2271b1;">
+					<?php esc_html_e( 'Plugins', 'cloudfest-wporgdownload' ); ?>
+				</h3>
+
+				<?php
+				$plugin_detection_progress = $size_stats['plugins']['detection_progress'];
+				$plugin_with_size          = $size_stats['plugins']['count_with_size'];
+				$plugin_total              = $size_stats['plugins']['total_count'];
+				?>
+
+				<!-- Progress Bar -->
+				<div style="background: #e0e0e0; height: 24px; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
+					<div style="background: linear-gradient(90deg, #2271b1, #135e96); height: 100%; width: <?php echo esc_attr( number_format( $plugin_detection_progress, 1 ) ); ?>%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600; transition: width 0.3s ease;">
+						<?php echo esc_html( number_format( $plugin_detection_progress, 1 ) ); ?>%
+					</div>
+				</div>
+
+				<!-- Stats Grid -->
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; margin-bottom: 20px;">
+					<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+						<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Size Detected', 'cloudfest-wporgdownload' ); ?></div>
+						<div style="font-weight: 600; font-size: 16px; color: #00a32a;">
+							<?php echo esc_html( $admin::format_number_abbreviated( $plugin_with_size ) ); ?>
+							<span style="font-size: 13px; color: #646970; font-weight: 400;">
+								/ <?php echo esc_html( $admin::format_number_abbreviated( $plugin_total ) ); ?>
+							</span>
+						</div>
+					</div>
+
+					<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+						<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Remaining', 'cloudfest-wporgdownload' ); ?></div>
+						<div style="font-weight: 600; font-size: 16px; color: #d63638;">
+							<?php echo esc_html( $admin::format_number_abbreviated( $plugin_total - $plugin_with_size ) ); ?>
+						</div>
+					</div>
+				</div>
+
+				<!-- Theme Size Detection -->
+				<h3 style="margin: 15px 0 10px 0; font-size: 14px; color: #2271b1;">
+					<?php esc_html_e( 'Themes', 'cloudfest-wporgdownload' ); ?>
+				</h3>
+
+				<?php
+				$theme_detection_progress = $size_stats['themes']['detection_progress'];
+				$theme_with_size          = $size_stats['themes']['count_with_size'];
+				$theme_total              = $size_stats['themes']['total_count'];
+				?>
+
+				<!-- Progress Bar -->
+				<div style="background: #e0e0e0; height: 24px; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
+					<div style="background: linear-gradient(90deg, #2271b1, #135e96); height: 100%; width: <?php echo esc_attr( number_format( $theme_detection_progress, 1 ) ); ?>%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600; transition: width 0.3s ease;">
+						<?php echo esc_html( number_format( $theme_detection_progress, 1 ) ); ?>%
+					</div>
+				</div>
+
+				<!-- Stats Grid -->
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+					<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+						<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Size Detected', 'cloudfest-wporgdownload' ); ?></div>
+						<div style="font-weight: 600; font-size: 16px; color: #00a32a;">
+							<?php echo esc_html( $admin::format_number_abbreviated( $theme_with_size ) ); ?>
+							<span style="font-size: 13px; color: #646970; font-weight: 400;">
+								/ <?php echo esc_html( $admin::format_number_abbreviated( $theme_total ) ); ?>
+							</span>
+						</div>
+					</div>
+
+					<div style="background: #f0f0f1; padding: 10px; border-radius: 3px;">
+						<div style="color: #646970; font-size: 11px; margin-bottom: 3px;"><?php esc_html_e( 'Remaining', 'cloudfest-wporgdownload' ); ?></div>
+						<div style="font-weight: 600; font-size: 16px; color: #d63638;">
+							<?php echo esc_html( $admin::format_number_abbreviated( $theme_total - $theme_with_size ) ); ?>
+						</div>
+					</div>
+				</div>
+
+				<!-- Worker Status -->
+				<div style="margin-top: 15px; padding: 10px; background: #f6f7f7; border-left: 3px solid #8c8f94; border-radius: 3px; font-size: 12px; color: #646970;">
+					<strong><?php esc_html_e( 'Auto-detection:', 'cloudfest-wporgdownload' ); ?></strong>
+					<?php esc_html_e( 'Runs every 5 minutes (100 ZIPs per batch)', 'cloudfest-wporgdownload' ); ?>
+				</div>
+			</div>
+
 			<!-- Download Queue -->
 			<div class="card">
 			<h2><?php esc_html_e( 'Download Queue', 'cloudfest-wporgdownload' ); ?></h2>

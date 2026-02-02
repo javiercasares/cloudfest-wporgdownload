@@ -1099,7 +1099,7 @@ final class WPInsight_CPT {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT version, filesize, sha256, path, downloaded_at
+				'SELECT version, file_size as filesize, sha256, path, downloaded_at
 				FROM %i
 				WHERE slug = %s AND entity_type = %s
 				ORDER BY downloaded_at DESC',
