@@ -564,10 +564,13 @@ final class WPInsight_Sync {
 	 * @return array<string, mixed> {
 	 *     Sync state data.
 	 *
-	 *     @type string $status      Sync status.
-	 *     @type int    $page        Current page.
-	 *     @type string $last_error  Last error message (if any).
-	 *     @type string $updated_at  Last update timestamp.
+	 *     @type string   $status      Sync status.
+	 *     @type int      $page        Current page.
+	 *     @type string   $last_error  Last error message (if any).
+	 *     @type string   $updated_at  Last update timestamp.
+	 *     @type int|null $total_pages Total pages to process (null if unknown).
+	 *     @type int|null $total_items Total items to process (null if unknown).
+	 *     @type int      $per_page    Items per page.
 	 * }
 	 */
 	public static function get_sync_state( string $type ): array {
@@ -587,18 +590,24 @@ final class WPInsight_Sync {
 		if ( ! $row ) {
 			// No state yet, return defaults.
 			return array(
-				'status'     => self::STATE_IDLE,
-				'page'       => 1,
-				'last_error' => '',
-				'updated_at' => current_time( 'mysql', true ),
+				'status'      => self::STATE_IDLE,
+				'page'        => 1,
+				'last_error'  => '',
+				'updated_at'  => current_time( 'mysql', true ),
+				'total_pages' => null,
+				'total_items' => null,
+				'per_page'    => WPInsight_Settings::get( 'per_page', 250 ),
 			);
 		}
 
 		return array(
-			'status'     => $row['status'],
-			'page'       => (int) $row['page'],
-			'last_error' => $row['last_error'] ?? '',
-			'updated_at' => $row['updated_at'],
+			'status'      => $row['status'],
+			'page'        => (int) $row['page'],
+			'last_error'  => $row['last_error'] ?? '',
+			'updated_at'  => $row['updated_at'],
+			'total_pages' => isset( $row['total_pages'] ) ? (int) $row['total_pages'] : null,
+			'total_items' => isset( $row['total_items'] ) ? (int) $row['total_items'] : null,
+			'per_page'    => isset( $row['per_page'] ) ? (int) $row['per_page'] : WPInsight_Settings::get( 'per_page', 250 ),
 		);
 	}
 
@@ -619,15 +628,19 @@ final class WPInsight_Sync {
 
 		$table = WPInsight_DB::get_table_name( 'sync_state' );
 
+		// Get per_page from settings to save with state.
+		$per_page = WPInsight_Settings::get( 'per_page', 250 );
+
 		$data = array(
 			'sync_type'  => $type,
 			'status'     => $status,
 			'page'       => $page,
+			'per_page'   => $per_page,
 			'last_error' => $last_error,
 			'updated_at' => current_time( 'mysql', true ),
 		);
 
-		$format = array( '%s', '%s', '%d', '%s', '%s' );
+		$format = array( '%s', '%s', '%d', '%d', '%s', '%s' );
 
 		// Add optional fields if provided.
 		if ( null !== $total_pages ) {
