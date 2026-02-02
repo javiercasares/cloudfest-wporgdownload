@@ -67,6 +67,7 @@ final class WPInsight_Admin {
 		add_action( 'admin_menu', array( __CLASS__, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_dashboard_actions' ) );
+		add_action( 'admin_init', array( __CLASS__, 'handle_export_download' ) );
 	}
 
 	/**
@@ -462,6 +463,87 @@ final class WPInsight_Admin {
 	}
 
 	/**
+	 * Handle export download.
+	 *
+	 * Intercepts export requests and generates file download BEFORE any HTML is rendered.
+	 * This must run on admin_init to work properly.
+	 *
+	 * @since 1.2.0
+	 * @return void
+	 */
+	public static function handle_export_download(): void {
+		// Only process on import/export page.
+		if ( ! isset( $_GET['page'] ) || 'wpinsight-import-export' !== $_GET['page'] ) {
+			return;
+		}
+
+		// Check if export button was clicked.
+		if ( ! isset( $_POST['wpinsight_export'] ) ) {
+			return;
+		}
+
+		// Verify nonce.
+		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'wpinsight_export' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'cloudfest-wporgdownload' ) );
+		}
+
+		// Check user capabilities.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions.', 'cloudfest-wporgdownload' ) );
+		}
+
+		// Get export parameters.
+		$export_type = isset( $_POST['export_type'] ) ? sanitize_text_field( wp_unslash( $_POST['export_type'] ) ) : 'all';
+		$compress    = isset( $_POST['compress'] );
+
+		// Validate export type.
+		if ( ! in_array( $export_type, array( 'plugins', 'themes', 'all' ), true ) ) {
+			wp_die( esc_html__( 'Invalid export type.', 'cloudfest-wporgdownload' ) );
+		}
+
+		// Generate export data.
+		$data = '';
+		switch ( $export_type ) {
+			case 'plugins':
+				$data = WPInsight_Export::export_plugins( $compress );
+				break;
+			case 'themes':
+				$data = WPInsight_Export::export_themes( $compress );
+				break;
+			case 'all':
+			default:
+				$data = WPInsight_Export::export_all( $compress );
+				break;
+		}
+
+		// Check if export was successful.
+		if ( empty( $data ) ) {
+			wp_die( esc_html__( 'Failed to generate export. Please check error logs.', 'cloudfest-wporgdownload' ) );
+		}
+
+		// Generate filename with timestamp.
+		$filename = 'wpinsight-export-' . $export_type . '-' . gmdate( 'Y-m-d-His' ) . '.json' . ( $compress ? '.gz' : '' );
+
+		// Clear any output buffers.
+		if ( ob_get_level() ) {
+			ob_end_clean();
+		}
+
+		// Set headers for download.
+		header( 'Content-Type: application/' . ( $compress ? 'gzip' : 'json' ) );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		header( 'Content-Length: ' . strlen( $data ) );
+		header( 'Cache-Control: no-cache, no-store, must-revalidate' );
+		header( 'Pragma: no-cache' );
+		header( 'Expires: 0' );
+
+		// Output file content and exit.
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Binary data, JSON, or compressed content.
+		echo $data;
+		exit;
+	}
+
+	/**
 	 * Render dashboard page.
 	 *
 	 * Displays the main dashboard with statistics, sync status, and action buttons.
@@ -839,49 +921,8 @@ final class WPInsight_Admin {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'cloudfest-wporgdownload' ) );
 		}
 
-		// Handle export form submission.
-		if ( isset( $_POST['wpinsight_export'] ) && check_admin_referer( 'wpinsight_export' ) ) {
-			$export_type = isset( $_POST['export_type'] ) ? sanitize_text_field( wp_unslash( $_POST['export_type'] ) ) : 'all';
-			$compress    = isset( $_POST['compress'] );
-
-			// Generate export data.
-			$data = '';
-			switch ( $export_type ) {
-				case 'plugins':
-					$data = WPInsight_Export::export_plugins( $compress );
-					break;
-				case 'themes':
-					$data = WPInsight_Export::export_themes( $compress );
-					break;
-				case 'all':
-				default:
-					$data = WPInsight_Export::export_all( $compress );
-					break;
-			}
-
-			if ( ! empty( $data ) ) {
-				$filename = 'wpinsight-export-' . $export_type . '-' . gmdate( 'Y-m-d-His' ) . '.json' . ( $compress ? '.gz' : '' );
-
-				// Set headers for download.
-				header( 'Content-Type: application/' . ( $compress ? 'gzip' : 'json' ) );
-				header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
-				header( 'Content-Length: ' . strlen( $data ) );
-				header( 'Pragma: no-cache' );
-				header( 'Expires: 0' );
-
-				// Output and exit.
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Binary data, JSON, or compressed content.
-				echo $data;
-				exit;
-			} else {
-				add_settings_error(
-					'wpinsight_import_export',
-					'export_failed',
-					__( 'Failed to generate export. Please check error logs.', 'cloudfest-wporgdownload' ),
-					'error'
-				);
-			}
-		}
+		// Note: Export form submission is handled by handle_export_download() on admin_init.
+		// This ensures the file is downloaded before any HTML is rendered.
 
 		// Handle import form submission.
 		if ( isset( $_POST['wpinsight_import'] ) && check_admin_referer( 'wpinsight_import' ) ) {
@@ -995,7 +1036,7 @@ final class WPInsight_Admin {
 
 			<?php settings_errors( 'wpinsight_import_export' ); ?>
 
-			<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-top: 20px;">
+			<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0;">
 				<!-- Export Section -->
 				<div class="card">
 					<h2><?php esc_html_e( 'Export Data', 'cloudfest-wporgdownload' ); ?></h2>
