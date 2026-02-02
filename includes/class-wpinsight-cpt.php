@@ -925,6 +925,10 @@ final class WPInsight_CPT {
 			return;
 		}
 
+		// Get full API data for changelog.
+		$sections = get_post_meta( $post->ID, 'sections', true );
+		$changelog = isset( $sections['changelog'] ) ? $sections['changelog'] : '';
+
 		// Get artifact data (downloaded ZIPs).
 		$artifacts = self::get_artifact_data( $slug, $entity_type );
 
@@ -964,53 +968,213 @@ final class WPInsight_CPT {
 		uksort( $version_data, 'version_compare' );
 		$version_data = array_reverse( $version_data, true );
 
-		// Display table.
+		// Display accordion-style version history.
 		?>
-		<p><?php echo esc_html( sprintf( __( 'Total versions: %d', 'cloudfest-wporgdownload' ), count( $version_data ) ) ); ?></p>
-		<table class="widefat fixed" style="margin-top: 10px;">
-			<thead>
-				<tr>
-					<th style="width: 15%;"><?php esc_html_e( 'Version', 'cloudfest-wporgdownload' ); ?></th>
-					<th style="width: 20%;"><?php esc_html_e( 'Status', 'cloudfest-wporgdownload' ); ?></th>
-					<th style="width: 15%;"><?php esc_html_e( 'Size', 'cloudfest-wporgdownload' ); ?></th>
-					<th style="width: 20%;"><?php esc_html_e( 'Date', 'cloudfest-wporgdownload' ); ?></th>
-					<th style="width: 30%;"><?php esc_html_e( 'Actions', 'cloudfest-wporgdownload' ); ?></th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php foreach ( $version_data as $version => $data ) : ?>
-				<tr>
-					<td><strong><?php echo esc_html( $version ); ?></strong></td>
-					<td><?php echo wp_kses_post( self::get_status_badge( $data['status'] ) ); ?></td>
-					<td><?php echo $data['size'] ? esc_html( size_format( $data['size'], 2 ) ) : '—'; ?></td>
-					<td><?php echo $data['date'] ? esc_html( human_time_diff( strtotime( $data['date'] ), time() ) . ' ago' ) : '—'; ?></td>
-					<td>
-						<?php if ( 'downloaded' === $data['status'] && $data['path'] ) : ?>
-							<?php
-							$public_url = self::get_public_url( $data['path'] );
-							if ( $public_url ) :
-								?>
-								<a href="<?php echo esc_url( $public_url ); ?>" target="_blank" class="button button-small">
-									<?php esc_html_e( 'View URL', 'cloudfest-wporgdownload' ); ?>
-								</a>
+		<style>
+			.wpinsight-version-accordion {
+				margin-top: 10px;
+			}
+			.wpinsight-version-item {
+				border: 1px solid #dcdcde;
+				margin-bottom: 5px;
+				background: #fff;
+			}
+			.wpinsight-version-header {
+				padding: 12px 15px;
+				cursor: pointer;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				background: #f6f7f7;
+				transition: background-color 0.2s;
+			}
+			.wpinsight-version-header:hover {
+				background: #f0f0f1;
+			}
+			.wpinsight-version-header-left {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				flex: 1;
+			}
+			.wpinsight-version-toggle {
+				width: 20px;
+				text-align: center;
+				font-weight: bold;
+				color: #2271b1;
+			}
+			.wpinsight-version-number {
+				font-weight: 600;
+				font-size: 14px;
+				min-width: 80px;
+			}
+			.wpinsight-version-body {
+				display: none;
+				padding: 15px;
+				border-top: 1px solid #dcdcde;
+				background: #fff;
+			}
+			.wpinsight-version-body.active {
+				display: block;
+			}
+			.wpinsight-changelog {
+				margin: 10px 0;
+				padding: 10px;
+				background: #f9f9f9;
+				border-left: 3px solid #2271b1;
+				font-size: 13px;
+				line-height: 1.6;
+			}
+			.wpinsight-changelog h4 {
+				margin: 0 0 8px 0;
+				font-size: 13px;
+				color: #2271b1;
+			}
+			.wpinsight-changelog ul {
+				margin: 0;
+				padding-left: 20px;
+			}
+			.wpinsight-version-actions {
+				margin-top: 12px;
+				display: flex;
+				gap: 8px;
+			}
+		</style>
+
+		<p style="margin-bottom: 10px;">
+			<strong><?php echo esc_html( sprintf( __( 'Total versions: %d', 'cloudfest-wporgdownload' ), count( $version_data ) ) ); ?></strong>
+		</p>
+
+		<div class="wpinsight-version-accordion">
+			<?php
+			$version_index = 0;
+			foreach ( $version_data as $version => $data ) :
+				$version_index++;
+				$accordion_id = 'version-' . esc_attr( $slug . '-' . $version );
+
+				// Extract changelog for this version.
+				$version_changelog = self::extract_version_changelog( $changelog, $version );
+				?>
+				<div class="wpinsight-version-item">
+					<div class="wpinsight-version-header" onclick="toggleVersionDetails('<?php echo esc_js( $accordion_id ); ?>')">
+						<div class="wpinsight-version-header-left">
+							<span class="wpinsight-version-toggle" id="toggle-<?php echo esc_attr( $accordion_id ); ?>">▶</span>
+							<span class="wpinsight-version-number"><?php echo esc_html( $version ); ?></span>
+							<?php echo wp_kses_post( self::get_status_badge( $data['status'] ) ); ?>
+							<?php if ( $data['date'] ) : ?>
+								<span style="color: #646970; font-size: 12px;">
+									<?php echo esc_html( human_time_diff( strtotime( $data['date'] ), time() ) . ' ago' ); ?>
+								</span>
 							<?php endif; ?>
-						<?php elseif ( 'failed' === $data['status'] ) : ?>
-							<button type="button" class="button button-small" disabled>
-								<?php esc_html_e( 'Retry (Not implemented)', 'cloudfest-wporgdownload' ); ?>
-							</button>
-						<?php elseif ( 'pending' === $data['status'] || 'queued' === $data['status'] ) : ?>
-							<span style="color: #999;">
-								<?php esc_html_e( 'In queue...', 'cloudfest-wporgdownload' ); ?>
-							</span>
+						</div>
+						<div style="display: flex; gap: 8px; align-items: center;">
+							<?php if ( $data['size'] ) : ?>
+								<span style="color: #646970; font-size: 12px;">
+									<?php echo esc_html( size_format( $data['size'], 2 ) ); ?>
+								</span>
+							<?php endif; ?>
+						</div>
+					</div>
+
+					<div class="wpinsight-version-body" id="<?php echo esc_attr( $accordion_id ); ?>">
+						<?php if ( ! empty( $version_changelog ) ) : ?>
+							<div class="wpinsight-changelog">
+								<h4><?php esc_html_e( 'Changelog:', 'cloudfest-wporgdownload' ); ?></h4>
+								<?php echo wp_kses_post( $version_changelog ); ?>
+							</div>
 						<?php else : ?>
-							—
+							<div style="padding: 10px; color: #646970; font-style: italic;">
+								<?php esc_html_e( 'No changelog available for this version.', 'cloudfest-wporgdownload' ); ?>
+							</div>
 						<?php endif; ?>
-					</td>
-				</tr>
-				<?php endforeach; ?>
-			</tbody>
-		</table>
+
+						<div class="wpinsight-version-actions">
+							<?php if ( 'downloaded' === $data['status'] && $data['path'] ) : ?>
+								<?php
+								$public_url = self::get_public_url( $data['path'] );
+								if ( $public_url ) :
+									?>
+									<a href="<?php echo esc_url( $public_url ); ?>" target="_blank" class="button button-small">
+										<?php esc_html_e( 'Download ZIP', 'cloudfest-wporgdownload' ); ?>
+										<?php if ( $data['size'] ) : ?>
+											(<?php echo esc_html( size_format( $data['size'], 2 ) ); ?>)
+										<?php endif; ?>
+									</a>
+								<?php endif; ?>
+							<?php endif; ?>
+
+							<a href="<?php echo esc_url( 'https://wordpress.org/' . ( 'plugin' === $entity_type ? 'plugins' : 'themes' ) . '/' . $slug . '/' ); ?>"
+							   target="_blank"
+							   class="button button-small">
+								<?php esc_html_e( 'View on WordPress.org', 'cloudfest-wporgdownload' ); ?>
+							</a>
+
+							<?php if ( 'failed' === $data['status'] ) : ?>
+								<button type="button" class="button button-small" disabled>
+									<?php esc_html_e( 'Retry (Not implemented)', 'cloudfest-wporgdownload' ); ?>
+								</button>
+							<?php elseif ( 'pending' === $data['status'] || 'queued' === $data['status'] ) : ?>
+								<span style="color: #999; font-size: 12px; padding: 5px 10px;">
+									<?php esc_html_e( 'In download queue...', 'cloudfest-wporgdownload' ); ?>
+								</span>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+			<?php endforeach; ?>
+		</div>
+
+		<script>
+		function toggleVersionDetails(id) {
+			var body = document.getElementById(id);
+			var toggle = document.getElementById('toggle-' + id);
+
+			if (body.classList.contains('active')) {
+				body.classList.remove('active');
+				toggle.textContent = '▶';
+			} else {
+				body.classList.add('active');
+				toggle.textContent = '▼';
+			}
+		}
+		</script>
 		<?php
+	}
+
+	/**
+	 * Extract changelog for a specific version.
+	 *
+	 * Parses the full changelog HTML and extracts content for a specific version.
+	 *
+	 * @since 1.5.0
+	 * @param string $full_changelog Full changelog HTML from WordPress.org API.
+	 * @param string $version        Version number to extract.
+	 * @return string Changelog content for the version, or empty string if not found.
+	 */
+	private static function extract_version_changelog( string $full_changelog, string $version ): string {
+		if ( empty( $full_changelog ) ) {
+			return '';
+		}
+
+		// Try to find version-specific changelog.
+		// WordPress.org changelogs typically use <h4>Version X.X.X</h4> format.
+		$pattern = '/<h4>(?:Version\s+)?' . preg_quote( $version, '/' ) . '(?:\s+.+?)?<\/h4>(.*?)(?=<h4>|$)/is';
+
+		if ( preg_match( $pattern, $full_changelog, $matches ) ) {
+			return trim( $matches[1] );
+		}
+
+		// Fallback: Try simpler pattern.
+		$pattern = '/##?\s+' . preg_quote( $version, '/' ) . '\s*(.*?)(?=##?\s+[\d\.]+|$)/is';
+
+		if ( preg_match( $pattern, $full_changelog, $matches ) ) {
+			// Convert to HTML if it's markdown-style.
+			$content = trim( $matches[1] );
+			$content = wpautop( $content );
+			return $content;
+		}
+
+		return '';
 	}
 
 	/**
