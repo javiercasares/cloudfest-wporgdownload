@@ -1016,6 +1016,10 @@ final class WPInsight_Admin {
 		$disk_space       = self::get_disk_space_info();
 		$downloads_paused = WPInsight_Settings::get( 'downloads_paused', false );
 
+		// Get system health data for Phase 18.6
+		$system_health = self::get_system_health_data();
+		$overall_health = self::get_overall_health_status( $system_health );
+
 		// Pass admin class reference for helper methods.
 		$admin = __CLASS__;
 
@@ -3339,5 +3343,234 @@ final class WPInsight_Admin {
 
 		wp_safe_redirect( $redirect_url );
 		exit;
+	}
+
+	/**
+	 * Get system health check data.
+	 *
+	 * Performs comprehensive system health checks including PHP version,
+	 * memory, extensions, permissions, and requirements.
+	 *
+	 * @since 1.5.0
+	 * @return array{
+	 *     php_version: array{status: string, value: string, required: string, message: string},
+	 *     php_memory: array{status: string, value: string, used: int, limit: int, percent: float, message: string},
+	 *     wp_version: array{status: string, value: string, required: string, message: string},
+	 *     extensions: array<string, array{status: string, installed: bool, message: string}>,
+	 *     permissions: array{status: string, path: string, writable: bool, message: string},
+	 *     disk_space: array{status: string, free: int, total: int, percent: float, message: string},
+	 *     database: array{status: string, version: string, message: string},
+	 *     action_scheduler: array{status: string, installed: bool, message: string}
+	 * } System health data.
+	 */
+	private static function get_system_health_data(): array {
+		global $wpdb;
+
+		$health = array();
+
+		// Check PHP Version.
+		$php_version     = PHP_VERSION;
+		$required_php    = '8.4';
+		$php_version_ok  = version_compare( $php_version, $required_php, '>=' );
+		$health['php_version'] = array(
+			'status'   => $php_version_ok ? 'ok' : 'error',
+			'value'    => $php_version,
+			'required' => $required_php . '+',
+			'message'  => $php_version_ok
+				? sprintf( __( 'PHP %s (meets requirement)', 'cloudfest-wporgdownload' ), $php_version )
+				: sprintf( __( 'PHP %s (requires %s+)', 'cloudfest-wporgdownload' ), $php_version, $required_php ),
+		);
+
+		// Check PHP Memory.
+		$memory_limit     = ini_get( 'memory_limit' );
+		$memory_limit_bytes = wp_convert_hr_to_bytes( $memory_limit );
+		$memory_usage     = memory_get_usage( true );
+		$memory_percent   = $memory_limit_bytes > 0 ? ( $memory_usage / $memory_limit_bytes ) * 100 : 0;
+
+		$memory_status = 'ok';
+		if ( $memory_percent > 90 ) {
+			$memory_status = 'error';
+		} elseif ( $memory_percent > 75 ) {
+			$memory_status = 'warning';
+		}
+
+		$health['php_memory'] = array(
+			'status'  => $memory_status,
+			'value'   => $memory_limit,
+			'used'    => $memory_usage,
+			'limit'   => $memory_limit_bytes,
+			'percent' => round( $memory_percent, 1 ),
+			'message' => sprintf(
+				/* translators: 1: used memory, 2: memory limit, 3: percentage */
+				__( '%1$s used of %2$s (%3$s%%)', 'cloudfest-wporgdownload' ),
+				size_format( $memory_usage ),
+				$memory_limit,
+				round( $memory_percent, 1 )
+			),
+		);
+
+		// Check WordPress Version.
+		$wp_version     = get_bloginfo( 'version' );
+		$required_wp    = '6.9';
+		$wp_version_ok  = version_compare( $wp_version, $required_wp, '>=' );
+		$health['wp_version'] = array(
+			'status'   => $wp_version_ok ? 'ok' : 'error',
+			'value'    => $wp_version,
+			'required' => $required_wp . '+',
+			'message'  => $wp_version_ok
+				? sprintf( __( 'WordPress %s (meets requirement)', 'cloudfest-wporgdownload' ), $wp_version )
+				: sprintf( __( 'WordPress %s (requires %s+)', 'cloudfest-wporgdownload' ), $wp_version, $required_wp ),
+		);
+
+		// Check PHP Extensions.
+		$required_extensions = array(
+			'curl'     => __( 'cURL extension (required for API requests)', 'cloudfest-wporgdownload' ),
+			'zip'      => __( 'ZIP extension (required for file validation)', 'cloudfest-wporgdownload' ),
+			'json'     => __( 'JSON extension (required for API parsing)', 'cloudfest-wporgdownload' ),
+			'mbstring' => __( 'Mbstring extension (recommended for string handling)', 'cloudfest-wporgdownload' ),
+		);
+
+		$health['extensions'] = array();
+		foreach ( $required_extensions as $ext => $description ) {
+			$installed = extension_loaded( $ext );
+			$is_required = in_array( $ext, array( 'curl', 'zip', 'json' ), true );
+
+			$health['extensions'][ $ext ] = array(
+				'status'    => $installed ? 'ok' : ( $is_required ? 'error' : 'warning' ),
+				'installed' => $installed,
+				'message'   => $installed
+					? sprintf( __( '%s - Installed', 'cloudfest-wporgdownload' ), $description )
+					: sprintf( __( '%s - Missing', 'cloudfest-wporgdownload' ), $description ),
+			);
+		}
+
+		// Check File Permissions.
+		$upload_dir = wp_upload_dir();
+		$base_path  = $upload_dir['basedir'];
+		$writable   = wp_is_writable( $base_path );
+
+		$health['permissions'] = array(
+			'status'   => $writable ? 'ok' : 'error',
+			'path'     => $base_path,
+			'writable' => $writable,
+			'message'  => $writable
+				? sprintf( __( 'Uploads directory writable: %s', 'cloudfest-wporgdownload' ), $base_path )
+				: sprintf( __( 'Uploads directory NOT writable: %s', 'cloudfest-wporgdownload' ), $base_path ),
+		);
+
+		// Check Disk Space.
+		$total_space = disk_total_space( $base_path );
+		$free_space  = disk_free_space( $base_path );
+		$used_percent = $total_space > 0 ? ( ( $total_space - $free_space ) / $total_space ) * 100 : 0;
+
+		$disk_status = 'ok';
+		if ( $used_percent > 95 ) {
+			$disk_status = 'error';
+		} elseif ( $used_percent > 85 ) {
+			$disk_status = 'warning';
+		}
+
+		$health['disk_space'] = array(
+			'status'  => $disk_status,
+			'free'    => $free_space,
+			'total'   => $total_space,
+			'percent' => round( $used_percent, 1 ),
+			'message' => sprintf(
+				/* translators: 1: free space, 2: total space */
+				__( '%1$s free of %2$s', 'cloudfest-wporgdownload' ),
+				size_format( $free_space ),
+				size_format( $total_space )
+			),
+		);
+
+		// Check Database.
+		$db_version = $wpdb->db_version();
+		$db_ok      = version_compare( $db_version, '10.6', '>=' );
+
+		$health['database'] = array(
+			'status'  => $db_ok ? 'ok' : 'warning',
+			'version' => $db_version,
+			'message' => $db_ok
+				? sprintf( __( 'MariaDB/MySQL %s (meets requirement)', 'cloudfest-wporgdownload' ), $db_version )
+				: sprintf( __( 'MariaDB/MySQL %s (10.6+ recommended)', 'cloudfest-wporgdownload' ), $db_version ),
+		);
+
+		// Check Action Scheduler.
+		$as_installed = function_exists( 'as_schedule_recurring_action' );
+
+		$health['action_scheduler'] = array(
+			'status'    => $as_installed ? 'ok' : 'error',
+			'installed' => $as_installed,
+			'message'   => $as_installed
+				? __( 'Action Scheduler - Installed and active', 'cloudfest-wporgdownload' )
+				: __( 'Action Scheduler - Missing (REQUIRED)', 'cloudfest-wporgdownload' ),
+		);
+
+		return $health;
+	}
+
+	/**
+	 * Get overall health status.
+	 *
+	 * Analyzes all health checks and returns overall status.
+	 *
+	 * @since 1.5.0
+	 * @param array<string, mixed> $health_data Health check data.
+	 * @return array{
+	 *     status: string,
+	 *     message: string,
+	 *     error_count: int,
+	 *     warning_count: int
+	 * } Overall health status.
+	 */
+	private static function get_overall_health_status( array $health_data ): array {
+		$error_count   = 0;
+		$warning_count = 0;
+
+		// Count errors and warnings.
+		foreach ( $health_data as $key => $check ) {
+			if ( 'extensions' === $key ) {
+				foreach ( $check as $ext_data ) {
+					if ( 'error' === $ext_data['status'] ) {
+						++$error_count;
+					} elseif ( 'warning' === $ext_data['status'] ) {
+						++$warning_count;
+					}
+				}
+			} else {
+				if ( 'error' === $check['status'] ) {
+					++$error_count;
+				} elseif ( 'warning' === $check['status'] ) {
+					++$warning_count;
+				}
+			}
+		}
+
+		// Determine overall status.
+		$overall_status = 'ok';
+		$message        = __( 'All system checks passed', 'cloudfest-wporgdownload' );
+
+		if ( $error_count > 0 ) {
+			$overall_status = 'error';
+			$message        = sprintf(
+				/* translators: %d: number of errors */
+				_n( '%d critical issue detected', '%d critical issues detected', $error_count, 'cloudfest-wporgdownload' ),
+				$error_count
+			);
+		} elseif ( $warning_count > 0 ) {
+			$overall_status = 'warning';
+			$message        = sprintf(
+				/* translators: %d: number of warnings */
+				_n( '%d warning detected', '%d warnings detected', $warning_count, 'cloudfest-wporgdownload' ),
+				$warning_count
+			);
+		}
+
+		return array(
+			'status'        => $overall_status,
+			'message'       => $message,
+			'error_count'   => $error_count,
+			'warning_count' => $warning_count,
+		);
 	}
 }
