@@ -7,6 +7,177 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] - 2026-02-02
+
+_CPT UI Enhancement Release_
+
+### Highlights
+
+* Enhanced version history with accordion-style interface
+* Per-version changelog display extracted from WordPress.org API
+* Expandable/collapsible version details
+* Direct links to WordPress.org for each version
+* Improved download actions with file size display
+* Modern UI with smooth transitions and visual indicators
+
+### Added
+
+* **Version History Accordion (Phase 20.3)**
+  * Enhanced `render_zip_downloads_meta_box()` method - Accordion-style version display
+    - Replaced simple table with interactive accordion interface
+    - Each version is now a collapsible/expandable item
+    - Click anywhere on header to toggle expansion
+    - Smooth CSS transitions for better UX
+  * **Accordion header** (always visible):
+    - Toggle icon: ▶ (collapsed) / ▼ (expanded)
+    - Version number in bold with 80px min-width
+    - Status badge: ✓ Downloaded, ⏳ Pending, ✗ Failed, ⟳ Processing
+    - Relative timestamp: "2 days ago", "5 hours ago"
+    - File size when available (right-aligned)
+    - Hover effect: Background color changes on mouseover
+    - Flexbox layout for responsive alignment
+  * **Accordion body** (hidden by default, shows on click):
+    - **Changelog section**:
+      - Styled panel with light gray background (#f9f9f9)
+      - Blue left border (3px solid #2271b1)
+      - "Changelog:" heading in blue
+      - Parsed HTML content from WordPress.org API
+      - Fallback message: "No changelog available" when empty
+      - Proper line-height (1.6) for readability
+    - **Action buttons**:
+      - "Download ZIP (X.X MB)" - Only for downloaded versions, shows file size
+      - "View on WordPress.org" - Direct link to plugin/theme page on WordPress.org
+      - "Retry (Not implemented)" - Disabled button for failed downloads
+      - "In download queue..." - Status text for pending/queued versions
+      - Flexbox layout with 8px gap between buttons
+  * New `extract_version_changelog()` method - Intelligent changelog parsing
+    - **Pattern 1 (HTML format)**: Searches for `<h4>Version X.X.X</h4>` tags
+      - Regex: `/<h4>(?:Version\s+)?{version}(?:\s+.+?)?<\/h4>(.*?)(?=<h4>|$)/is`
+      - Captures content until next `<h4>` or end of string
+      - Handles optional "Version" prefix and additional text after version
+      - Case-insensitive matching
+    - **Pattern 2 (Markdown format - fallback)**: Searches for `## X.X.X` or `# X.X.X`
+      - Regex: `/##?\s+{version}\s*(.*?)(?=##?\s+[\d\.]+|$)/is`
+      - Captures until next heading or end
+      - Converts markdown to HTML using `wpautop()`
+    - Returns empty string if version not found in changelog
+    - Trims whitespace from extracted content
+  * **Integrated CSS styles**:
+    - `.wpinsight-version-accordion` - Main container with top margin
+    - `.wpinsight-version-item` - Individual version item with border
+    - `.wpinsight-version-header` - Clickable header
+      - Background: #f6f7f7 (light gray)
+      - Hover: #f0f0f1 (slightly darker)
+      - Cursor: pointer
+      - Padding: 12px 15px
+      - Transition: background-color 0.2s ease
+    - `.wpinsight-version-header-left` - Left section of header
+      - Flexbox with 12px gap
+      - Contains toggle, version, badge, date
+    - `.wpinsight-version-toggle` - Arrow icon
+      - Width: 20px
+      - Color: #2271b1 (WordPress blue)
+      - Font-weight: bold
+    - `.wpinsight-version-body` - Expandable content
+      - Display: none (default)
+      - Display: block (when .active class added)
+      - Border-top: 1px solid #dcdcde
+      - Padding: 15px
+      - Background: #fff
+    - `.wpinsight-changelog` - Changelog panel
+      - Background: #f9f9f9
+      - Border-left: 3px solid #2271b1
+      - Padding: 10px
+      - Font-size: 13px
+      - Line-height: 1.6
+    - `.wpinsight-version-actions` - Button container
+      - Display: flex
+      - Gap: 8px
+      - Margin-top: 12px
+  * **JavaScript accordion functionality**:
+    - `toggleVersionDetails(id)` function
+      - Pure vanilla JavaScript (no jQuery dependency)
+      - Parameter: Element ID of version body
+      - Finds body element by ID
+      - Finds toggle icon by ID (`toggle-{id}`)
+      - Checks for `.active` class
+      - If active: Removes class, changes icon to ▶
+      - If inactive: Adds class, changes icon to ▼
+      - Inline script in meta box for immediate availability
+  * **Data sources**:
+    - Post meta: `versions` (array of version => download_url)
+    - Post meta: `sections` (contains full changelog from API)
+    - Extracts: `sections['changelog']` for parsing
+    - Database: Artifacts table (for downloaded ZIPs)
+    - Database: Queue table (for pending/failed downloads)
+  * **Intelligent version sorting**:
+    - Uses `version_compare()` for proper semantic versioning
+    - Sorted descending (newest first)
+    - Handles complex version numbers (1.0.0, 1.0.0-beta.1, etc.)
+
+### Changed
+
+* Plugin version: `1.5.0` → `1.6.0`
+* CPT detail view now uses accordion instead of simple table
+* Changelog data now displayed inline (previously not shown)
+* Version actions reorganized for better accessibility
+* ZIP Downloads meta box title unchanged (backward compatible)
+
+### Improved
+
+* **User Experience**:
+  - No need to leave WordPress admin to see changelogs
+  - Easy version comparison by expanding multiple versions
+  - Visual feedback with hover states and transitions
+  - Clearer status indicators with color-coded badges
+  - Direct download links when files are available
+* **Performance**:
+  - Changelog parsing done server-side
+  - CSS and JS inline (no additional HTTP requests)
+  - Vanilla JavaScript (smaller footprint than jQuery)
+  - Efficient regex patterns for changelog extraction
+* **Accessibility**:
+  - Keyboard-friendly (click events work with Enter key)
+  - Semantic HTML structure
+  - Clear visual hierarchy
+  - Readable font sizes and contrast ratios
+
+### Compatibility
+
+* WordPress: 6.9+
+* PHP: 8.4+
+* MariaDB: 10.6+
+* Action Scheduler: Latest version
+* Works with both plugin and theme CPTs
+
+### Use Cases
+
+**Version History Accordion:**
+* **Changelog Review**: View what changed in each version without leaving WordPress admin
+* **Version Comparison**: Expand multiple versions to compare changes side-by-side
+* **Release Research**: Understand why a particular version was released
+* **Bug Investigation**: Find which version introduced or fixed specific issues
+* **Security Audits**: Quickly identify security-related changes in changelogs
+* **Update Planning**: Review changes before deciding which version to use
+* **Documentation**: Reference version history when documenting installations
+* **Support**: Provide accurate version information when troubleshooting
+
+### Tests
+
+* PHP syntax validation: ✓ Passed
+* Regex patterns: ✓ Tested with WordPress.org changelog formats
+* Accordion functionality: ✓ Expand/collapse working smoothly
+* Changelog extraction: ✓ Both HTML and Markdown patterns tested
+* Empty changelog handling: ✓ Graceful fallback message displayed
+* JavaScript: ✓ No console errors, vanilla JS works across browsers
+* CSS: ✓ Responsive layout, hover states working
+* Version sorting: ✓ Semantic versioning respected
+* Status badges: ✓ All states display correctly (downloaded, pending, failed, processing)
+* Download links: ✓ Public URLs generated correctly
+* WordPress.org links: ✓ Direct links to correct plugin/theme pages
+
+---
+
 ## [1.5.0] - 2026-02-02
 
 _Enhanced Diagnostics, Monitoring & Health Check Release_
