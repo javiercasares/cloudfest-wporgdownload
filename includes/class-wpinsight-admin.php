@@ -67,6 +67,7 @@ final class WPInsight_Admin {
 		add_action( 'admin_menu', array( __CLASS__, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_dashboard_actions' ) );
+		add_action( 'admin_init', array( __CLASS__, 'handle_debug_actions' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_export_download' ) );
 	}
 
@@ -466,6 +467,197 @@ final class WPInsight_Admin {
 
 			default:
 				add_settings_error( 'wpinsight_dashboard', 'invalid_action', __( 'Invalid action.', 'cloudfest-wporgdownload' ), 'error' );
+				break;
+		}
+	}
+
+	/**
+	 * Handle debug actions.
+	 *
+	 * Processes debug tool actions like running cron manually or resetting workers.
+	 *
+	 * @since 1.4.0
+	 * @return void
+	 */
+	public static function handle_debug_actions(): void {
+		// Only process on dashboard page.
+		if ( ! isset( $_GET['page'] ) || self::DASHBOARD_PAGE_SLUG !== $_GET['page'] ) {
+			return;
+		}
+
+		// Check if debug action is set.
+		if ( ! isset( $_POST['wpinsight_debug_action'] ) ) {
+			return;
+		}
+
+		// Verify nonce.
+		if ( ! isset( $_POST['wpinsight_debug_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wpinsight_debug_nonce'] ) ), 'wpinsight_debug_action' ) ) {
+			add_settings_error( 'wpinsight_dashboard', 'invalid_nonce', __( 'Security check failed.', 'cloudfest-wporgdownload' ), 'error' );
+			return;
+		}
+
+		// Check user capabilities.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			add_settings_error( 'wpinsight_dashboard', 'insufficient_permissions', __( 'You do not have sufficient permissions.', 'cloudfest-wporgdownload' ), 'error' );
+			return;
+		}
+
+		$action = sanitize_text_field( wp_unslash( $_POST['wpinsight_debug_action'] ) );
+
+		switch ( $action ) {
+			case 'run_cron':
+				if ( ! isset( $_POST['cron_hook'] ) ) {
+					add_settings_error( 'wpinsight_dashboard', 'missing_hook', __( 'Missing cron hook.', 'cloudfest-wporgdownload' ), 'error' );
+					break;
+				}
+
+				$hook = sanitize_text_field( wp_unslash( $_POST['cron_hook'] ) );
+
+				// Validate hook is one of ours.
+				$valid_hooks = array( 'wpinsight_sync_tick', 'wpinsight_zip_worker_tick', 'wpinsight_size_detection_tick' );
+				if ( ! in_array( $hook, $valid_hooks, true ) ) {
+					add_settings_error( 'wpinsight_dashboard', 'invalid_hook', __( 'Invalid cron hook.', 'cloudfest-wporgdownload' ), 'error' );
+					break;
+				}
+
+				// Execute the worker directly.
+				$start_time = microtime( true );
+				$result     = null;
+
+				try {
+					switch ( $hook ) {
+						case 'wpinsight_sync_tick':
+							WPInsight_Sync::sync_tick();
+							$result = __( 'Sync tick executed.', 'cloudfest-wporgdownload' );
+							break;
+
+						case 'wpinsight_zip_worker_tick':
+							WPInsight_Zip_Queue::worker_tick();
+							$result = __( 'ZIP worker tick executed.', 'cloudfest-wporgdownload' );
+							break;
+
+						case 'wpinsight_size_detection_tick':
+							WPInsight_Zip_Queue::size_detection_tick();
+							$result = __( 'Size detection tick executed.', 'cloudfest-wporgdownload' );
+							break;
+					}
+
+					$execution_time = round( ( microtime( true ) - $start_time ) * 1000, 2 );
+
+					add_settings_error(
+						'wpinsight_dashboard',
+						'cron_executed',
+						sprintf(
+							/* translators: 1: result message, 2: execution time in milliseconds */
+							__( '%1$s (Execution time: %2$s ms)', 'cloudfest-wporgdownload' ),
+							$result,
+							$execution_time
+						),
+						'success'
+					);
+				} catch ( Exception $e ) {
+					add_settings_error(
+						'wpinsight_dashboard',
+						'cron_error',
+						sprintf(
+							/* translators: %s: error message */
+							__( 'Error executing cron: %s', 'cloudfest-wporgdownload' ),
+							$e->getMessage()
+						),
+						'error'
+					);
+				}
+				break;
+
+			case 'schedule_worker':
+				if ( ! isset( $_POST['cron_hook'] ) ) {
+					add_settings_error( 'wpinsight_dashboard', 'missing_hook', __( 'Missing cron hook.', 'cloudfest-wporgdownload' ), 'error' );
+					break;
+				}
+
+				$hook = sanitize_text_field( wp_unslash( $_POST['cron_hook'] ) );
+
+				// Validate hook is one of ours.
+				$valid_hooks = array( 'wpinsight_sync_tick', 'wpinsight_zip_worker_tick', 'wpinsight_size_detection_tick' );
+				if ( ! in_array( $hook, $valid_hooks, true ) ) {
+					add_settings_error( 'wpinsight_dashboard', 'invalid_hook', __( 'Invalid cron hook.', 'cloudfest-wporgdownload' ), 'error' );
+					break;
+				}
+
+				if ( ! function_exists( 'as_schedule_recurring_action' ) ) {
+					add_settings_error( 'wpinsight_dashboard', 'scheduler_unavailable', __( 'Action Scheduler is not available.', 'cloudfest-wporgdownload' ), 'error' );
+					break;
+				}
+
+				// Schedule the specific worker.
+				try {
+					switch ( $hook ) {
+						case 'wpinsight_sync_tick':
+							WPInsight_Sync::ensure_scheduled();
+							$worker_name = __( 'Sync Worker', 'cloudfest-wporgdownload' );
+							break;
+
+						case 'wpinsight_zip_worker_tick':
+							WPInsight_Zip_Queue::ensure_scheduled();
+							$worker_name = __( 'ZIP Worker', 'cloudfest-wporgdownload' );
+							break;
+
+						case 'wpinsight_size_detection_tick':
+							WPInsight_Zip_Queue::ensure_size_detection_scheduled();
+							$worker_name = __( 'Size Detection Worker', 'cloudfest-wporgdownload' );
+							break;
+					}
+
+					add_settings_error(
+						'wpinsight_dashboard',
+						'worker_scheduled',
+						sprintf(
+							/* translators: %s: worker name */
+							__( '%s has been scheduled successfully.', 'cloudfest-wporgdownload' ),
+							$worker_name
+						),
+						'success'
+					);
+				} catch ( Exception $e ) {
+					add_settings_error(
+						'wpinsight_dashboard',
+						'schedule_error',
+						sprintf(
+							/* translators: %s: error message */
+							__( 'Error scheduling worker: %s', 'cloudfest-wporgdownload' ),
+							$e->getMessage()
+						),
+						'error'
+					);
+				}
+				break;
+
+			case 'reset_crons':
+				if ( ! function_exists( 'as_unschedule_all_actions' ) || ! function_exists( 'as_schedule_recurring_action' ) ) {
+					add_settings_error( 'wpinsight_dashboard', 'scheduler_unavailable', __( 'Action Scheduler is not available.', 'cloudfest-wporgdownload' ), 'error' );
+					break;
+				}
+
+				// Unschedule all existing workers.
+				as_unschedule_all_actions( 'wpinsight_sync_tick', array(), WPINSIGHT_AS_GROUP );
+				as_unschedule_all_actions( 'wpinsight_zip_worker_tick', array(), WPINSIGHT_AS_GROUP );
+				as_unschedule_all_actions( 'wpinsight_size_detection_tick', array(), WPINSIGHT_AS_GROUP );
+
+				// Reschedule workers.
+				WPInsight_Sync::ensure_scheduled();
+				WPInsight_Zip_Queue::ensure_scheduled();
+				WPInsight_Zip_Queue::ensure_size_detection_scheduled();
+
+				add_settings_error(
+					'wpinsight_dashboard',
+					'crons_reset',
+					__( 'All scheduled workers have been reset and recreated successfully.', 'cloudfest-wporgdownload' ),
+					'success'
+				);
+				break;
+
+			default:
+				add_settings_error( 'wpinsight_dashboard', 'invalid_debug_action', __( 'Invalid debug action.', 'cloudfest-wporgdownload' ), 'error' );
 				break;
 		}
 	}
@@ -1163,7 +1355,160 @@ final class WPInsight_Admin {
 		<div class="wrap">
 			<h2><?php esc_html_e( 'Debug Tools', 'cloudfest-wporgdownload' ); ?></h2>
 			<p><?php esc_html_e( 'Debug tools for developers and troubleshooting.', 'cloudfest-wporgdownload' ); ?></p>
-			<!-- Phase 5.5: Add debug tools content here -->
+
+			<?php
+			if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+				?>
+				<div class="notice notice-info inline">
+					<p>
+						<strong><?php esc_html_e( 'Note:', 'cloudfest-wporgdownload' ); ?></strong>
+						<?php esc_html_e( 'WP_DEBUG is currently disabled. Enable it in wp-config.php to see detailed debug information.', 'cloudfest-wporgdownload' ); ?>
+					</p>
+				</div>
+				<?php
+			}
+			?>
+
+			<!-- System Information -->
+			<h3><?php esc_html_e( 'System Information', 'cloudfest-wporgdownload' ); ?></h3>
+			<div style="background: #f6f7f7; padding: 15px; border-left: 3px solid #0073aa; border-radius: 3px; margin-bottom: 20px;">
+				<p><strong><?php esc_html_e( 'WordPress Version:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( get_bloginfo( 'version' ) ); ?></p>
+				<p><strong><?php esc_html_e( 'PHP Version:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( PHP_VERSION ); ?></p>
+				<p><strong><?php esc_html_e( 'Plugin Version:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( WPINSIGHT_VERSION ); ?></p>
+				<p><strong><?php esc_html_e( 'Database Schema:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( WPInsight_DB::get_schema_version() ); ?></p>
+				<p><strong><?php esc_html_e( 'WP_DEBUG:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo defined( 'WP_DEBUG' ) && WP_DEBUG ? '✓ ' . esc_html__( 'Enabled', 'cloudfest-wporgdownload' ) : '✗ ' . esc_html__( 'Disabled', 'cloudfest-wporgdownload' ); ?></p>
+				<p><strong><?php esc_html_e( 'Action Scheduler:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo function_exists( 'as_next_scheduled_action' ) ? '✓ ' . esc_html__( 'Active', 'cloudfest-wporgdownload' ) : '✗ ' . esc_html__( 'Not Found', 'cloudfest-wporgdownload' ); ?></p>
+			</div>
+
+			<!-- Database Information -->
+			<h3><?php esc_html_e( 'Database Information', 'cloudfest-wporgdownload' ); ?></h3>
+			<?php
+			global $wpdb;
+			$queue_table     = WPInsight_DB::get_table_name( 'zip_queue' );
+			$artifacts_table = WPInsight_DB::get_table_name( 'artifacts' );
+			$error_log_table = WPInsight_DB::get_table_name( 'error_log' );
+
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$queue_count     = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $queue_table ) );
+			$artifacts_count = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $artifacts_table ) );
+			$error_count     = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $error_log_table ) );
+			$plugin_count    = wp_count_posts( WPInsight_CPT::get_plugin_post_type() )->publish ?? 0;
+			$theme_count     = wp_count_posts( WPInsight_CPT::get_theme_post_type() )->publish ?? 0;
+			// phpcs:enable
+			?>
+			<div style="background: #f6f7f7; padding: 15px; border-left: 3px solid #0073aa; border-radius: 3px; margin-bottom: 20px;">
+				<p><strong><?php esc_html_e( 'Plugin CPTs:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( number_format_i18n( $plugin_count ) ); ?></p>
+				<p><strong><?php esc_html_e( 'Theme CPTs:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( number_format_i18n( $theme_count ) ); ?></p>
+				<p><strong><?php esc_html_e( 'Queue Jobs:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( number_format_i18n( $queue_count ) ); ?></p>
+				<p><strong><?php esc_html_e( 'Downloaded Artifacts:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( number_format_i18n( $artifacts_count ) ); ?></p>
+				<p><strong><?php esc_html_e( 'Error Log Entries:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( number_format_i18n( $error_count ) ); ?></p>
+			</div>
+
+			<!-- Action Scheduler / Cron Jobs -->
+			<h3><?php esc_html_e( 'Scheduled Workers (Cron Jobs)', 'cloudfest-wporgdownload' ); ?></h3>
+			<?php
+			if ( ! function_exists( 'as_next_scheduled_action' ) ) {
+				?>
+				<div class="notice notice-error inline">
+					<p><?php esc_html_e( 'Action Scheduler is not available. Please install and activate the Action Scheduler plugin.', 'cloudfest-wporgdownload' ); ?></p>
+				</div>
+				<?php
+			} else {
+				$workers = array(
+					'wpinsight_sync_tick'            => array(
+						'name'        => __( 'Sync Worker', 'cloudfest-wporgdownload' ),
+						'description' => __( 'Fetches new plugins/themes from WordPress.org API', 'cloudfest-wporgdownload' ),
+					),
+					'wpinsight_zip_worker_tick'      => array(
+						'name'        => __( 'ZIP Worker', 'cloudfest-wporgdownload' ),
+						'description' => __( 'Downloads ZIP files from download.wordpress.org', 'cloudfest-wporgdownload' ),
+					),
+					'wpinsight_size_detection_tick'  => array(
+						'name'        => __( 'Size Detection Worker', 'cloudfest-wporgdownload' ),
+						'description' => __( 'Detects ZIP file sizes via HEAD requests', 'cloudfest-wporgdownload' ),
+					),
+				);
+
+				?>
+				<table class="widefat striped" style="margin-bottom: 20px;">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Worker', 'cloudfest-wporgdownload' ); ?></th>
+							<th><?php esc_html_e( 'Status', 'cloudfest-wporgdownload' ); ?></th>
+							<th><?php esc_html_e( 'Next Run', 'cloudfest-wporgdownload' ); ?></th>
+							<th><?php esc_html_e( 'Actions', 'cloudfest-wporgdownload' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $workers as $hook => $worker_data ) : ?>
+							<?php
+							$next_run = as_next_scheduled_action( $hook, array(), WPINSIGHT_AS_GROUP );
+							$is_scheduled = false !== $next_run;
+							?>
+							<tr>
+								<td>
+									<strong><?php echo esc_html( $worker_data['name'] ); ?></strong>
+									<br>
+									<span style="color: #646970; font-size: 12px;">
+										<?php echo esc_html( $worker_data['description'] ); ?>
+									</span>
+								</td>
+								<td>
+									<?php if ( $is_scheduled ) : ?>
+										<span style="color: #46b450;">✓ <?php esc_html_e( 'Scheduled', 'cloudfest-wporgdownload' ); ?></span>
+									<?php else : ?>
+										<span style="color: #dc3232;">✗ <?php esc_html_e( 'Not Scheduled', 'cloudfest-wporgdownload' ); ?></span>
+									<?php endif; ?>
+								</td>
+								<td>
+									<?php
+									if ( $is_scheduled ) {
+										echo esc_html( human_time_diff( $next_run, time() ) );
+									} else {
+										echo '—';
+									}
+									?>
+								</td>
+								<td>
+									<?php if ( ! $is_scheduled ) : ?>
+										<form method="post" style="display: inline-block; margin-right: 5px;">
+											<?php wp_nonce_field( 'wpinsight_debug_action', 'wpinsight_debug_nonce' ); ?>
+											<input type="hidden" name="wpinsight_debug_action" value="schedule_worker">
+											<input type="hidden" name="cron_hook" value="<?php echo esc_attr( $hook ); ?>">
+											<button type="submit" class="button button-primary button-small">
+												<?php esc_html_e( 'Schedule Now', 'cloudfest-wporgdownload' ); ?>
+											</button>
+										</form>
+									<?php endif; ?>
+									<form method="post" style="display: inline-block; margin-right: 5px;">
+										<?php wp_nonce_field( 'wpinsight_debug_action', 'wpinsight_debug_nonce' ); ?>
+										<input type="hidden" name="wpinsight_debug_action" value="run_cron">
+										<input type="hidden" name="cron_hook" value="<?php echo esc_attr( $hook ); ?>">
+										<button type="submit" class="button button-small">
+											<?php esc_html_e( 'Run Now', 'cloudfest-wporgdownload' ); ?>
+										</button>
+									</form>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+
+				<!-- Cron Reset/Reinstall -->
+				<div style="background: #fff3cd; padding: 15px; border-left: 3px solid #ffc107; border-radius: 3px; margin-top: 20px;">
+					<h4 style="margin-top: 0;"><?php esc_html_e( 'Reset Scheduled Workers', 'cloudfest-wporgdownload' ); ?></h4>
+					<p><?php esc_html_e( 'If workers are not running correctly, you can reset all scheduled actions. This will clear existing schedules and recreate them.', 'cloudfest-wporgdownload' ); ?></p>
+					<form method="post" onsubmit="return confirm('<?php echo esc_js( __( 'Are you sure you want to reset all scheduled workers? This will clear and recreate all Action Scheduler jobs.', 'cloudfest-wporgdownload' ) ); ?>');">
+						<?php wp_nonce_field( 'wpinsight_debug_action', 'wpinsight_debug_nonce' ); ?>
+						<input type="hidden" name="wpinsight_debug_action" value="reset_crons">
+						<button type="submit" class="button button-secondary">
+							<?php esc_html_e( 'Reset All Workers', 'cloudfest-wporgdownload' ); ?>
+						</button>
+					</form>
+				</div>
+				<?php
+			}
+			?>
 		</div>
 		<?php
 	}
@@ -1242,6 +1587,12 @@ final class WPInsight_Admin {
 		echo '</p>';
 	}
 
+	/**
+	 * Render debug tools section description.
+	 *
+	 * @since 1.4.0
+	 * @return void
+	 */
 	/**
 	 * Render delete_on_uninstall field.
 	 *

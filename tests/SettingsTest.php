@@ -120,6 +120,7 @@ class SettingsTest extends TestCase {
 		$required_keys = array(
 			'delete_on_uninstall',
 			'max_concurrent_downloads',
+			'max_size_detection_rate',
 			'sync_interval',
 			'zip_worker_interval',
 			'per_page',
@@ -321,5 +322,78 @@ class SettingsTest extends TestCase {
 				"{$method}() method should be public"
 			);
 		}
+	}
+
+	/**
+	 * Test max_size_detection_rate default value.
+	 *
+	 * Verifies that max_size_detection_rate has correct default value
+	 * and type.
+	 *
+	 * @since 1.4.0
+	 * @return void
+	 */
+	public function test_max_size_detection_rate_default(): void {
+		$defaults = WPInsight_Settings::get_defaults();
+
+		$this->assertArrayHasKey(
+			'max_size_detection_rate',
+			$defaults,
+			'Defaults should have max_size_detection_rate'
+		);
+
+		$this->assertIsInt(
+			$defaults['max_size_detection_rate'],
+			'max_size_detection_rate should be an integer'
+		);
+
+		$this->assertEquals(
+			3,
+			$defaults['max_size_detection_rate'],
+			'Default max_size_detection_rate should be 3'
+		);
+	}
+
+	/**
+	 * Test max_size_detection_rate validation range.
+	 *
+	 * Verifies that max_size_detection_rate is validated to be
+	 * between 1 and 10.
+	 *
+	 * @since 1.4.0
+	 * @return void
+	 */
+	public function test_max_size_detection_rate_validation(): void {
+		// Valid values should work.
+		$this->assertTrue(
+			WPInsight_Settings::update( 'max_size_detection_rate', 1 ),
+			'Should accept 1 (minimum value)'
+		);
+
+		$this->assertTrue(
+			WPInsight_Settings::update( 'max_size_detection_rate', 10 ),
+			'Should accept 10 (maximum value)'
+		);
+
+		$this->assertTrue(
+			WPInsight_Settings::update( 'max_size_detection_rate', 5 ),
+			'Should accept 5 (middle value)'
+		);
+
+		// Invalid values should fail.
+		$this->assertFalse(
+			WPInsight_Settings::update( 'max_size_detection_rate', 0 ),
+			'Should reject 0 (below minimum)'
+		);
+
+		$this->assertFalse(
+			WPInsight_Settings::update( 'max_size_detection_rate', 11 ),
+			'Should reject 11 (above maximum)'
+		);
+
+		$this->assertFalse(
+			WPInsight_Settings::update( 'max_size_detection_rate', -1 ),
+			'Should reject negative values'
+		);
 	}
 }

@@ -658,6 +658,127 @@ if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_next_scheduled' ) ) {
+	/**
+	 * Stub for wp_next_scheduled() WordPress function.
+	 *
+	 * @param string $hook Hook name.
+	 * @param array  $args Arguments.
+	 * @return int|false Next scheduled timestamp or false.
+	 */
+	function wp_next_scheduled( $hook, $args = [] ) {
+		return false;
+	}
+}
+
+if ( ! function_exists( 'wp_schedule_event' ) ) {
+	/**
+	 * Stub for wp_schedule_event() WordPress function.
+	 *
+	 * @param int    $timestamp  Timestamp.
+	 * @param string $recurrence Recurrence interval.
+	 * @param string $hook       Hook name.
+	 * @param array  $args       Arguments.
+	 * @param bool   $wp_error   Return WP_Error on failure.
+	 * @return bool|WP_Error True on success, false or WP_Error on failure.
+	 */
+	function wp_schedule_event( $timestamp, $recurrence, $hook, $args = [], $wp_error = false ) {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_remote_head' ) ) {
+	/**
+	 * Stub for wp_remote_head() WordPress function.
+	 *
+	 * @param string $url  Request URL.
+	 * @param array  $args Request arguments.
+	 * @return array|WP_Error Response array or WP_Error.
+	 */
+	function wp_remote_head( $url, $args = [] ) {
+		return new WP_Error( 'http_request_failed', 'Test stub: wp_remote_head not available' );
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_header' ) ) {
+	/**
+	 * Stub for wp_remote_retrieve_header() WordPress function.
+	 *
+	 * @param array|WP_Error $response Response array or WP_Error.
+	 * @param string         $header   Header name.
+	 * @return string Header value or empty string.
+	 */
+	function wp_remote_retrieve_header( $response, $header ) {
+		return '';
+	}
+}
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	/**
+	 * Stub for add_query_arg() WordPress function.
+	 *
+	 * @param mixed  $param1 Parameter name or array of query parameters.
+	 * @param mixed  $param2 Parameter value or URL.
+	 * @param string $param3 Optional URL.
+	 * @return string URL with query parameters added.
+	 */
+	function add_query_arg( $param1, $param2 = '', $param3 = '' ) {
+		if ( is_array( $param1 ) ) {
+			$url    = $param2;
+			$params = $param1;
+		} else {
+			$url                = $param3 ? $param3 : $param2;
+			$params             = [];
+			$params[ $param1 ]  = $param2;
+		}
+
+		if ( empty( $url ) ) {
+			$url = 'http://example.com';
+		}
+
+		$query_string = http_build_query( $params );
+		return $url . ( strpos( $url, '?' ) !== false ? '&' : '?' ) . $query_string;
+	}
+}
+
+if ( ! function_exists( 'get_transient' ) ) {
+	/**
+	 * Stub for get_transient() WordPress function.
+	 *
+	 * @param string $transient Transient name.
+	 * @return mixed Transient value or false.
+	 */
+	function get_transient( $transient ) {
+		return false;
+	}
+}
+
+if ( ! function_exists( 'set_transient' ) ) {
+	/**
+	 * Stub for set_transient() WordPress function.
+	 *
+	 * @param string $transient  Transient name.
+	 * @param mixed  $value      Transient value.
+	 * @param int    $expiration Time until expiration in seconds.
+	 * @return bool True on success, false on failure.
+	 */
+	function set_transient( $transient, $value, $expiration = 0 ) {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'delete_transient' ) ) {
+	/**
+	 * Stub for delete_transient() WordPress function.
+	 *
+	 * @param string $transient Transient name.
+	 * @return bool True on success, false on failure.
+	 */
+	function delete_transient( $transient ) {
+		return true;
+	}
+}
+
 if ( ! function_exists( 'wp_upload_dir' ) ) {
 	/**
 	 * Stub for wp_upload_dir() WordPress function.

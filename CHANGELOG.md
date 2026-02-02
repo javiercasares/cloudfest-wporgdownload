@@ -85,6 +85,19 @@ _ZIP Size Detection System Release_
 * One-time detection per ZIP (no redundant checks)
 * Size data persists permanently in database
 
+### Testing
+
+* **Expanded Test Coverage** (Phase 16)
+  * New `LoggerTest.php` - 14 tests for logging system (v1.1.0)
+  * New `ImportExportTest.php` - 7 tests for export/import functionality (v1.2.0)
+  * New `SizeDetectionTest.php` - 23 tests for size detection system (v1.4.0)
+  * Updated `SettingsTest.php` - Added tests for max_size_detection_rate setting
+  * Enhanced WordPress function stubs in bootstrap.php
+  * Added stubs: wp_next_scheduled, wp_schedule_event, wp_remote_head, add_query_arg, get_transient
+  * **Total: 157 tests, 500 assertions, 100% passing**
+  * PHPUnit 10.5 with full testdox documentation
+  * Test coverage for all major features v1.0.0 through v1.4.0
+
 ### Security
 
 * Prepared statements for all database queries

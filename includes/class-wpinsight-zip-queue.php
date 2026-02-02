@@ -52,6 +52,11 @@ final class WPInsight_Zip_Queue {
 
 		// Register size detection worker tick handler.
 		add_action( 'wpinsight_size_detection_tick', array( __CLASS__, 'size_detection_tick' ) );
+
+		// Ensure size detection worker is scheduled.
+		// This is called on every init to ensure the worker is scheduled even if the plugin
+		// was updated without being deactivated/reactivated.
+		add_action( 'init', array( __CLASS__, 'ensure_size_detection_scheduled' ), 20 );
 	}
 
 	/**
