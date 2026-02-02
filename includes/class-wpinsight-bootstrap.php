@@ -185,6 +185,9 @@ final class WPInsight_Bootstrap {
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php';
 		WPInsight_Zip_Queue::ensure_scheduled();
 
+		// Schedule size detection worker (Phase 21).
+		WPInsight_Zip_Queue::ensure_size_detection_scheduled();
+
 		// Set activation timestamp for future reference.
 		update_option( WPINSIGHT_ACTIVATED_AT_OPTION, current_time( 'mysql' ) );
 	}

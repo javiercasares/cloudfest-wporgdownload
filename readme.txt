@@ -3,10 +3,10 @@ Contributors: javiercasares
 Tags: wordpress.org, plugins, themes, archive, mirror, backup, downloader
 Requires at least: 6.9
 Tested up to: 6.9
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 Requires PHP: 8.4
 Requires Plugins: action-scheduler
-Version: 1.3.0
+Version: 1.4.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -287,6 +287,41 @@ Yes! This plugin was developed during CloudFest Hackathon. Contributions welcome
 
 == Changelog ==
 
+= 1.4.0 - 2026-02-02 =
+
+**ZIP Size Detection System Release**
+
+* **Size Detection System**
+  * Automatic detection of ZIP file sizes via HEAD requests
+  * Parallel process independent of download system
+  * One-time detection per ZIP (sizes don't change)
+  * Processes 100 ZIPs every 5 minutes via Action Scheduler
+  * Content-Length header reading without downloading files
+
+* **Database Schema v1.2.0**
+  * New `remote_filesize` column in `zip_queue` table
+  * Stores detected file sizes (BIGINT UNSIGNED)
+  * Automatic migration from v1.1.0
+
+* **Dashboard Statistics**
+  * "Storage Requirements Analysis" section
+  * Separate statistics for plugins and themes
+  * Downloaded vs Pending ZIPs sizes
+  * Total required storage calculation
+  * Detection progress percentage
+  * Grand total across all ZIPs
+
+* **Performance**
+  * HEAD requests with 0.1s delay (polite to WP.org)
+  * Batch processing (100 URLs per tick)
+  * Cached statistics queries
+  * 10-second timeout per request
+
+**Compatibility:**
+* WordPress: 6.9+
+* PHP: 8.4+
+* MariaDB: 10.6+
+
 = 1.3.0 - 2026-02-02 =
 
 **CPT Detail View Enhancement Release**
@@ -415,6 +450,9 @@ Full changelog with detailed changes available at:
 [CHANGELOG.md](https://github.com/javiercasares/cloudfest-wporgdownload/blob/main/CHANGELOG.md)
 
 == Upgrade Notice ==
+
+= 1.4.0 =
+ZIP size detection system! Automatically detects file sizes via HEAD requests. Dashboard shows total storage requirements (downloaded + pending). Database schema upgraded to v1.2.0 (automatic migration).
 
 = 1.3.0 =
 Enhanced CPT detail views with comprehensive plugin/theme information, ZIP downloads table, quick stats widget, and public URLs. Major UX improvement for data visibility.

@@ -7,6 +7,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-02-02
+
+_ZIP Size Detection System Release_
+
+### Highlights
+
+* Automatic ZIP file size detection via HEAD requests
+* Storage requirements analysis in dashboard
+* Parallel process independent of download system
+* One-time detection per ZIP (no re-checks)
+* Comprehensive statistics for planning storage needs
+
+### Added
+
+* **Size Detection System**
+  * New `detect_zip_sizes()` method - Processes ZIPs without size data
+  * New `get_remote_filesize()` method - Makes HEAD request to get Content-Length
+  * New `get_size_statistics()` method - Returns comprehensive size statistics
+  * Automatic scheduling via Action Scheduler (every 5 minutes)
+  * Batch processing: 100 URLs per execution
+  * Polite delays: 0.1 seconds between requests
+  * Error logging for failed detections
+
+* **Database Schema v1.2.0**
+  * New column `remote_filesize` in `wpinsight_zip_queue` table
+  * Type: `BIGINT(20) UNSIGNED DEFAULT NULL`
+  * Stores file size in bytes without downloading
+  * NULL until size is detected
+  * Automatic migration from v1.1.0 via `migrate_to_1_2_0()`
+
+* **Dashboard Statistics**
+  * New "Storage Requirements Analysis" section
+  * Separate tables for plugins and themes
+  * Statistics displayed:
+    - Downloaded ZIPs size
+    - Pending ZIPs size (from remote_filesize)
+    - Total required storage
+    - Detection progress percentage
+    - Count of ZIPs with detected sizes
+  * Grand total calculation (plugins + themes)
+  * Human-readable size formatting (GB, MB, etc.)
+
+* **Action Scheduler Integration**
+  * New action hook: `wpinsight_size_detection_tick`
+  * New method: `size_detection_tick()` - Scheduled worker
+  * New method: `ensure_size_detection_scheduled()` - Setup during activation
+  * Runs every 5 minutes independently of download worker
+  * Registered in bootstrap activation
+
+### Changed
+
+* Database schema version: `1.1.0` → `1.2.0`
+* Plugin version: `1.3.0` → `1.4.0`
+* Bootstrap now schedules size detection worker on activation
+* Zip Queue init() now registers size detection tick action
+
+### Performance
+
+* HEAD requests only (no file downloads)
+* 10-second timeout per request
+* 0.1-second delay between requests (polite to WordPress.org)
+* Batch processing prevents timeouts
+* One-time detection per ZIP (no redundant checks)
+* Size data persists permanently in database
+
+### Security
+
+* Prepared statements for all database queries
+* User-Agent header identifies WPInsight
+* Timeout limits prevent hanging requests
+* Error handling for network failures
+* Logging for audit trail
+
+### Compatibility
+
+* WordPress: 6.9+
+* PHP: 8.4+
+* MariaDB: 10.6+
+* Action Scheduler: Latest version
+
+### Use Cases
+
+* **Storage Planning**: Know total space required before downloading
+* **Cost Estimation**: Calculate storage costs for hosting
+* **Capacity Monitoring**: Track storage vs available space
+* **Progress Tracking**: See detection progress percentage
+* **Decision Making**: Prioritize plugins vs themes based on sizes
+
+### Tests
+
+* PHP syntax validation: ✓ Passed
+* Database migration tested (v1.1.0 → v1.2.0)
+* HEAD request logic verified
+* Statistics calculations validated
+* Dashboard rendering checked
+
+---
+
 ## [1.3.0] - 2026-02-02
 
 _CPT Detail View Enhancement Release_

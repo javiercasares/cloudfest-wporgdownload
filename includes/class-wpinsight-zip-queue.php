@@ -49,6 +49,9 @@ final class WPInsight_Zip_Queue {
 	public static function init(): void {
 		// Register ZIP worker tick handler.
 		add_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array( __CLASS__, 'worker_tick' ) );
+
+		// Register size detection worker tick handler.
+		add_action( 'wpinsight_size_detection_tick', array( __CLASS__, 'size_detection_tick' ) );
 	}
 
 	/**
@@ -81,6 +84,51 @@ final class WPInsight_Zip_Queue {
 			array(),
 			WPINSIGHT_AS_GROUP
 		);
+	}
+
+	/**
+	 * Ensure size detection job is scheduled.
+	 *
+	 * Called during plugin activation to set up recurring size detection job.
+	 * Runs independently of download worker.
+	 *
+	 * @since 1.3.0
+	 * @return void
+	 */
+	public static function ensure_size_detection_scheduled(): void {
+		// Check if Action Scheduler is available.
+		if ( ! function_exists( 'as_schedule_recurring_action' ) ) {
+			return;
+		}
+
+		// Check if already scheduled.
+		$next_run = as_next_scheduled_action( 'wpinsight_size_detection_tick', array(), WPINSIGHT_AS_GROUP );
+		if ( false !== $next_run ) {
+			return; // Already scheduled.
+		}
+
+		// Schedule recurring size detection tick (every 5 minutes).
+		as_schedule_recurring_action(
+			time(),
+			300, // 5 minutes.
+			'wpinsight_size_detection_tick',
+			array(),
+			WPINSIGHT_AS_GROUP
+		);
+	}
+
+	/**
+	 * Size detection tick handler.
+	 *
+	 * Called by Action Scheduler every 5 minutes. Detects file sizes
+	 * for ZIPs that don't have size information yet.
+	 *
+	 * @since 1.3.0
+	 * @return void
+	 */
+	public static function size_detection_tick(): void {
+		// Detect sizes for up to 100 ZIPs per tick.
+		self::detect_zip_sizes( 100 );
 	}
 
 	/**
@@ -507,5 +555,272 @@ final class WPInsight_Zip_Queue {
 		);
 
 		return (int) $result;
+	}
+
+	/**
+	 * Detect file sizes for ZIPs without remote_filesize.
+	 *
+	 * Makes HEAD requests to get Content-Length header for ZIPs that don't
+	 * have size information yet. Processes in batches to avoid timeouts.
+	 *
+	 * @since 1.3.0
+	 * @param int $limit Maximum number of ZIPs to process. Default 100.
+	 * @return array Statistics about detection (checked, updated, failed).
+	 */
+	public static function detect_zip_sizes( int $limit = 100 ): array {
+		global $wpdb;
+		$table = WPInsight_DB::get_table_name( 'zip_queue' );
+
+		// Get ZIPs without remote_filesize (limit to batch size).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$jobs = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT id, download_url
+				FROM %i
+				WHERE remote_filesize IS NULL
+				LIMIT %d',
+				$table,
+				$limit
+			),
+			ARRAY_A
+		);
+
+		if ( empty( $jobs ) ) {
+			return array(
+				'checked' => 0,
+				'updated' => 0,
+				'failed'  => 0,
+			);
+		}
+
+		$stats = array(
+			'checked' => count( $jobs ),
+			'updated' => 0,
+			'failed'  => 0,
+		);
+
+		foreach ( $jobs as $job ) {
+			$filesize = self::get_remote_filesize( $job['download_url'] );
+
+			if ( false !== $filesize ) {
+				// Update remote_filesize in database.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+				$updated = $wpdb->update(
+					$table,
+					array( 'remote_filesize' => $filesize ),
+					array( 'id' => $job['id'] ),
+					array( '%d' ),
+					array( '%d' )
+				);
+
+				if ( false !== $updated ) {
+					++$stats['updated'];
+				} else {
+					++$stats['failed'];
+				}
+			} else {
+				++$stats['failed'];
+			}
+
+			// Small delay to be polite to WordPress.org servers.
+			usleep( 100000 ); // 0.1 seconds.
+		}
+
+		WPInsight_Logger::info(
+			'ZIP size detection completed',
+			array(
+				'checked' => $stats['checked'],
+				'updated' => $stats['updated'],
+				'failed'  => $stats['failed'],
+			)
+		);
+
+		return $stats;
+	}
+
+	/**
+	 * Get remote file size via HEAD request.
+	 *
+	 * Makes a HEAD request to get Content-Length header without downloading the file.
+	 *
+	 * @since 1.3.0
+	 * @param string $url URL to check.
+	 * @return int|false File size in bytes, or false on failure.
+	 */
+	private static function get_remote_filesize( string $url ) {
+		// Make HEAD request.
+		$response = wp_remote_head(
+			$url,
+			array(
+				'timeout'    => 10,
+				'user-agent' => 'WPInsight/' . WPINSIGHT_VERSION . '; ' . home_url(),
+			)
+		);
+
+		// Check for errors.
+		if ( is_wp_error( $response ) ) {
+			WPInsight_Logger::warning(
+				'Failed to get remote filesize via HEAD request',
+				array(
+					'url'   => $url,
+					'error' => $response->get_error_message(),
+				)
+			);
+			return false;
+		}
+
+		// Get Content-Length header.
+		$content_length = wp_remote_retrieve_header( $response, 'content-length' );
+
+		if ( empty( $content_length ) ) {
+			return false;
+		}
+
+		// Convert to integer.
+		$filesize = (int) $content_length;
+
+		// Sanity check (ZIP should be at least 1KB).
+		if ( $filesize < 1024 ) {
+			return false;
+		}
+
+		return $filesize;
+	}
+
+	/**
+	 * Get total size statistics for plugins and themes.
+	 *
+	 * Returns total sizes for downloaded ZIPs and pending/queued ZIPs.
+	 *
+	 * @since 1.3.0
+	 * @return array Statistics with plugin and theme sizes.
+	 */
+	public static function get_size_statistics(): array {
+		global $wpdb;
+		$queue_table     = WPInsight_DB::get_table_name( 'zip_queue' );
+		$artifacts_table = WPInsight_DB::get_table_name( 'artifacts' );
+
+		// Get plugin sizes.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$plugin_downloaded = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COALESCE(SUM(filesize), 0)
+				FROM %i
+				WHERE item_type = %s',
+				$artifacts_table,
+				'plugin'
+			)
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$plugin_pending = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COALESCE(SUM(remote_filesize), 0)
+				FROM %i
+				WHERE item_type = %s
+				AND status IN (%s, %s, %s)
+				AND remote_filesize IS NOT NULL',
+				$queue_table,
+				'plugin',
+				'pending',
+				'queued',
+				'failed'
+			)
+		);
+
+		// Get theme sizes.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$theme_downloaded = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COALESCE(SUM(filesize), 0)
+				FROM %i
+				WHERE item_type = %s',
+				$artifacts_table,
+				'theme'
+			)
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$theme_pending = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COALESCE(SUM(remote_filesize), 0)
+				FROM %i
+				WHERE item_type = %s
+				AND status IN (%s, %s, %s)
+				AND remote_filesize IS NOT NULL',
+				$queue_table,
+				'theme',
+				'pending',
+				'queued',
+				'failed'
+			)
+		);
+
+		// Get counts with remote_filesize (for percentage calculation).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$plugin_count_with_size = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*)
+				FROM %i
+				WHERE item_type = %s
+				AND remote_filesize IS NOT NULL',
+				$queue_table,
+				'plugin'
+			)
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$theme_count_with_size = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*)
+				FROM %i
+				WHERE item_type = %s
+				AND remote_filesize IS NOT NULL',
+				$queue_table,
+				'theme'
+			)
+		);
+
+		// Get total counts.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$plugin_total_count = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*)
+				FROM %i
+				WHERE item_type = %s',
+				$queue_table,
+				'plugin'
+			)
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$theme_total_count = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*)
+				FROM %i
+				WHERE item_type = %s',
+				$queue_table,
+				'theme'
+			)
+		);
+
+		return array(
+			'plugins' => array(
+				'downloaded_size'    => (int) $plugin_downloaded,
+				'pending_size'       => (int) $plugin_pending,
+				'total_size'         => (int) $plugin_downloaded + (int) $plugin_pending,
+				'count_with_size'    => (int) $plugin_count_with_size,
+				'total_count'        => (int) $plugin_total_count,
+				'detection_progress' => $plugin_total_count > 0 ? round( ( $plugin_count_with_size / $plugin_total_count ) * 100, 1 ) : 0,
+			),
+			'themes'  => array(
+				'downloaded_size'    => (int) $theme_downloaded,
+				'pending_size'       => (int) $theme_pending,
+				'total_size'         => (int) $theme_downloaded + (int) $theme_pending,
+				'count_with_size'    => (int) $theme_count_with_size,
+				'total_count'        => (int) $theme_total_count,
+				'detection_progress' => $theme_total_count > 0 ? round( ( $theme_count_with_size / $theme_total_count ) * 100, 1 ) : 0,
+			),
+		);
 	}
 }
