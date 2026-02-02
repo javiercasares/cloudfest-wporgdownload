@@ -100,8 +100,16 @@ final class WPInsight_Admin {
 			array( __CLASS__, 'render_settings_page' )                    // Callback.
 		);
 
-		// Error logs are now integrated in the main dashboard.
-		// No separate menu entry needed.
+		// Add Error Log page under Tools menu (only visible when WP_DEBUG is enabled).
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			add_management_page(
+				__( 'WPInsight Error Log', 'cloudfest-wporgdownload' ),  // Page title.
+				__( 'WPInsight Errors', 'cloudfest-wporgdownload' ),     // Menu title.
+				'manage_options',                                          // Capability.
+				'wpinsight-error-log',                                     // Menu slug.
+				array( __CLASS__, 'render_error_log_page' )               // Callback.
+			);
+		}
 	}
 
 	/**
