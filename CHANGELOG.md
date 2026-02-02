@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0] - 2026-02-02
 
-_Enhanced Database Diagnostics, Action Scheduler Monitoring & Download Queue Control Release_
+_Enhanced Diagnostics, Monitoring & Health Check Release_
 
 ### Highlights
 
@@ -24,6 +24,11 @@ _Enhanced Database Diagnostics, Action Scheduler Monitoring & Download Queue Con
 * Pause/Resume controls for bandwidth management
 * Disk space monitoring with warnings
 * Download speed tracking and progress visualization
+* WordPress.org API health monitoring with response times and error rates
+* Complete system health checks (PHP, WordPress, extensions, permissions)
+* Proactive alerts for memory, disk space, and configuration issues
+* Export/Import diagnostic reports for troubleshooting and support
+* Anonymous report sharing for debugging
 
 ### Added
 
@@ -248,13 +253,188 @@ _Enhanced Database Diagnostics, Action Scheduler Monitoring & Download Queue Con
     - No new downloads start while paused
     - Already processing downloads continue until completion
 
+* **API Health Monitor (Phase 18.5)**
+  * New `get_api_health_data()` method - WordPress.org API monitoring
+    - Real-time API health test with response time measurement
+    - Uses microtime() for millisecond precision
+    - Calls `WPInsight_WPOrg_Client::check_api_health()` to verify API status
+    - Response time thresholds: OK (<1.5s), Warning (1.5-3s), Error (>3s)
+    - Returns: response_time, error_rate, rate_limit, last_test, recommendations
+  * Error rate calculation (24-hour window):
+    - Queries error_log for API-related errors (severity: ERROR/EMERGENCY)
+    - Filters by keywords: 'API', 'WordPress.org', 'wporg'
+    - Estimates total API requests based on sync frequency and workers
+    - Sync worker: ~576 requests/day (288 syncs × 2 API calls)
+    - Size detection worker: ~600 HEAD requests per 5-minute tick
+    - Calculates percentage: (errors / total_requests) × 100
+    - Status thresholds: OK (<1%), Warning (1-5%), Error (>5%)
+  * Rate limit analysis:
+    - Reads current `max_concurrent_downloads` setting
+    - Compares against WordPress.org recommended optimal (3)
+    - Status: OK (=3), Warning (4-5), Error (>5)
+    - Warning message when above recommended limit
+  * Intelligent recommendations:
+    - High error rate: Suggests reducing sync frequency or rate limits
+    - Rate limit too high: Warns about risk of being blocked
+    - Slow response times: Indicates network issues or service degradation
+    - Failed API test: Suggests checking network and service status
+    - Optimal status: Confirms no issues detected
+  * Enhanced Dashboard with new "API Health Monitor" section:
+    - **Header with API status badge**:
+      - "✓ API Online" (green) when test successful
+      - "✗ API Offline" (red) when test fails
+      - Border color changes based on overall health
+    - **Three-column metrics grid**:
+      - Response Time panel: Shows average response in seconds with color coding
+      - Error Rate panel: 24h error percentage with detailed count message
+      - Rate Limit panel: Current vs optimal with checkmark when optimal
+    - **Recommendations panel**:
+      - Blue-bordered box with actionable suggestions
+      - Bullet list of all recommendations
+      - Only shown when recommendations exist
+    - **Last test info**: Footer showing test result and timestamp
+
+* **System Health Check (Phase 18.6)**
+  * New `get_system_health_data()` method - Comprehensive system verification
+    - **PHP Version check**: Verifies PHP 8.4+ requirement
+    - **PHP Memory monitoring**: Tracks memory usage vs limit
+      - Calculates: used / limit × 100
+      - Status: OK (<75%), Warning (75-90%), Error (>90%)
+      - Shows: used memory, limit, percentage
+    - **WordPress Version check**: Verifies WordPress 6.9+ requirement
+    - **PHP Extensions verification**:
+      - curl (REQUIRED): For API requests
+      - zip (REQUIRED): For file validation
+      - json (REQUIRED): For API parsing
+      - mbstring (RECOMMENDED): For string handling
+      - Status: OK (installed), Warning (missing recommended), Error (missing required)
+    - **File Permissions check**: Verifies uploads directory is writable
+    - **Disk Space monitoring**: Tracks disk usage percentage
+      - Status: OK (<85%), Warning (85-95%), Error (>95%)
+      - Shows: free space / total space
+    - **Database check**: Verifies MariaDB/MySQL 10.6+
+    - **Action Scheduler check**: Verifies required dependency installed
+  * New `get_overall_health_status()` method - Status aggregation
+    - Counts errors and warnings across all checks
+    - Determines overall status: ok/warning/error
+    - Generates summary message
+    - Returns: status, message, error_count, warning_count
+  * Enhanced Dashboard with new "System Health Check" section:
+    - **Header with overall status badge**:
+      - Green ✓ when all checks pass
+      - Orange ⚠ when warnings detected
+      - Red ✗ when critical errors found
+      - Border color matches status
+    - **Two-column layout** (Software & Resources):
+      - **Left column - Software Requirements**:
+        - PHP Version with ✓/✗ indicator
+        - WordPress Version with ✓/✗ indicator
+        - Database version with ✓/⚠/✗ indicator
+        - Action Scheduler with ✓/✗ indicator
+        - PHP Extensions table with individual status per extension
+      - **Right column - System Resources**:
+        - PHP Memory panel with progress bar and color coding
+        - Disk Space panel with progress bar and color coding
+        - Permissions panel with path display
+        - Alert box when issues detected (only if errors/warnings)
+    - **Proactive alerts**:
+      - "Action Required" for critical errors (red background)
+      - "Recommendations" for warnings (yellow background)
+      - Descriptive messages about impact
+
+* **Export/Import Diagnostics (Phase 18.7)**
+  * New `export_diagnostic_report()` method - Complete system report generation
+    - **Metadata included**:
+      - Generation timestamp
+      - Plugin version (WPINSIGHT_VERSION)
+      - WordPress version
+      - PHP version
+      - Anonymization flag
+    - **Data exported**:
+      - System health data (all checks)
+      - API health metrics (response times, error rates)
+      - Database statistics (all tables via get_all_tables_stats)
+      - Queue statistics (download queue state)
+      - Sync states (plugin and theme sync status)
+      - Settings (all plugin configuration)
+      - Recent errors (last 50 from error_log)
+      - Active downloads count
+      - Disk space information
+      - Environment details (home_url, site_url, WP_DEBUG, server info)
+    - **Anonymization when enabled**:
+      - File paths redacted: [PATH]
+      - URLs redacted: [URL]
+      - Sensitive paths: [REDACTED]
+      - Email addresses removed from settings
+      - Environment section completely excluded
+      - Regex-based sanitization of error messages
+  * New `handle_diagnostic_export()` method - Export action handler
+    - Actions: `export_diagnostics` (full) and `export_diagnostics_anon` (anonymous)
+    - Nonce verification: `wpinsight_export_diagnostics`
+    - Capability check: `manage_options` required
+    - JSON output: Pretty-printed with unescaped slashes
+    - Filename format: `wpinsight-diagnostics-{full|anonymous}-{Y-m-d-His}.json`
+    - HTTP headers for direct download
+    - Logging of all export operations
+    - Try/catch error handling with user-friendly messages
+  * New `handle_settings_import()` method - Settings import handler
+    - Accepts JSON file upload via multipart form
+    - File type validation: .json only
+    - JSON parsing and structure validation
+    - Verifies `settings` field exists in JSON
+    - **Whitelist of safe settings** (only these can be imported):
+      - auto_sync_enabled
+      - sync_plugins_enabled
+      - sync_themes_enabled
+      - download_plugins_enabled
+      - download_themes_enabled
+      - sync_interval
+      - max_concurrent_downloads
+      - zip_worker_interval
+      - max_retry_attempts
+      - max_size_detection_rate
+      - per_page
+      - log_retention_days
+    - **Never imports**: Emails, file paths, credentials
+    - Counts imported settings
+    - Logging of import operations
+    - Admin notices for success/error feedback
+  * Enhanced Dashboard with new "Diagnostic Tools" section:
+    - **Export section** (two-column grid):
+      - **Full Report card**:
+        - Description: Internal troubleshooting use
+        - Includes: System health, API health, database stats, all settings, errors, environment
+        - Button: "📥 Download Full Report" (primary)
+        - Link with nonce to `export_diagnostics`
+      - **Anonymous Report card**:
+        - Description: Safe for public sharing
+        - Includes: System health, API health, database stats, safe settings, redacted errors
+        - Excludes: Environment details, sensitive paths/emails
+        - Button: "📥 Download Anonymous Report" (secondary)
+        - Link with nonce to `export_diagnostics_anon`
+    - **Import section**:
+      - File upload form with .json accept filter
+      - Nonce field for security
+      - Information panel listing imported settings types
+      - Warning note about excluded sensitive settings
+      - Submit button: "📤 Import Settings" (primary)
+
 ### Changed
 
 * Plugin version: `1.4.0` → `1.5.0`
 * Debug Tools section expanded with database diagnostics
-* Admin init hook now includes `handle_database_actions()` and `handle_download_control_actions()`
-* Template variables documentation updated with new Phase 18.4 variables
+* Admin init hook now includes:
+  - `handle_database_actions()` (Phase 18.1)
+  - `handle_download_control_actions()` (Phase 18.4)
+  - `handle_diagnostic_export()` (Phase 18.7)
+  - `handle_settings_import()` (Phase 18.7)
+* Template variables documentation updated with new variables:
+  - Phase 18.3: `$plugin_progress`, `$theme_progress`
+  - Phase 18.4: `$active_downloads`, `$disk_space`, `$downloads_paused`
+  - Phase 18.5: `$api_health`
+  - Phase 18.6: `$system_health`, `$overall_health`
 * ZIP worker checks for downloads_paused setting before processing jobs
+* Dashboard now includes 7 new monitoring sections (Phases 18.1-18.7)
 
 ### Fixed
 
@@ -327,12 +507,41 @@ _Enhanced Database Diagnostics, Action Scheduler Monitoring & Download Queue Con
 * **Disk Space Warnings**: Proactive alerts when running out of storage
 * **Operations Management**: Pause before system maintenance, resume after
 
+**API Health Monitor:**
+* **Service Monitoring**: Real-time verification that WordPress.org API is accessible
+* **Performance Tracking**: Monitor API response times to detect slowdowns
+* **Error Analysis**: Track API error rates over 24-hour periods
+* **Rate Limit Optimization**: Ensure settings comply with WordPress.org recommendations
+* **Proactive Alerts**: Get recommendations before hitting rate limits or being blocked
+* **Network Diagnostics**: Identify if slow responses are network or service issues
+* **Configuration Validation**: Verify your settings won't cause API blocks
+
+**System Health Check:**
+* **Pre-flight Checks**: Verify all requirements before starting large sync operations
+* **Troubleshooting**: Quickly identify system issues causing plugin failures
+* **Compatibility Verification**: Ensure PHP, WordPress, and extensions meet requirements
+* **Resource Monitoring**: Track memory and disk space usage proactively
+* **Permission Validation**: Verify file permissions before encountering write errors
+* **Extension Detection**: Identify missing PHP extensions early
+* **Production Readiness**: Confirm system is ready for 600K+ download operations
+* **Maintenance Planning**: Know when to upgrade PHP, WordPress, or expand disk space
+
+**Export/Import Diagnostics:**
+* **Support Requests**: Export full report when asking for help from developers
+* **Debugging**: Share anonymous report publicly without exposing sensitive data
+* **Migration**: Transfer settings from staging to production servers
+* **Backup**: Keep diagnostic snapshots for before/after comparisons
+* **Team Collaboration**: Share configuration across team members
+* **Troubleshooting History**: Compare reports before and after issues occur
+* **Configuration Cloning**: Replicate working settings to new installations
+* **Documentation**: Include diagnostic reports in incident reports
+
 ### Tests
 
-* PHP syntax validation: ✓ Passed (all 3 modified files)
+* PHP syntax validation: ✓ Passed (all modified files)
 * SQL syntax validation: ✓ Fixed reserved word issue
-* Nonce verification: ✓ Tested (database actions, download controls)
-* Capability checks: ✓ Tested (manage_options required)
+* Nonce verification: ✓ Tested (database actions, download controls, exports, imports)
+* Capability checks: ✓ Tested (manage_options required for all actions)
 * Table operations tested on development database
 * Action Scheduler queries tested with production data
 * Execution history retrieval validated
@@ -342,6 +551,17 @@ _Enhanced Database Diagnostics, Action Scheduler Monitoring & Download Queue Con
 * Active downloads display: ✓ Tested with processing jobs
 * Disk space calculations: ✓ Validated
 * Download speed estimation: ✓ Verified
+* API health test: ✓ Real-time checks working
+* API response time measurement: ✓ Microsecond precision
+* Error rate calculations: ✓ 24h window accurate
+* System health checks: ✓ All 8 checks functional
+* PHP extension detection: ✓ Verified
+* Memory monitoring: ✓ Percentage calculations correct
+* Diagnostic export: ✓ Full and anonymous reports generated
+* JSON format: ✓ Valid and pretty-printed
+* Anonymization: ✓ Paths, URLs, emails redacted
+* Settings import: ✓ Whitelist enforcement working
+* File upload validation: ✓ Only .json accepted
 * Template escaping: ✓ All output properly escaped
 
 ---
