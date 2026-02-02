@@ -70,6 +70,8 @@ final class WPInsight_Admin {
 		add_action( 'admin_init', array( __CLASS__, 'handle_debug_actions' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_database_actions' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_download_control_actions' ) );
+		add_action( 'admin_init', array( __CLASS__, 'handle_diagnostic_export' ) );
+		add_action( 'admin_init', array( __CLASS__, 'handle_settings_import' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_export_download' ) );
 	}
 
@@ -3760,5 +3762,320 @@ final class WPInsight_Admin {
 		$health['recommendations'] = $recommendations;
 
 		return $health;
+	}
+
+	/**
+	 * Export diagnostic report.
+	 *
+	 * Generates a comprehensive diagnostic report for support or debugging.
+	 *
+	 * @since 1.5.0
+	 * @param bool $anonymize Whether to anonymize sensitive data.
+	 * @return array<string, mixed> Diagnostic report data.
+	 */
+	private static function export_diagnostic_report( bool $anonymize = false ): array {
+		global $wpdb;
+
+		$report = array(
+			'meta' => array(
+				'generated_at' => current_time( 'mysql', true ),
+				'plugin_version' => WPINSIGHT_VERSION,
+				'wp_version' => get_bloginfo( 'version' ),
+				'php_version' => PHP_VERSION,
+				'anonymized' => $anonymize,
+			),
+		);
+
+		// System Health.
+		$report['system_health'] = self::get_system_health_data();
+
+		// Anonymize sensitive paths.
+		if ( $anonymize && isset( $report['system_health']['permissions']['path'] ) ) {
+			$report['system_health']['permissions']['path'] = '[REDACTED]';
+		}
+
+		// API Health.
+		$report['api_health'] = self::get_api_health_data();
+
+		// Database Statistics.
+		$report['database_stats'] = WPInsight_DB::get_all_tables_stats();
+
+		// Queue Statistics.
+		$report['queue_stats'] = WPInsight_Zip_Queue::get_queue_stats();
+
+		// Sync States.
+		$report['sync_states'] = array(
+			'plugin' => WPInsight_Sync::get_sync_state( 'plugin' ),
+			'theme'  => WPInsight_Sync::get_sync_state( 'theme' ),
+		);
+
+		// Settings (optionally anonymized).
+		$all_settings = WPInsight_Settings::get_all();
+
+		if ( $anonymize ) {
+			// Remove sensitive settings.
+			unset( $all_settings['admin_notification_email'] );
+			unset( $all_settings['storage_base_path'] );
+		}
+
+		$report['settings'] = $all_settings;
+
+		// Recent errors (last 50).
+		$logs_table = WPInsight_DB::get_table_name( 'error_log' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$recent_errors = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT severity, message, created_at FROM %i
+				ORDER BY created_at DESC
+				LIMIT 50',
+				$logs_table
+			),
+			ARRAY_A
+		);
+
+		if ( $anonymize && $recent_errors ) {
+			// Redact file paths and URLs from error messages.
+			foreach ( $recent_errors as &$error ) {
+				$error['message'] = preg_replace( '#(/[^\s]+)#', '[PATH]', $error['message'] );
+				$error['message'] = preg_replace( '#(https?://[^\s]+)#', '[URL]', $error['message'] );
+			}
+		}
+
+		$report['recent_errors'] = $recent_errors;
+
+		// Active downloads.
+		$report['active_downloads'] = count( self::get_active_downloads() );
+
+		// Disk space.
+		$report['disk_space'] = self::get_disk_space_info();
+
+		// WordPress environment info.
+		if ( ! $anonymize ) {
+			$report['environment'] = array(
+				'home_url'        => home_url(),
+				'site_url'        => site_url(),
+				'wp_debug'        => defined( 'WP_DEBUG' ) && WP_DEBUG,
+				'wp_debug_log'    => defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG,
+				'wp_memory_limit' => WP_MEMORY_LIMIT,
+				'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
+			);
+		}
+
+		return $report;
+	}
+
+	/**
+	 * Handle diagnostic export action.
+	 *
+	 * Exports diagnostic report as JSON download.
+	 *
+	 * @since 1.5.0
+	 * @return void
+	 */
+	public static function handle_diagnostic_export(): void {
+		// Check if export action is set.
+		if ( ! isset( $_GET['action'] ) || ! in_array( $_GET['action'], array( 'export_diagnostics', 'export_diagnostics_anon' ), true ) ) {
+			return;
+		}
+
+		// Verify nonce.
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'wpinsight_export_diagnostics' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'cloudfest-wporgdownload' ) );
+		}
+
+		// Check user capability.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'cloudfest-wporgdownload' ) );
+		}
+
+		$action = sanitize_text_field( wp_unslash( $_GET['action'] ) );
+		$anonymize = ( 'export_diagnostics_anon' === $action );
+
+		try {
+			// Generate report.
+			$report = self::export_diagnostic_report( $anonymize );
+
+			// Log export.
+			WPInsight_Logger::info(
+				'Diagnostic report exported',
+				array(
+					'anonymized' => $anonymize,
+					'user_id'    => get_current_user_id(),
+				)
+			);
+
+			// Generate filename.
+			$filename = sprintf(
+				'wpinsight-diagnostics-%s-%s.json',
+				$anonymize ? 'anonymous' : 'full',
+				gmdate( 'Y-m-d-His' )
+			);
+
+			// Send headers for download.
+			header( 'Content-Type: application/json; charset=utf-8' );
+			header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+			header( 'Cache-Control: no-cache, no-store, must-revalidate' );
+			header( 'Pragma: no-cache' );
+			header( 'Expires: 0' );
+
+			// Output JSON.
+			echo wp_json_encode( $report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
+			exit;
+
+		} catch ( Exception $e ) {
+			WPInsight_Logger::error(
+				'Diagnostic export failed',
+				array(
+					'error' => $e->getMessage(),
+				)
+			);
+
+			wp_die(
+				esc_html(
+					sprintf(
+						/* translators: %s: Error message */
+						__( 'Export failed: %s', 'cloudfest-wporgdownload' ),
+						$e->getMessage()
+					)
+				)
+			);
+		}
+	}
+
+	/**
+	 * Handle settings import action.
+	 *
+	 * Imports settings from uploaded JSON file.
+	 *
+	 * @since 1.5.0
+	 * @return void
+	 */
+	public static function handle_settings_import(): void {
+		// Check if import action is set.
+		if ( ! isset( $_POST['wpinsight_import_settings'] ) ) {
+			return;
+		}
+
+		// Verify nonce.
+		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'wpinsight_import_settings' ) ) {
+			add_settings_error(
+				'wpinsight_messages',
+				'import_error',
+				__( 'Security check failed.', 'cloudfest-wporgdownload' ),
+				'error'
+			);
+			return;
+		}
+
+		// Check user capability.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			add_settings_error(
+				'wpinsight_messages',
+				'import_error',
+				__( 'You do not have permission to perform this action.', 'cloudfest-wporgdownload' ),
+				'error'
+			);
+			return;
+		}
+
+		// Check if file was uploaded.
+		if ( ! isset( $_FILES['settings_file'] ) || UPLOAD_ERR_OK !== $_FILES['settings_file']['error'] ) {
+			add_settings_error(
+				'wpinsight_messages',
+				'import_error',
+				__( 'No file uploaded or upload error occurred.', 'cloudfest-wporgdownload' ),
+				'error'
+			);
+			return;
+		}
+
+		try {
+			// Validate file type.
+			$file_name = sanitize_file_name( wp_unslash( $_FILES['settings_file']['name'] ) );
+			if ( ! str_ends_with( $file_name, '.json' ) ) {
+				throw new Exception( __( 'Invalid file type. Only JSON files are allowed.', 'cloudfest-wporgdownload' ) );
+			}
+
+			// Read file content.
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Need to read uploaded file.
+			$file_content = file_get_contents( $_FILES['settings_file']['tmp_name'] );
+			if ( false === $file_content ) {
+				throw new Exception( __( 'Failed to read uploaded file.', 'cloudfest-wporgdownload' ) );
+			}
+
+			// Parse JSON.
+			$data = json_decode( $file_content, true );
+			if ( null === $data ) {
+				throw new Exception( __( 'Invalid JSON format.', 'cloudfest-wporgdownload' ) );
+			}
+
+			// Validate structure.
+			if ( ! isset( $data['settings'] ) || ! is_array( $data['settings'] ) ) {
+				throw new Exception( __( 'Invalid diagnostic file. Missing settings data.', 'cloudfest-wporgdownload' ) );
+			}
+
+			// Import settings (only safe settings).
+			$safe_settings = array(
+				'auto_sync_enabled',
+				'sync_plugins_enabled',
+				'sync_themes_enabled',
+				'download_plugins_enabled',
+				'download_themes_enabled',
+				'sync_interval',
+				'max_concurrent_downloads',
+				'zip_worker_interval',
+				'max_retry_attempts',
+				'max_size_detection_rate',
+				'per_page',
+				'log_retention_days',
+			);
+
+			$imported_count = 0;
+			foreach ( $safe_settings as $setting_key ) {
+				if ( isset( $data['settings'][ $setting_key ] ) ) {
+					WPInsight_Settings::update( $setting_key, $data['settings'][ $setting_key ] );
+					++$imported_count;
+				}
+			}
+
+			// Log import.
+			WPInsight_Logger::info(
+				'Settings imported from diagnostic file',
+				array(
+					'imported_count' => $imported_count,
+					'user_id'        => get_current_user_id(),
+				)
+			);
+
+			add_settings_error(
+				'wpinsight_messages',
+				'import_success',
+				sprintf(
+					/* translators: %d: number of settings imported */
+					_n( '%d setting imported successfully.', '%d settings imported successfully.', $imported_count, 'cloudfest-wporgdownload' ),
+					$imported_count
+				),
+				'success'
+			);
+
+		} catch ( Exception $e ) {
+			WPInsight_Logger::error(
+				'Settings import failed',
+				array(
+					'error' => $e->getMessage(),
+				)
+			);
+
+			add_settings_error(
+				'wpinsight_messages',
+				'import_error',
+				sprintf(
+					/* translators: %s: Error message */
+					__( 'Import failed: %s', 'cloudfest-wporgdownload' ),
+					$e->getMessage()
+				),
+				'error'
+			);
+		}
 	}
 }
