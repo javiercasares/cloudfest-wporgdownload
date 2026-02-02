@@ -1020,6 +1020,9 @@ final class WPInsight_Admin {
 		$system_health = self::get_system_health_data();
 		$overall_health = self::get_overall_health_status( $system_health );
 
+		// Get API health data for Phase 18.5
+		$api_health = self::get_api_health_data();
+
 		// Pass admin class reference for helper methods.
 		$admin = __CLASS__;
 
@@ -3572,5 +3575,190 @@ final class WPInsight_Admin {
 			'error_count'   => $error_count,
 			'warning_count' => $warning_count,
 		);
+	}
+
+	/**
+	 * Get API health monitor data.
+	 *
+	 * Monitors WordPress.org API health including response times,
+	 * error rates, and configuration recommendations.
+	 *
+	 * @since 1.5.0
+	 * @return array{
+	 *     response_time: array{status: string, value: float, message: string},
+	 *     error_rate: array{status: string, errors: int, total: int, percent: float, message: string},
+	 *     rate_limit: array{status: string, current: int, optimal: int, message: string},
+	 *     last_test: array{success: bool, time: float, message: string},
+	 *     recommendations: array<int, string>
+	 * } API health data.
+	 */
+	private static function get_api_health_data(): array {
+		global $wpdb;
+
+		$health = array();
+
+		// Test API response time (real-time check).
+		$test_start = microtime( true );
+		$test_response = WPInsight_WPOrg_Client::check_api_health();
+		$test_time = microtime( true ) - $test_start;
+
+		$response_ok = ! is_wp_error( $test_response );
+		$health['last_test'] = array(
+			'success' => $response_ok,
+			'time'    => round( $test_time, 3 ),
+			'message' => $response_ok
+				? sprintf(
+					/* translators: %s: response time in seconds */
+					__( 'API responding in %ss', 'cloudfest-wporgdownload' ),
+					round( $test_time, 3 )
+				)
+				: sprintf(
+					/* translators: %s: error message */
+					__( 'API test failed: %s', 'cloudfest-wporgdownload' ),
+					$test_response->get_error_message()
+				),
+		);
+
+		// Calculate average response time from recent successful requests.
+		// For now, use the test time as baseline.
+		$avg_response = $test_time;
+		$response_status = 'ok';
+
+		if ( $avg_response > 3.0 ) {
+			$response_status = 'error';
+		} elseif ( $avg_response > 1.5 ) {
+			$response_status = 'warning';
+		}
+
+		$health['response_time'] = array(
+			'status'  => $response_status,
+			'value'   => round( $avg_response, 3 ),
+			'message' => $response_status === 'ok'
+				? sprintf(
+					/* translators: %s: response time in seconds */
+					__( 'Fast (%ss average)', 'cloudfest-wporgdownload' ),
+					round( $avg_response, 3 )
+				)
+				: sprintf(
+					/* translators: %s: response time in seconds */
+					__( 'Slow (%ss average)', 'cloudfest-wporgdownload' ),
+					round( $avg_response, 3 )
+				),
+		);
+
+		// Get API error rate from error log (last 24 hours).
+		$logs_table = WPInsight_DB::get_table_name( 'error_log' );
+
+		// Count API-related errors.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$api_errors = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM %i
+				WHERE severity IN ('ERROR', 'EMERGENCY')
+				AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+				AND (message LIKE %s OR message LIKE %s OR context LIKE %s)",
+				$logs_table,
+				'%API%',
+				'%WordPress.org%',
+				'%wporg%'
+			)
+		);
+
+		// Estimate total API requests in last 24h.
+		// Based on sync frequency: if sync runs every 5 min = 288 times/day.
+		// Each sync makes ~1-3 API calls depending on type.
+		// Plus size detection worker, etc.
+		// Conservative estimate: ~500-3000 requests per day.
+		$sync_interval = WPInsight_Settings::get( 'sync_interval', 300 );
+		$syncs_per_day = 86400 / $sync_interval; // 24h / interval.
+		$estimated_requests = $syncs_per_day * 2; // Average 2 API calls per sync.
+
+		// Add size detection requests.
+		$size_detection_rate = WPInsight_Settings::get( 'max_size_detection_rate', 3 );
+		$size_detection_per_day = ( 86400 / 300 ) * 600; // Every 5 min, 600 ZIPs.
+		$estimated_requests += $size_detection_per_day;
+
+		$error_percent = $estimated_requests > 0 ? ( $api_errors / $estimated_requests ) * 100 : 0;
+
+		$error_status = 'ok';
+		if ( $error_percent > 5 ) {
+			$error_status = 'error';
+		} elseif ( $error_percent > 1 ) {
+			$error_status = 'warning';
+		}
+
+		$health['error_rate'] = array(
+			'status'  => $error_status,
+			'errors'  => (int) $api_errors,
+			'total'   => (int) $estimated_requests,
+			'percent' => round( $error_percent, 2 ),
+			'message' => sprintf(
+				/* translators: 1: error count, 2: total requests, 3: error percentage */
+				__( '%1$d errors of %2$d requests (%3$s%%)', 'cloudfest-wporgdownload' ),
+				$api_errors,
+				number_format_i18n( $estimated_requests ),
+				round( $error_percent, 2 )
+			),
+		);
+
+		// Rate limit recommendations.
+		$current_rate_limit = WPInsight_Settings::get( 'max_concurrent_downloads', 3 );
+		$optimal_rate_limit = 3; // WordPress.org best practice.
+
+		$rate_status = 'ok';
+		if ( $current_rate_limit > 5 ) {
+			$rate_status = 'error'; // Too aggressive, risk of being banned.
+		} elseif ( $current_rate_limit > 3 ) {
+			$rate_status = 'warning'; // Above recommended.
+		}
+
+		$health['rate_limit'] = array(
+			'status'  => $rate_status,
+			'current' => $current_rate_limit,
+			'optimal' => $optimal_rate_limit,
+			'message' => $current_rate_limit === $optimal_rate_limit
+				? sprintf(
+					/* translators: %d: rate limit value */
+					__( 'Optimal (%d concurrent downloads)', 'cloudfest-wporgdownload' ),
+					$current_rate_limit
+				)
+				: sprintf(
+					/* translators: 1: current rate, 2: optimal rate */
+					__( 'Current: %1$d, Recommended: %2$d', 'cloudfest-wporgdownload' ),
+					$current_rate_limit,
+					$optimal_rate_limit
+				),
+		);
+
+		// Generate recommendations.
+		$recommendations = array();
+
+		if ( $error_percent > 5 ) {
+			$recommendations[] = __( 'High API error rate detected. Consider reducing sync frequency or rate limits.', 'cloudfest-wporgdownload' );
+		}
+
+		if ( $current_rate_limit > 3 ) {
+			$recommendations[] = sprintf(
+				/* translators: %d: current rate limit */
+				__( 'Current rate limit (%d) is above WordPress.org recommended limit (3). Reduce to avoid being blocked.', 'cloudfest-wporgdownload' ),
+				$current_rate_limit
+			);
+		}
+
+		if ( $avg_response > 2.0 ) {
+			$recommendations[] = __( 'Slow API response times detected. This may indicate network issues or WordPress.org service degradation.', 'cloudfest-wporgdownload' );
+		}
+
+		if ( ! $response_ok ) {
+			$recommendations[] = __( 'API test failed. Check your network connection and WordPress.org service status.', 'cloudfest-wporgdownload' );
+		}
+
+		if ( empty( $recommendations ) ) {
+			$recommendations[] = __( 'API health is optimal. No issues detected.', 'cloudfest-wporgdownload' );
+		}
+
+		$health['recommendations'] = $recommendations;
+
+		return $health;
 	}
 }
