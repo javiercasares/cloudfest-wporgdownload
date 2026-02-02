@@ -295,7 +295,8 @@ Yes! This plugin was developed during CloudFest Hackathon. Contributions welcome
   * Automatic detection of ZIP file sizes via HEAD requests
   * Parallel process independent of download system
   * One-time detection per ZIP (sizes don't change)
-  * Processes 100 ZIPs every 5 minutes via Action Scheduler
+  * Processes 600 ZIPs every 5 minutes via Action Scheduler
+  * Configurable rate limiting (1-10 req/sec, default: 3)
   * Content-Length header reading without downloading files
 
 * **Database Schema v1.2.0**
@@ -303,17 +304,25 @@ Yes! This plugin was developed during CloudFest Hackathon. Contributions welcome
   * Stores detected file sizes (BIGINT UNSIGNED)
   * Automatic migration from v1.1.0
 
-* **Dashboard Statistics**
+* **Dashboard Enhancements**
   * "Storage Requirements Analysis" section
+  * "ZIP Size Detection Progress" card with real-time status
   * Separate statistics for plugins and themes
+  * Progress bars showing detection completion
   * Downloaded vs Pending ZIPs sizes
   * Total required storage calculation
   * Detection progress percentage
   * Grand total across all ZIPs
 
+* **Settings**
+  * New: Size detection rate limit (1-10 req/sec, default: 3)
+  * Configurable via Settings > WPInsight > Rate Limiting
+  * Balance between speed and WordPress.org politeness
+
 * **Performance**
-  * HEAD requests with 0.1s delay (polite to WP.org)
-  * Batch processing (100 URLs per tick)
+  * HEAD requests with configurable rate (default: 3 req/sec)
+  * Batch processing (600 URLs per tick)
+  * 600 ZIPs @ 3 req/sec = ~3.3 minutes per batch
   * Cached statistics queries
   * 10-second timeout per request
 
@@ -452,7 +461,7 @@ Full changelog with detailed changes available at:
 == Upgrade Notice ==
 
 = 1.4.0 =
-ZIP size detection system! Automatically detects file sizes via HEAD requests. Dashboard shows total storage requirements (downloaded + pending). Database schema upgraded to v1.2.0 (automatic migration).
+ZIP size detection system with configurable rate limiting! Automatically detects file sizes via HEAD requests (600 ZIPs per batch, 3 req/sec by default). Dashboard shows total storage requirements and detection progress. New setting for rate limit configuration. Database schema upgraded to v1.2.0 (automatic migration).
 
 = 1.3.0 =
 Enhanced CPT detail views with comprehensive plugin/theme information, ZIP downloads table, quick stats widget, and public URLs. Major UX improvement for data visibility.

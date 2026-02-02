@@ -605,7 +605,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<!-- Worker Status -->
 				<div style="margin-top: 15px; padding: 10px; background: #f6f7f7; border-left: 3px solid #8c8f94; border-radius: 3px; font-size: 12px; color: #646970;">
 					<strong><?php esc_html_e( 'Auto-detection:', 'cloudfest-wporgdownload' ); ?></strong>
-					<?php esc_html_e( 'Runs every 5 minutes (100 ZIPs per batch)', 'cloudfest-wporgdownload' ); ?>
+					<?php
+					$rate_limit = WPInsight_Settings::get( 'max_size_detection_rate', 3 );
+					/* translators: 1: batch size, 2: requests per second */
+					echo esc_html( sprintf( __( 'Runs every 5 minutes (600 ZIPs per batch, %d req/sec)', 'cloudfest-wporgdownload' ), $rate_limit ) );
+					?>
 				</div>
 			</div>
 

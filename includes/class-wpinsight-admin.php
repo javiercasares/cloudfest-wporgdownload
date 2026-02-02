@@ -241,6 +241,14 @@ final class WPInsight_Admin {
 		);
 
 		add_settings_field(
+			'max_size_detection_rate',
+			__( 'Size Detection Rate (req/sec)', 'cloudfest-wporgdownload' ),
+			array( __CLASS__, 'render_field_max_size_detection_rate' ),
+			self::SETTINGS_PAGE_SLUG,
+			'wpinsight_rate_limiting'
+		);
+
+		add_settings_field(
 			'zip_worker_interval',
 			__( 'ZIP Worker Interval (seconds)', 'cloudfest-wporgdownload' ),
 			array( __CLASS__, 'render_field_zip_worker_interval' ),
@@ -1370,6 +1378,22 @@ final class WPInsight_Admin {
 	}
 
 	/**
+	 * Render max_size_detection_rate field.
+	 *
+	 * @since 1.4.0
+	 * @return void
+	 */
+	public static function render_field_max_size_detection_rate(): void {
+		$value = WPInsight_Settings::get( 'max_size_detection_rate', 3 );
+		?>
+		<input type="number" name="<?php echo esc_attr( WPINSIGHT_SETTINGS_OPTION . '[max_size_detection_rate]' ); ?>" value="<?php echo esc_attr( $value ); ?>" min="1" max="10" step="1" class="small-text" />
+		<p class="description">
+			<?php esc_html_e( 'HEAD requests per second for size detection (1-10). Lower values are more polite to WordPress.org servers. Default: 3 (recommended).', 'cloudfest-wporgdownload' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
 	 * Render zip_worker_interval field.
 	 *
 	 * @since 0.1.0
@@ -1483,6 +1507,7 @@ final class WPInsight_Admin {
 		// IMPORTANT: Do NOT call WPInsight_Settings::update() here as it causes infinite loop.
 		$number_fields = array(
 			'max_concurrent_downloads',
+			'max_size_detection_rate',
 			'sync_interval',
 			'zip_worker_interval',
 			'max_retries',
@@ -1500,6 +1525,9 @@ final class WPInsight_Admin {
 				switch ( $key ) {
 					case 'max_concurrent_downloads':
 						$is_valid = ( $value >= 1 && $value <= 5 );
+						break;
+					case 'max_size_detection_rate':
+						$is_valid = ( $value >= 1 && $value <= 10 );
 						break;
 					case 'sync_interval':
 					case 'zip_worker_interval':

@@ -26,8 +26,9 @@ _ZIP Size Detection System Release_
   * New `get_remote_filesize()` method - Makes HEAD request to get Content-Length
   * New `get_size_statistics()` method - Returns comprehensive size statistics
   * Automatic scheduling via Action Scheduler (every 5 minutes)
-  * Batch processing: 100 URLs per execution
-  * Polite delays: 0.1 seconds between requests
+  * Batch processing: 600 URLs per execution
+  * Configurable rate limiting: 1-10 req/sec (default: 3)
+  * Dynamic delay calculation based on rate setting
   * Error logging for failed detections
 
 * **Database Schema v1.2.0**
@@ -37,9 +38,11 @@ _ZIP Size Detection System Release_
   * NULL until size is detected
   * Automatic migration from v1.1.0 via `migrate_to_1_2_0()`
 
-* **Dashboard Statistics**
+* **Dashboard Enhancements**
   * New "Storage Requirements Analysis" section
-  * Separate tables for plugins and themes
+  * New "ZIP Size Detection Progress" card with real-time status
+  * Separate statistics for plugins and themes
+  * Progress bars showing detection completion
   * Statistics displayed:
     - Downloaded ZIPs size
     - Pending ZIPs size (from remote_filesize)
@@ -48,6 +51,7 @@ _ZIP Size Detection System Release_
     - Count of ZIPs with detected sizes
   * Grand total calculation (plugins + themes)
   * Human-readable size formatting (GB, MB, etc.)
+  * Dynamic worker status showing rate limit
 
 * **Action Scheduler Integration**
   * New action hook: `wpinsight_size_detection_tick`
@@ -55,6 +59,13 @@ _ZIP Size Detection System Release_
   * New method: `ensure_size_detection_scheduled()` - Setup during activation
   * Runs every 5 minutes independently of download worker
   * Registered in bootstrap activation
+
+* **Settings**
+  * New setting: `max_size_detection_rate` (default: 3 req/sec)
+  * Range: 1-10 HEAD requests per second
+  * Configurable via Settings > WPInsight > Rate Limiting
+  * Validation ensures values within acceptable range
+  * Description guides users on WordPress.org politeness
 
 ### Changed
 
@@ -67,7 +78,9 @@ _ZIP Size Detection System Release_
 
 * HEAD requests only (no file downloads)
 * 10-second timeout per request
-* 0.1-second delay between requests (polite to WordPress.org)
+* Configurable rate limiting (default: 3 req/sec = 0.333s delay)
+* Batch size increased: 100 → 600 ZIPs per tick
+* 600 ZIPs @ 3 req/sec = ~3.3 minutes per batch (fits in 5-minute window)
 * Batch processing prevents timeouts
 * One-time detection per ZIP (no redundant checks)
 * Size data persists permanently in database

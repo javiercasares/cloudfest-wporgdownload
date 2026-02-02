@@ -58,6 +58,7 @@ final class WPInsight_Settings {
 
 			// Rate limiting - CRITICAL for WordPress.org.
 			'max_concurrent_downloads'          => 3, // Max 3 concurrent downloads to avoid bans.
+			'max_size_detection_rate'           => 3, // Max 3 HEAD requests per second for size detection.
 
 			// Scheduling intervals (in seconds).
 			'sync_interval'                     => 300, // 5 minutes - sync check frequency.
@@ -237,6 +238,15 @@ final class WPInsight_Settings {
 				if ( false === $value || $value < 1 || $value > 5 ) {
 					// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message, not user output.
 					throw new InvalidArgumentException( "Setting '{$key}' must be an integer between 1 and 5" );
+				}
+				return $value;
+
+			case 'max_size_detection_rate':
+				// Integer: 1-10 range (HEAD requests per second).
+				$value = filter_var( $value, FILTER_VALIDATE_INT );
+				if ( false === $value || $value < 1 || $value > 10 ) {
+					// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message, not user output.
+					throw new InvalidArgumentException( "Setting '{$key}' must be an integer between 1 and 10" );
 				}
 				return $value;
 

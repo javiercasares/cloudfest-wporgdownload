@@ -127,8 +127,8 @@ final class WPInsight_Zip_Queue {
 	 * @return void
 	 */
 	public static function size_detection_tick(): void {
-		// Detect sizes for up to 100 ZIPs per tick.
-		self::detect_zip_sizes( 100 );
+		// Detect sizes for up to 600 ZIPs per tick.
+		self::detect_zip_sizes( 600 );
 	}
 
 	/**
@@ -599,6 +599,13 @@ final class WPInsight_Zip_Queue {
 			'failed'  => 0,
 		);
 
+		// Get rate limit from settings (requests per second).
+		$rate_limit = WPInsight_Settings::get( 'max_size_detection_rate', 3 );
+
+		// Calculate delay in microseconds: 1 second / rate = delay per request.
+		// Example: 3 req/sec = 1/3 = 0.333 seconds = 333333 microseconds.
+		$delay_microseconds = (int) ( 1000000 / $rate_limit );
+
 		foreach ( $jobs as $job ) {
 			$filesize = self::get_remote_filesize( $job['download_url'] );
 
@@ -622,8 +629,8 @@ final class WPInsight_Zip_Queue {
 				++$stats['failed'];
 			}
 
-			// Small delay to be polite to WordPress.org servers.
-			usleep( 100000 ); // 0.1 seconds.
+			// Rate limiting delay to be polite to WordPress.org servers.
+			usleep( $delay_microseconds );
 		}
 
 		WPInsight_Logger::info(
