@@ -150,6 +150,11 @@ final class WPInsight_Zip_Queue {
 	 * @return void
 	 */
 	public static function worker_tick(): void {
+		// Check if downloads are paused.
+		if ( WPInsight_Settings::get( 'downloads_paused', false ) ) {
+			return; // Downloads paused by user.
+		}
+
 		// Check if auto sync is enabled (downloads require sync).
 		if ( ! WPInsight_Settings::get( 'auto_sync_enabled', true ) ) {
 			return;

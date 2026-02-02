@@ -13,6 +13,11 @@
  * - $plugin_state: Plugin sync state array.
  * - $theme_state: Theme sync state array.
  * - $queue_stats: Download queue statistics.
+ * - $plugin_progress: Plugin sync progress data (Phase 18.3).
+ * - $theme_progress: Theme sync progress data (Phase 18.3).
+ * - $active_downloads: Active downloads array (Phase 18.4).
+ * - $disk_space: Disk space information array (Phase 18.4).
+ * - $downloads_paused: Boolean flag for paused downloads (Phase 18.4).
  * - $recent_logs: Recent error logs array.
  * - $admin: WPInsight_Admin class for helper methods.
  *
@@ -208,6 +213,169 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</div>
 					</div>
 				<?php endif; ?>
+			</div>
+		</div>
+	</div>
+
+	<!-- Download Queue Monitor (Phase 18.4) -->
+	<div style="background: #fff; padding: 20px; margin: 20px 0; border-left: 4px solid <?php echo $downloads_paused ? '#dba617' : '#00a32a'; ?>; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+			<h2 style="margin: 0; font-size: 18px;">
+				<?php esc_html_e( 'Download Queue Monitor', 'cloudfest-wporgdownload' ); ?>
+			</h2>
+			<div style="display: flex; gap: 10px;">
+				<?php if ( $downloads_paused ) : ?>
+					<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'resume_downloads', 'page' => 'wpinsight-dashboard' ), admin_url( 'tools.php' ) ), 'wpinsight_download_control' ) ); ?>"
+					   class="button button-primary"
+					   style="background: #00a32a; border-color: #00a32a;">
+						<?php esc_html_e( '▶ Resume Downloads', 'cloudfest-wporgdownload' ); ?>
+					</a>
+				<?php else : ?>
+					<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'pause_downloads', 'page' => 'wpinsight-dashboard' ), admin_url( 'tools.php' ) ), 'wpinsight_download_control' ) ); ?>"
+					   class="button"
+					   style="background: #dba617; border-color: #dba617; color: #fff;">
+						<?php esc_html_e( '⏸ Pause Downloads', 'cloudfest-wporgdownload' ); ?>
+					</a>
+				<?php endif; ?>
+			</div>
+		</div>
+
+		<?php if ( $downloads_paused ) : ?>
+			<div style="padding: 12px; background: #fcf3cf; border-left: 3px solid #dba617; border-radius: 4px; margin-bottom: 15px;">
+				<strong style="color: #d97706;"><?php esc_html_e( '⏸ Downloads Paused', 'cloudfest-wporgdownload' ); ?></strong> -
+				<?php esc_html_e( 'No new downloads will start until resumed.', 'cloudfest-wporgdownload' ); ?>
+			</div>
+		<?php endif; ?>
+
+		<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+			<!-- Active Downloads -->
+			<div>
+				<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970; text-transform: uppercase; letter-spacing: 0.5px;">
+					<?php esc_html_e( 'Active Downloads', 'cloudfest-wporgdownload' ); ?>
+					<span style="background: #2271b1; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px;">
+						<?php echo esc_html( count( $active_downloads ) ); ?>
+					</span>
+				</h3>
+
+				<?php if ( empty( $active_downloads ) ) : ?>
+					<div style="padding: 20px; text-align: center; background: #f6f7f7; border-radius: 4px; color: #646970;">
+						<?php esc_html_e( 'No active downloads at the moment', 'cloudfest-wporgdownload' ); ?>
+					</div>
+				<?php else : ?>
+					<table class="widefat" style="margin: 0;">
+						<thead>
+							<tr>
+								<th style="padding: 8px;"><?php esc_html_e( 'ZIP File', 'cloudfest-wporgdownload' ); ?></th>
+								<th style="padding: 8px; text-align: center;"><?php esc_html_e( 'Progress', 'cloudfest-wporgdownload' ); ?></th>
+								<th style="padding: 8px; text-align: right;"><?php esc_html_e( 'Speed', 'cloudfest-wporgdownload' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php foreach ( $active_downloads as $download ) : ?>
+								<tr>
+									<td style="padding: 8px;">
+										<strong><?php echo esc_html( $download['slug'] ); ?></strong>
+										<span style="color: #646970; font-size: 11px;">.<?php echo esc_html( $download['version'] ); ?>.zip</span>
+										<?php if ( $download['remote_filesize'] ) : ?>
+											<div style="font-size: 11px; color: #646970;">
+												<?php echo esc_html( size_format( $download['remote_filesize'], 2 ) ); ?>
+											</div>
+										<?php endif; ?>
+									</td>
+									<td style="padding: 8px; text-align: center;">
+										<?php if ( null !== $download['progress_percent'] ) : ?>
+											<div style="background: #f0f0f1; border-radius: 10px; height: 20px; position: relative; overflow: hidden;">
+												<div style="background: #2271b1; height: 100%; width: <?php echo esc_attr( $download['progress_percent'] ); ?>%; transition: width 0.3s ease;"></div>
+												<span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 11px; font-weight: 600; color: #1d2327;">
+													<?php echo esc_html( round( $download['progress_percent'] ) ); ?>%
+												</span>
+											</div>
+										<?php else : ?>
+											<span style="color: #646970; font-size: 11px;">
+												<?php
+												/* translators: %s: elapsed time */
+												echo esc_html( sprintf( __( '%s elapsed', 'cloudfest-wporgdownload' ), human_time_diff( time() - $download['elapsed_seconds'], time() ) ) );
+												?>
+											</span>
+										<?php endif; ?>
+									</td>
+									<td style="padding: 8px; text-align: right;">
+										<?php if ( null !== $download['estimated_speed'] ) : ?>
+											<span style="font-weight: 600; color: #00a32a;">
+												<?php echo esc_html( size_format( $download['estimated_speed'], 2 ) ); ?>/s
+											</span>
+										<?php else : ?>
+											<span style="color: #646970;">—</span>
+										<?php endif; ?>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				<?php endif; ?>
+			</div>
+
+			<!-- Disk Space -->
+			<div>
+				<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970; text-transform: uppercase; letter-spacing: 0.5px;">
+					<?php esc_html_e( 'Disk Space', 'cloudfest-wporgdownload' ); ?>
+				</h3>
+
+				<div style="background: #f6f7f7; padding: 15px; border-radius: 4px;">
+					<!-- Disk Usage Progress Bar -->
+					<div style="margin-bottom: 15px;">
+						<div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;">
+							<span style="color: #646970;"><?php esc_html_e( 'Used', 'cloudfest-wporgdownload' ); ?></span>
+							<span style="font-weight: 600; color: #1d2327;"><?php echo esc_html( $disk_space['used_percent'] ); ?>%</span>
+						</div>
+						<div style="background: #dcdcde; border-radius: 10px; height: 10px; overflow: hidden;">
+							<div style="background: <?php echo $disk_space['used_percent'] > 90 ? '#d63638' : ( $disk_space['used_percent'] > 75 ? '#dba617' : '#00a32a' ); ?>; height: 100%; width: <?php echo esc_attr( $disk_space['used_percent'] ); ?>%; transition: width 0.3s ease;"></div>
+						</div>
+					</div>
+
+					<!-- Storage Stats -->
+					<table style="width: 100%; font-size: 12px; margin: 0;">
+						<tbody>
+							<tr>
+								<td style="padding: 4px 0; color: #646970;"><?php esc_html_e( 'Total:', 'cloudfest-wporgdownload' ); ?></td>
+								<td style="padding: 4px 0; text-align: right; font-weight: 600;">
+									<?php echo esc_html( size_format( $disk_space['total_space'], 2 ) ); ?>
+								</td>
+							</tr>
+							<tr>
+								<td style="padding: 4px 0; color: #646970;"><?php esc_html_e( 'Free:', 'cloudfest-wporgdownload' ); ?></td>
+								<td style="padding: 4px 0; text-align: right; font-weight: 600; color: #00a32a;">
+									<?php echo esc_html( size_format( $disk_space['free_space'], 2 ) ); ?>
+								</td>
+							</tr>
+							<tr style="border-top: 1px solid #dcdcde;">
+								<td style="padding: 4px 0; color: #646970;"><?php esc_html_e( 'Downloaded:', 'cloudfest-wporgdownload' ); ?></td>
+								<td style="padding: 4px 0; text-align: right; font-weight: 600;">
+									<?php echo esc_html( size_format( $disk_space['artifacts_size'], 2 ) ); ?>
+								</td>
+							</tr>
+							<tr>
+								<td style="padding: 4px 0; color: #646970;"><?php esc_html_e( 'Pending:', 'cloudfest-wporgdownload' ); ?></td>
+								<td style="padding: 4px 0; text-align: right; font-weight: 600; color: #dba617;">
+									<?php echo esc_html( size_format( $disk_space['pending_size'], 2 ) ); ?>
+								</td>
+							</tr>
+							<tr style="border-top: 1px solid #dcdcde;">
+								<td style="padding: 4px 0; color: #646970;"><strong><?php esc_html_e( 'Total Required:', 'cloudfest-wporgdownload' ); ?></strong></td>
+								<td style="padding: 4px 0; text-align: right; font-weight: 600; color: #2271b1;">
+									<?php echo esc_html( size_format( $disk_space['total_required'], 2 ) ); ?>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+
+					<?php if ( $disk_space['total_required'] > $disk_space['free_space'] ) : ?>
+						<div style="margin-top: 10px; padding: 8px; background: #fcf3cf; border-left: 2px solid #dba617; font-size: 11px; color: #d97706; border-radius: 2px;">
+							<strong>⚠ <?php esc_html_e( 'Warning:', 'cloudfest-wporgdownload' ); ?></strong>
+							<?php esc_html_e( 'Not enough disk space for all pending downloads', 'cloudfest-wporgdownload' ); ?>
+						</div>
+					<?php endif; ?>
+				</div>
 			</div>
 		</div>
 	</div>

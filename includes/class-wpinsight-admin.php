@@ -69,6 +69,7 @@ final class WPInsight_Admin {
 		add_action( 'admin_init', array( __CLASS__, 'handle_dashboard_actions' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_debug_actions' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_database_actions' ) );
+		add_action( 'admin_init', array( __CLASS__, 'handle_download_control_actions' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_export_download' ) );
 	}
 
@@ -1009,6 +1010,11 @@ final class WPInsight_Admin {
 		// Get sync progress data for Phase 18.3
 		$plugin_progress = self::get_sync_progress_data( 'plugin' );
 		$theme_progress  = self::get_sync_progress_data( 'theme' );
+
+		// Get active downloads and disk space info for Phase 18.4
+		$active_downloads = self::get_active_downloads();
+		$disk_space       = self::get_disk_space_info();
+		$downloads_paused = WPInsight_Settings::get( 'downloads_paused', false );
 
 		// Pass admin class reference for helper methods.
 		$admin = __CLASS__;
@@ -3111,5 +3117,227 @@ final class WPInsight_Admin {
 
 		/* translators: %d: number of days */
 		return sprintf( __( '%d days', 'cloudfest-wporgdownload' ), $days );
+	}
+
+	/**
+	 * Get active downloads.
+	 *
+	 * Returns currently processing downloads with progress information.
+	 *
+	 * @since 1.5.0
+	 * @return array<int, array{
+	 *     id: int,
+	 *     slug: string,
+	 *     version: string,
+	 *     item_type: string,
+	 *     remote_filesize: int|null,
+	 *     started_at: string,
+	 *     elapsed_seconds: int,
+	 *     estimated_speed: float|null,
+	 *     progress_percent: float|null
+	 * }> Active downloads data.
+	 */
+	private static function get_active_downloads(): array {
+		global $wpdb;
+
+		$table = WPInsight_DB::get_table_name( 'zip_queue' );
+
+		// Get currently processing downloads (last 10 minutes).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$downloads = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, slug, version, item_type, remote_filesize, started_at
+				FROM %i
+				WHERE status = 'processing'
+				AND started_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+				ORDER BY started_at DESC
+				LIMIT 10",
+				$table
+			),
+			ARRAY_A
+		);
+
+		if ( ! $downloads ) {
+			return array();
+		}
+
+		// Calculate progress info for each download.
+		$now = time();
+		foreach ( $downloads as &$download ) {
+			$started_time = strtotime( $download['started_at'] );
+			$elapsed      = $now - $started_time;
+
+			$download['elapsed_seconds'] = $elapsed;
+
+			// If we have remote filesize, estimate speed and progress.
+			if ( ! empty( $download['remote_filesize'] ) && $elapsed > 0 ) {
+				// Estimate download speed (conservative: assume 50% downloaded at this point).
+				$estimated_bytes_downloaded = $download['remote_filesize'] * 0.5;
+				$download['estimated_speed'] = $estimated_bytes_downloaded / $elapsed; // Bytes per second.
+
+				// Estimate progress (50% if still processing).
+				$download['progress_percent'] = 50.0;
+			} else {
+				$download['estimated_speed']  = null;
+				$download['progress_percent'] = null;
+			}
+		}
+
+		return $downloads;
+	}
+
+	/**
+	 * Get disk space information.
+	 *
+	 * Returns disk space statistics for the uploads directory.
+	 *
+	 * @since 1.5.0
+	 * @return array{
+	 *     total_space: int,
+	 *     free_space: int,
+	 *     used_space: int,
+	 *     used_percent: float,
+	 *     artifacts_size: int,
+	 *     pending_size: int,
+	 *     total_required: int
+	 * } Disk space data.
+	 */
+	private static function get_disk_space_info(): array {
+		$upload_dir = wp_upload_dir();
+		$base_path  = $upload_dir['basedir'];
+
+		// Get disk space statistics.
+		$total_space = disk_total_space( $base_path );
+		$free_space  = disk_free_space( $base_path );
+
+		// Calculate used space.
+		$used_space    = $total_space - $free_space;
+		$used_percent  = $total_space > 0 ? ( $used_space / $total_space ) * 100 : 0;
+
+		// Get artifacts size from database.
+		global $wpdb;
+		$artifacts_table = WPInsight_DB::get_table_name( 'artifacts' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$artifacts_size = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COALESCE(SUM(file_size), 0) FROM %i',
+				$artifacts_table
+			)
+		);
+
+		// Get pending downloads size estimate.
+		$queue_table = WPInsight_DB::get_table_name( 'zip_queue' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$pending_size = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COALESCE(SUM(remote_filesize), 0) FROM %i
+				WHERE status IN ('pending', 'processing')
+				AND remote_filesize IS NOT NULL",
+				$queue_table
+			)
+		);
+
+		return array(
+			'total_space'     => (int) $total_space,
+			'free_space'      => (int) $free_space,
+			'used_space'      => (int) $used_space,
+			'used_percent'    => round( $used_percent, 1 ),
+			'artifacts_size'  => (int) $artifacts_size,
+			'pending_size'    => (int) $pending_size,
+			'total_required'  => (int) $artifacts_size + (int) $pending_size,
+		);
+	}
+
+	/**
+	 * Handle download control actions.
+	 *
+	 * Processes pause/resume actions for download queue.
+	 *
+	 * @since 1.5.0
+	 * @return void
+	 */
+	public static function handle_download_control_actions(): void {
+		// Check if action is set.
+		if ( ! isset( $_GET['action'] ) || ! in_array( $_GET['action'], array( 'pause_downloads', 'resume_downloads' ), true ) ) {
+			return;
+		}
+
+		// Verify nonce.
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'wpinsight_download_control' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'cloudfest-wporgdownload' ) );
+		}
+
+		// Check user capability.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'cloudfest-wporgdownload' ) );
+		}
+
+		$action = sanitize_text_field( wp_unslash( $_GET['action'] ) );
+
+		try {
+			if ( 'pause_downloads' === $action ) {
+				// Pause downloads.
+				WPInsight_Settings::update( 'downloads_paused', true );
+
+				WPInsight_Logger::info(
+					'Downloads paused by user',
+					array( 'user_id' => get_current_user_id() )
+				);
+
+				add_settings_error(
+					'wpinsight_messages',
+					'downloads_paused',
+					__( 'Downloads have been paused. No new downloads will start.', 'cloudfest-wporgdownload' ),
+					'success'
+				);
+			} elseif ( 'resume_downloads' === $action ) {
+				// Resume downloads.
+				WPInsight_Settings::update( 'downloads_paused', false );
+
+				WPInsight_Logger::info(
+					'Downloads resumed by user',
+					array( 'user_id' => get_current_user_id() )
+				);
+
+				add_settings_error(
+					'wpinsight_messages',
+					'downloads_resumed',
+					__( 'Downloads have been resumed. Download queue will continue processing.', 'cloudfest-wporgdownload' ),
+					'success'
+				);
+			}
+		} catch ( Exception $e ) {
+			WPInsight_Logger::error(
+				'Download control action failed',
+				array(
+					'action' => $action,
+					'error'  => $e->getMessage(),
+				)
+			);
+
+			add_settings_error(
+				'wpinsight_messages',
+				'download_control_error',
+				sprintf(
+					/* translators: %s: Error message */
+					__( 'Action failed: %s', 'cloudfest-wporgdownload' ),
+					$e->getMessage()
+				),
+				'error'
+			);
+		}
+
+		// Redirect back to dashboard.
+		$redirect_url = add_query_arg(
+			array(
+				'page' => self::DASHBOARD_PAGE_SLUG,
+			),
+			admin_url( 'tools.php' )
+		);
+
+		wp_safe_redirect( $redirect_url );
+		exit;
 	}
 }
