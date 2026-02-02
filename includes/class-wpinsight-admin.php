@@ -73,6 +73,67 @@ final class WPInsight_Admin {
 		add_action( 'admin_init', array( __CLASS__, 'handle_diagnostic_export' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_settings_import' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_export_download' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
+	}
+
+	/**
+	 * Enqueue admin assets (CSS/JS).
+	 *
+	 * Enqueues scripts and styles for admin pages with real-time updates.
+	 *
+	 * @since 1.7.0
+	 * @param string $hook_suffix Current admin page hook suffix.
+	 * @return void
+	 */
+	public static function enqueue_admin_assets( string $hook_suffix ): void {
+		// Only enqueue on dashboard page.
+		if ( 'tools_page_wpinsight-dashboard' !== $hook_suffix ) {
+			return;
+		}
+
+		// Enqueue dashboard live updates script.
+		wp_enqueue_script(
+			'wpinsight-dashboard-live',
+			WPINSIGHT_PLUGIN_URL . 'assets/js/dashboard-live.js',
+			array( 'jquery' ),
+			WPINSIGHT_VERSION,
+			true
+		);
+
+		// Localize script with REST API endpoints and configuration.
+		wp_localize_script(
+			'wpinsight-dashboard-live',
+			'wpinsightLive',
+			array(
+				'endpoints' => array(
+					'dashboardStats'   => rest_url( 'wpinsight/v1/dashboard-stats' ),
+					'activeDownloads'  => rest_url( 'wpinsight/v1/active-downloads' ),
+					'syncStatus'       => rest_url( 'wpinsight/v1/sync-status' ),
+					'downloadNow'      => rest_url( 'wpinsight/v1/download-now' ),
+					'pauseDownloads'   => rest_url( 'wpinsight/v1/pause-downloads' ),
+					'resumeDownloads'  => rest_url( 'wpinsight/v1/resume-downloads' ),
+				),
+				'nonce'        => wp_create_nonce( 'wp_rest' ),
+				'pollInterval' => 5000, // 5 seconds
+			)
+		);
+
+		// Enqueue inline CSS for animations.
+		wp_add_inline_style(
+			'wp-admin',
+			'
+			[data-stat-container].stat-increased [data-stat] {
+				color: #00a32a;
+				font-weight: 600;
+				transition: color 0.3s ease;
+			}
+			[data-stat-container].stat-decreased [data-stat] {
+				color: #d63638;
+				font-weight: 600;
+				transition: color 0.3s ease;
+			}
+			'
+		);
 	}
 
 	/**

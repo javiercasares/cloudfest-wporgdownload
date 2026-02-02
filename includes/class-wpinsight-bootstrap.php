@@ -63,6 +63,9 @@ final class WPInsight_Bootstrap {
 		// Load logger class (Phase 5: v1.1.0+).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-logger.php';
 
+		// Load REST API class (Phase 20.5: v1.7.0+).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-rest-api.php';
+
 		// Load storage class (Phase 9).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-storage.php';
 
@@ -95,6 +98,9 @@ final class WPInsight_Bootstrap {
 
 		// Initialize logger (Phase 5: v1.1.0+).
 		WPInsight_Logger::init();
+
+		// Initialize REST API (Phase 20.5: v1.7.0+).
+		WPInsight_REST_API::init();
 
 		// Register AJAX handler for dismissing error notices (Phase 5: v1.1.0+).
 		add_action( 'wp_ajax_wpinsight_dismiss_errors', array( 'WPInsight_Logger', 'ajax_dismiss_errors' ) );

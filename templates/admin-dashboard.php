@@ -44,7 +44,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<div class="wrap">
+<div class="wrap" data-wpinsight-dashboard>
 	<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
 	<?php settings_errors( 'wpinsight_dashboard' ); ?>
@@ -83,19 +83,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
 			<!-- Plugin Sync Progress -->
-			<div>
+			<div data-sync="plugin">
 				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
 					<h3 style="margin: 0; font-size: 14px;">
 						<?php esc_html_e( 'Plugins', 'cloudfest-wporgdownload' ); ?>
 					</h3>
-					<span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; background: <?php echo esc_attr( $plugin_progress['status_color'] ); ?>; color: #fff;">
+					<span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; background: <?php echo esc_attr( $plugin_progress['status_color'] ); ?>; color: #fff;" data-sync-status>
 						<?php echo esc_html( $plugin_progress['status_label'] ); ?>
 					</span>
 				</div>
 
 				<!-- Progress Bar -->
 				<div style="background: #f0f0f1; border-radius: 4px; height: 30px; position: relative; margin-bottom: 10px; overflow: hidden;">
-					<div style="background: linear-gradient(90deg, #2271b1 0%, #135e96 100%); height: 100%; width: <?php echo esc_attr( $plugin_progress['progress_percent'] ); ?>%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center;">
+					<div style="background: linear-gradient(90deg, #2271b1 0%, #135e96 100%); height: 100%; width: <?php echo esc_attr( $plugin_progress['progress_percent'] ); ?>%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center;" data-sync-progress-bar>
 						<span style="color: #fff; font-size: 12px; font-weight: 600; position: relative; z-index: 2;">
 							<?php echo esc_html( $plugin_progress['progress_percent'] ); ?>%
 						</span>
@@ -106,8 +106,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 12px;">
 					<div>
 						<span style="color: #646970;"><?php esc_html_e( 'Synced:', 'cloudfest-wporgdownload' ); ?></span>
-						<strong><?php echo esc_html( number_format_i18n( $plugin_progress['synced_items'] ) ); ?></strong>
-						<span style="color: #646970;">/ <?php echo esc_html( number_format_i18n( $plugin_progress['total_items'] ) ); ?></span>
+						<strong data-sync-progress-text><?php echo esc_html( number_format_i18n( $plugin_progress['synced_items'] ) ); ?> / <?php echo esc_html( number_format_i18n( $plugin_progress['total_items'] ) ); ?> (<?php echo esc_html( $plugin_progress['progress_percent'] ); ?>%)</strong>
 					</div>
 					<?php if ( $plugin_progress['eta_formatted'] ) : ?>
 						<div>
@@ -133,19 +132,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 
 			<!-- Theme Sync Progress -->
-			<div>
+			<div data-sync="theme">
 				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
 					<h3 style="margin: 0; font-size: 14px;">
 						<?php esc_html_e( 'Themes', 'cloudfest-wporgdownload' ); ?>
 					</h3>
-					<span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; background: <?php echo esc_attr( $theme_progress['status_color'] ); ?>; color: #fff;">
+					<span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; background: <?php echo esc_attr( $theme_progress['status_color'] ); ?>; color: #fff;" data-sync-status>
 						<?php echo esc_html( $theme_progress['status_label'] ); ?>
 					</span>
 				</div>
 
 				<!-- Progress Bar -->
 				<div style="background: #f0f0f1; border-radius: 4px; height: 30px; position: relative; margin-bottom: 10px; overflow: hidden;">
-					<div style="background: linear-gradient(90deg, #2271b1 0%, #135e96 100%); height: 100%; width: <?php echo esc_attr( $theme_progress['progress_percent'] ); ?>%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center;">
+					<div style="background: linear-gradient(90deg, #2271b1 0%, #135e96 100%); height: 100%; width: <?php echo esc_attr( $theme_progress['progress_percent'] ); ?>%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center;" data-sync-progress-bar>
 						<span style="color: #fff; font-size: 12px; font-weight: 600; position: relative; z-index: 2;">
 							<?php echo esc_html( $theme_progress['progress_percent'] ); ?>%
 						</span>
@@ -156,8 +155,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 12px;">
 					<div>
 						<span style="color: #646970;"><?php esc_html_e( 'Synced:', 'cloudfest-wporgdownload' ); ?></span>
-						<strong><?php echo esc_html( number_format_i18n( $theme_progress['synced_items'] ) ); ?></strong>
-						<span style="color: #646970;">/ <?php echo esc_html( number_format_i18n( $theme_progress['total_items'] ) ); ?></span>
+						<strong data-sync-progress-text><?php echo esc_html( number_format_i18n( $theme_progress['synced_items'] ) ); ?> / <?php echo esc_html( number_format_i18n( $theme_progress['total_items'] ) ); ?> (<?php echo esc_html( $theme_progress['progress_percent'] ); ?>%)</strong>
 					</div>
 					<?php if ( $theme_progress['eta_formatted'] ) : ?>
 						<div>
@@ -227,19 +225,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<?php esc_html_e( 'Download Queue Monitor', 'cloudfest-wporgdownload' ); ?>
 			</h2>
 			<div style="display: flex; gap: 10px;">
-				<?php if ( $downloads_paused ) : ?>
-					<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'resume_downloads', 'page' => 'wpinsight-dashboard' ), admin_url( 'tools.php' ) ), 'wpinsight_download_control' ) ); ?>"
-					   class="button button-primary"
-					   style="background: #00a32a; border-color: #00a32a;">
-						<?php esc_html_e( '▶ Resume Downloads', 'cloudfest-wporgdownload' ); ?>
-					</a>
-				<?php else : ?>
-					<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'pause_downloads', 'page' => 'wpinsight-dashboard' ), admin_url( 'tools.php' ) ), 'wpinsight_download_control' ) ); ?>"
-					   class="button"
-					   style="background: #dba617; border-color: #dba617; color: #fff;">
-						<?php esc_html_e( '⏸ Pause Downloads', 'cloudfest-wporgdownload' ); ?>
-					</a>
-				<?php endif; ?>
+				<button type="button"
+						class="button button-primary"
+						data-action="resume-downloads"
+						style="background: #00a32a; border-color: #00a32a; <?php echo ! $downloads_paused ? 'display: none;' : ''; ?>">
+					<?php esc_html_e( '▶ Resume Downloads', 'cloudfest-wporgdownload' ); ?>
+				</button>
+				<button type="button"
+						class="button"
+						data-action="pause-downloads"
+						style="background: #dba617; border-color: #dba617; color: #fff; <?php echo $downloads_paused ? 'display: none;' : ''; ?>">
+					<?php esc_html_e( '⏸ Pause Downloads', 'cloudfest-wporgdownload' ); ?>
+				</button>
 			</div>
 		</div>
 
@@ -256,14 +253,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970; text-transform: uppercase; letter-spacing: 0.5px;">
 					<?php esc_html_e( 'Active Downloads', 'cloudfest-wporgdownload' ); ?>
 					<span style="background: #2271b1; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px;">
-						<?php echo esc_html( count( $active_downloads ) ); ?>
+						<span data-stat="processing"><?php echo esc_html( count( $active_downloads ) ); ?></span>
 					</span>
 				</h3>
 
+				<!-- Live AJAX container for active downloads -->
+				<div data-active-downloads>
 				<?php if ( empty( $active_downloads ) ) : ?>
-					<div style="padding: 20px; text-align: center; background: #f6f7f7; border-radius: 4px; color: #646970;">
-						<?php esc_html_e( 'No active downloads at the moment', 'cloudfest-wporgdownload' ); ?>
-					</div>
+					<p style="color: #646970; font-style: italic;"><?php esc_html_e( 'No active downloads', 'cloudfest-wporgdownload' ); ?></p>
 				<?php else : ?>
 					<table class="widefat" style="margin: 0;">
 						<thead>
@@ -316,6 +313,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</tbody>
 					</table>
 				<?php endif; ?>
+				</div><!-- /data-active-downloads -->
 			</div>
 
 			<!-- Disk Space -->
@@ -817,24 +815,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<!-- Download Queue -->
 			<div class="card">
-			<h2><?php esc_html_e( 'Download Queue', 'cloudfest-wporgdownload' ); ?></h2>
+			<h2><?php esc_html_e( 'Download Queue', 'cloudfest-wporgdownload' ); ?> <span style="font-size: 11px; font-weight: normal; color: #646970;" data-next-update>Next update in: 5s...</span></h2>
 			<table class="widefat striped">
 				<tbody>
-					<tr>
+					<tr data-stat-container>
 						<th><?php esc_html_e( 'Pending', 'cloudfest-wporgdownload' ); ?>:</th>
-						<td><strong><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['pending'] ) ); ?></strong></td>
+						<td><strong><span data-stat="pending"><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['pending'] ) ); ?></span></strong></td>
 					</tr>
-					<tr>
+					<tr data-stat-container>
 						<th><?php esc_html_e( 'Processing', 'cloudfest-wporgdownload' ); ?>:</th>
-						<td><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['processing'] ) ); ?></td>
+						<td><span data-stat="processing"><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['processing'] ) ); ?></span></td>
 					</tr>
-					<tr>
+					<tr data-stat-container>
 						<th><?php esc_html_e( 'Completed', 'cloudfest-wporgdownload' ); ?>:</th>
-						<td style="color: #00a32a;"><strong><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['completed'] ) ); ?></strong></td>
+						<td style="color: #00a32a;"><strong><span data-stat="completed"><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['completed'] ) ); ?></span></strong></td>
 					</tr>
-					<tr>
+					<tr data-stat-container>
 						<th><?php esc_html_e( 'Failed', 'cloudfest-wporgdownload' ); ?>:</th>
-						<td style="color: #d63638;"><strong><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['failed'] ) ); ?></strong></td>
+						<td style="color: #d63638;"><strong><span data-stat="failed"><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['failed'] ) ); ?></span></strong></td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Total', 'cloudfest-wporgdownload' ); ?>:</th>
