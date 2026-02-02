@@ -40,11 +40,12 @@ final class WPInsight_DB {
 	 * Version History:
 	 * - 1.0.0: Initial schema
 	 * - 1.1.0: Added last_error to sync_state, composite indexes to zip_queue, error_log table
+	 * - 1.2.0: Added remote_filesize to zip_queue for size detection system
 	 *
 	 * @since 0.1.0
 	 * @var string SCHEMA_VERSION Current schema version.
 	 */
-	private const SCHEMA_VERSION = '1.1.0';
+	private const SCHEMA_VERSION = '1.2.0';
 
 
 	/**
@@ -138,6 +139,7 @@ final class WPInsight_DB {
 			max_attempts tinyint(3) unsigned NOT NULL DEFAULT 3,
 			priority int(11) NOT NULL DEFAULT 0,
 			last_error text DEFAULT NULL,
+			remote_filesize bigint(20) unsigned DEFAULT NULL,
 			scheduled_at datetime DEFAULT NULL,
 			queued_at datetime DEFAULT NULL,
 			started_at datetime DEFAULT NULL,
@@ -220,6 +222,10 @@ final class WPInsight_DB {
 		// Run version-specific migrations before recreating tables.
 		if ( version_compare( $from_version, '1.1.0', '<' ) ) {
 			self::migrate_to_1_1_0();
+		}
+
+		if ( version_compare( $from_version, '1.2.0', '<' ) ) {
+			self::migrate_to_1_2_0();
 		}
 
 		// Recreate tables (dbDelta will update schema if needed).
@@ -358,6 +364,45 @@ final class WPInsight_DB {
 		}
 
 		// error_log table will be created by dbDelta in create_tables().
+	}
+
+	/**
+	 * Migrate database schema from 1.1.0 to 1.2.0.
+	 *
+	 * Changes in v1.2.0:
+	 * - Add remote_filesize column to zip_queue table for size detection system
+	 *
+	 * @since 1.3.0
+	 * @return void
+	 */
+	private static function migrate_to_1_2_0(): void {
+		global $wpdb;
+
+		$zip_queue_table = self::get_table_name( 'zip_queue' );
+
+		// Check if remote_filesize column exists in zip_queue.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SHOW COLUMNS FROM %i LIKE %s',
+				$zip_queue_table,
+				'remote_filesize'
+			)
+		);
+
+		if ( empty( $column_exists ) ) {
+			// Add remote_filesize column to zip_queue (v1.2.0 migration).
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query(
+				$wpdb->prepare(
+					'ALTER TABLE %i ADD COLUMN remote_filesize BIGINT(20) UNSIGNED DEFAULT NULL AFTER last_error',
+					$zip_queue_table
+				)
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+
+			WPInsight_Logger::info( 'Database migrated to v1.2.0: added remote_filesize column to zip_queue' );
+		}
 	}
 
 	/**
