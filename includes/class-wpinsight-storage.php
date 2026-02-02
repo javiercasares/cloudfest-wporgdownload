@@ -286,7 +286,7 @@ class WPInsight_Storage {
 		$wpdb->query(
 			$wpdb->prepare(
 				'INSERT IGNORE INTO %i
-				(artifact_type, artifact_slug, artifact_version, file_path, file_size, sha256_hash, downloaded_at)
+				(item_type, slug, version, file_path, file_size, sha256_hash, downloaded_at)
 				VALUES (%s, %s, %s, %s, %d, %s, %s)',
 				$table,
 				$entity_type,
@@ -371,7 +371,7 @@ class WPInsight_Storage {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Get artifact record. Table name from get_table_name() is safe.
 		$artifact = $wpdb->get_row(
 			$wpdb->prepare(
-				'SELECT * FROM %i WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version = %s',
+				'SELECT * FROM %i WHERE item_type = %s AND slug = %s AND version = %s',
 				$table,
 				$entity_type,
 				$slug,
@@ -395,9 +395,9 @@ class WPInsight_Storage {
 		$deleted = $wpdb->delete(
 			$table,
 			array(
-				'artifact_type'    => $entity_type,
-				'artifact_slug'    => $slug,
-				'artifact_version' => $version,
+				'item_type' => $entity_type,
+				'slug'      => $slug,
+				'version'   => $version,
 			),
 			array( '%s', '%s', '%s' )
 		);
@@ -435,7 +435,7 @@ class WPInsight_Storage {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Get artifact record. Table name from get_table_name() is safe.
 		$artifact = $wpdb->get_row(
 			$wpdb->prepare(
-				'SELECT * FROM %i WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version = %s',
+				'SELECT * FROM %i WHERE item_type = %s AND slug = %s AND version = %s',
 				$table,
 				$entity_type,
 				$slug,

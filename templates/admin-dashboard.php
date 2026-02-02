@@ -81,7 +81,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<h3 style="margin: 0 0 15px 0; font-size: 14px; color: #646970; text-transform: uppercase; letter-spacing: 0.5px;">
 							<?php esc_html_e( 'Plugin Sync', 'cloudfest-wporgdownload' ); ?>
 						</h3>
-						<?php if ( 'running' === $plugin_state['status'] || 'syncing' === $plugin_state['status'] ) : ?>
+						<?php if ( 'queued' === $plugin_state['status'] ) : ?>
+							<!-- Queued State -->
+							<div style="padding: 15px; text-align: center; background: #d5e5f2; border-left: 3px solid #2271b1; border-radius: 4px;">
+								<div style="font-size: 14px; font-weight: 600; color: #135e96; margin-bottom: 5px;">
+									<?php esc_html_e( 'Sync Queued', 'cloudfest-wporgdownload' ); ?>
+								</div>
+								<div style="font-size: 12px; color: #646970;">
+									<?php esc_html_e( 'Waiting for cron to start processing... This page will auto-refresh.', 'cloudfest-wporgdownload' ); ?>
+								</div>
+							</div>
+						<?php elseif ( 'running' === $plugin_state['status'] || 'syncing' === $plugin_state['status'] ) : ?>
 							<?php
 							$plugin_progress    = 0;
 							$plugin_per_page    = isset( $plugin_state['per_page'] ) ? $plugin_state['per_page'] : 250;
@@ -163,7 +173,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<h3 style="margin: 0 0 15px 0; font-size: 14px; color: #646970; text-transform: uppercase; letter-spacing: 0.5px;">
 							<?php esc_html_e( 'Theme Sync', 'cloudfest-wporgdownload' ); ?>
 						</h3>
-						<?php if ( 'running' === $theme_state['status'] || 'syncing' === $theme_state['status'] ) : ?>
+						<?php if ( 'queued' === $theme_state['status'] ) : ?>
+							<!-- Queued State -->
+							<div style="padding: 15px; text-align: center; background: #d5e5f2; border-left: 3px solid #2271b1; border-radius: 4px;">
+								<div style="font-size: 14px; font-weight: 600; color: #135e96; margin-bottom: 5px;">
+									<?php esc_html_e( 'Sync Queued', 'cloudfest-wporgdownload' ); ?>
+								</div>
+								<div style="font-size: 12px; color: #646970;">
+									<?php esc_html_e( 'Waiting for cron to start processing... This page will auto-refresh.', 'cloudfest-wporgdownload' ); ?>
+								</div>
+							</div>
+						<?php elseif ( 'running' === $theme_state['status'] || 'syncing' === $theme_state['status'] ) : ?>
 							<?php
 							$theme_progress    = 0;
 							$theme_per_page    = isset( $theme_state['per_page'] ) ? $theme_state['per_page'] : 250;
@@ -483,10 +503,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <script>
 (function() {
-	// Check if any sync is running
-	var pluginSyncRunning = <?php echo wp_json_encode( in_array( $plugin_state['status'], array( 'running', 'syncing' ), true ) ); ?>;
-	var themeSyncRunning = <?php echo wp_json_encode( in_array( $theme_state['status'], array( 'running', 'syncing' ), true ) ); ?>;
-	
+	// Check if any sync is running or queued
+	var pluginSyncRunning = <?php echo wp_json_encode( in_array( $plugin_state['status'], array( 'running', 'syncing', 'queued' ), true ) ); ?>;
+	var themeSyncRunning = <?php echo wp_json_encode( in_array( $theme_state['status'], array( 'running', 'syncing', 'queued' ), true ) ); ?>;
+
 	if (pluginSyncRunning || themeSyncRunning) {
 		// Auto-refresh every 10 seconds when sync is active
 		setTimeout(function() {

@@ -45,6 +45,16 @@ final class WPInsight_Sync {
 	private const STATE_IDLE = 'idle';
 
 	/**
+	 * Sync state: Queued.
+	 *
+	 * Job is enqueued in Action Scheduler but not yet executing.
+	 *
+	 * @since 1.1.0
+	 * @var string
+	 */
+	private const STATE_QUEUED = 'queued';
+
+	/**
 	 * Sync state: In progress.
 	 *
 	 * @since 0.1.0
@@ -166,7 +176,7 @@ final class WPInsight_Sync {
 			return false;
 		}
 
-		// Mark as running.
+		// Mark as running (change from queued or idle).
 		self::update_sync_state( 'plugin', self::STATE_RUNNING, $state['page'] );
 
 		// Fetch plugins from API.
@@ -196,15 +206,16 @@ final class WPInsight_Sync {
 		}
 
 		// Check if we've reached the end.
-		$total_pages = isset( $response['info']->pages ) ? (int) $response['info']->pages : 0;
+		$total_pages = isset( $response['info']['pages'] ) ? (int) $response['info']['pages'] : 0;
+		$total_items = isset( $response['info']['results'] ) ? (int) $response['info']['results'] : 0;
 		$has_more    = $state['page'] < $total_pages;
 
 		if ( $has_more ) {
 			// Move to next page.
-			self::update_sync_state( 'plugin', self::STATE_RUNNING, $state['page'] + 1 );
+			self::update_sync_state( 'plugin', self::STATE_RUNNING, $state['page'] + 1, '', $total_pages, $total_items );
 		} else {
 			// Mark as completed.
-			self::update_sync_state( 'plugin', self::STATE_COMPLETED, $state['page'] );
+			self::update_sync_state( 'plugin', self::STATE_COMPLETED, $state['page'], '', $total_pages, $total_items );
 		}
 
 		return true;
@@ -228,7 +239,7 @@ final class WPInsight_Sync {
 			return false;
 		}
 
-		// Mark as running.
+		// Mark as running (change from queued or idle).
 		self::update_sync_state( 'theme', self::STATE_RUNNING, $state['page'] );
 
 		// Fetch themes from API.
@@ -258,15 +269,16 @@ final class WPInsight_Sync {
 		}
 
 		// Check if we've reached the end.
-		$total_pages = isset( $response['info']->pages ) ? (int) $response['info']->pages : 0;
+		$total_pages = isset( $response['info']['pages'] ) ? (int) $response['info']['pages'] : 0;
+		$total_items = isset( $response['info']['results'] ) ? (int) $response['info']['results'] : 0;
 		$has_more    = $state['page'] < $total_pages;
 
 		if ( $has_more ) {
 			// Move to next page.
-			self::update_sync_state( 'theme', self::STATE_RUNNING, $state['page'] + 1 );
+			self::update_sync_state( 'theme', self::STATE_RUNNING, $state['page'] + 1, '', $total_pages, $total_items );
 		} else {
 			// Mark as completed.
-			self::update_sync_state( 'theme', self::STATE_COMPLETED, $state['page'] );
+			self::update_sync_state( 'theme', self::STATE_COMPLETED, $state['page'], '', $total_pages, $total_items );
 		}
 
 		return true;
@@ -372,7 +384,7 @@ final class WPInsight_Sync {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$existing = $wpdb->get_col(
 			$wpdb->prepare(
-				"SELECT artifact_version FROM %i WHERE artifact_type = %s AND artifact_slug = %s AND artifact_version IN ($placeholders)",
+				"SELECT version FROM %i WHERE item_type = %s AND slug = %s AND version IN ($placeholders)",
 				array_merge( array( $table, $type, $slug ), $versions )
 			)
 		);
@@ -409,11 +421,10 @@ final class WPInsight_Sync {
 		$placeholders = array();
 
 		foreach ( $versions as $version => $download_url ) {
-			$placeholders[] = '(%s, %s, %s, %d, %s, %s, %d, %d, %s)';
+			$placeholders[] = '(%s, %s, %s, %s, %s, %d, %d, %s)';
 			$values[]       = $type;
 			$values[]       = $slug;
 			$values[]       = $version;
-			$values[]       = $post_id;
 			$values[]       = $download_url;
 			$values[]       = 'pending';
 			$values[]       = 50; // Normal priority.
@@ -421,7 +432,7 @@ final class WPInsight_Sync {
 			$values[]       = $now;
 		}
 
-		$query = 'INSERT INTO %i (artifact_type, artifact_slug, artifact_version, artifact_post_id, download_url, status, priority, attempts, queued_at)
+		$query = 'INSERT INTO %i (item_type, slug, version, download_url, status, priority, attempts, queued_at)
 				  VALUES ' . implode( ', ', $placeholders );
 
 		// Bulk insert with prepared statement - PHPCS can't trace $query variable.
@@ -603,22 +614,37 @@ final class WPInsight_Sync {
 	 * @param string $last_error Last error message (optional).
 	 * @return bool True on success, false on failure.
 	 */
-	public static function update_sync_state( string $type, string $status, int $page, string $last_error = '' ): bool {
+	public static function update_sync_state( string $type, string $status, int $page, string $last_error = '', ?int $total_pages = null, ?int $total_items = null ): bool {
 		global $wpdb;
 
 		$table = WPInsight_DB::get_table_name( 'sync_state' );
 
+		$data = array(
+			'sync_type'  => $type,
+			'status'     => $status,
+			'page'       => $page,
+			'last_error' => $last_error,
+			'updated_at' => current_time( 'mysql', true ),
+		);
+
+		$format = array( '%s', '%s', '%d', '%s', '%s' );
+
+		// Add optional fields if provided.
+		if ( null !== $total_pages ) {
+			$data['total_pages'] = $total_pages;
+			$format[]            = '%d';
+		}
+
+		if ( null !== $total_items ) {
+			$data['total_items'] = $total_items;
+			$format[]            = '%d';
+		}
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->replace(
 			$table,
-			array(
-				'sync_type'  => $type,
-				'status'     => $status,
-				'page'       => $page,
-				'last_error' => $last_error,
-				'updated_at' => current_time( 'mysql', true ),
-			),
-			array( '%s', '%s', '%d', '%s', '%s' )
+			$data,
+			$format
 		);
 
 		return false !== $result;

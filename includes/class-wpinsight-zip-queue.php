@@ -247,9 +247,9 @@ final class WPInsight_Zip_Queue {
 	 * @return bool True on success, false on failure.
 	 */
 	private static function process_job( array $job ): bool {
-		$slug    = $job['artifact_slug'];
-		$version = $job['artifact_version'];
-		$type    = $job['artifact_type']; // Type: plugin or theme.
+		$slug    = $job['slug'];
+		$version = $job['version'];
+		$type    = $job['item_type']; // Type: plugin or theme.
 		$url     = $job['download_url'];
 		$job_id  = (int) $job['id'];
 
@@ -320,16 +320,15 @@ final class WPInsight_Zip_Queue {
 		$wpdb->insert(
 			$artifacts_table,
 			array(
-				'artifact_type'    => $job['artifact_type'],
-				'artifact_slug'    => $job['artifact_slug'],
-				'artifact_version' => $job['artifact_version'],
-				'artifact_post_id' => $job['artifact_post_id'],
-				'file_path'        => $file_path,
-				'file_size'        => $file_size,
-				'file_hash'        => hash_file( 'sha256', $file_path ),
-				'downloaded_at'    => current_time( 'mysql', true ),
+				'item_type'     => $job['item_type'],
+				'slug'          => $job['slug'],
+				'version'       => $job['version'],
+				'file_path'     => $file_path,
+				'file_size'     => $file_size,
+				'file_hash'     => hash_file( 'sha256', $file_path ),
+				'downloaded_at' => current_time( 'mysql', true ),
 			),
-			array( '%s', '%s', '%s', '%d', '%s', '%d', '%s', '%s' )
+			array( '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
 		);
 	}
 
