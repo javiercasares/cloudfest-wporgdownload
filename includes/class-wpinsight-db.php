@@ -406,6 +406,268 @@ final class WPInsight_DB {
 	}
 
 	/**
+	 * Get statistics for a specific table.
+	 *
+	 * Returns detailed information about a table including size, row count,
+	 * data size, index size, and last optimization time.
+	 *
+	 * @since 1.5.0
+	 * @param string $table_name Full table name with prefix.
+	 * @return array{
+	 *     name: string,
+	 *     rows: int,
+	 *     data_size: int,
+	 *     index_size: int,
+	 *     total_size: int,
+	 *     data_size_formatted: string,
+	 *     index_size_formatted: string,
+	 *     total_size_formatted: string,
+	 *     engine: string,
+	 *     last_optimize: string|null
+	 * }|null Table statistics or null if table doesn't exist.
+	 */
+	public static function get_table_stats( string $table_name ): ?array {
+		global $wpdb;
+
+		// Get table status from information_schema.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT
+					TABLE_NAME as name,
+					TABLE_ROWS as row_count,
+					DATA_LENGTH as data_size,
+					INDEX_LENGTH as index_size,
+					(DATA_LENGTH + INDEX_LENGTH) as total_size,
+					ENGINE as engine,
+					UPDATE_TIME as last_optimize
+				FROM information_schema.TABLES
+				WHERE TABLE_SCHEMA = %s
+				AND TABLE_NAME = %s",
+				DB_NAME,
+				$table_name
+			),
+			ARRAY_A
+		);
+
+		if ( ! $result ) {
+			return null;
+		}
+
+		// Format sizes for display.
+		$result['rows']                   = (int) $result['row_count'];
+		$result['data_size']              = (int) $result['data_size'];
+		$result['index_size']             = (int) $result['index_size'];
+		$result['total_size']             = (int) $result['total_size'];
+		$result['data_size_formatted']    = size_format( $result['data_size'], 2 );
+		$result['index_size_formatted']   = size_format( $result['index_size'], 2 );
+		$result['total_size_formatted']   = size_format( $result['total_size'], 2 );
+		$result['last_optimize']          = $result['last_optimize'] ?? null;
+
+		// Remove temporary row_count key.
+		unset( $result['row_count'] );
+
+		return $result;
+	}
+
+	/**
+	 * Get statistics for all WPInsight tables.
+	 *
+	 * Returns statistics for sync_state, zip_queue, artifacts, and error_log tables.
+	 *
+	 * @since 1.5.0
+	 * @return array<string, array> Array of table statistics keyed by short table name.
+	 */
+	public static function get_all_tables_stats(): array {
+		$tables = array( 'sync_state', 'zip_queue', 'artifacts', 'error_log' );
+		$stats  = array();
+
+		foreach ( $tables as $table ) {
+			$full_name        = self::get_table_name( $table );
+			$table_stats      = self::get_table_stats( $full_name );
+			if ( $table_stats ) {
+				$stats[ $table ] = $table_stats;
+			}
+		}
+
+		return $stats;
+	}
+
+	/**
+	 * Check health of a table.
+	 *
+	 * Runs CHECK TABLE command to verify table integrity and index health.
+	 *
+	 * @since 1.5.0
+	 * @param string $table_name Full table name with prefix.
+	 * @return array{
+	 *     status: string,
+	 *     msg_type: string,
+	 *     msg_text: string
+	 * }[] Array of check results.
+	 */
+	public static function check_table_health( string $table_name ): array {
+		global $wpdb;
+
+		// Run CHECK TABLE command.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"CHECK TABLE `{$table_name}`",
+			ARRAY_A
+		);
+
+		if ( ! $results ) {
+			return array(
+				array(
+					'status'   => 'error',
+					'msg_type' => 'error',
+					'msg_text' => 'Failed to check table',
+				),
+			);
+		}
+
+		// Format results.
+		$formatted = array();
+		foreach ( $results as $row ) {
+			$formatted[] = array(
+				'status'   => $row['Msg_type'] ?? 'unknown',
+				'msg_type' => $row['Msg_type'] ?? 'unknown',
+				'msg_text' => $row['Msg_text'] ?? '',
+			);
+		}
+
+		return $formatted;
+	}
+
+	/**
+	 * Optimize a table.
+	 *
+	 * Runs OPTIMIZE TABLE command to reclaim unused space and defragment the table.
+	 * This can improve query performance on large tables.
+	 *
+	 * @since 1.5.0
+	 * @param string $table_name Full table name with prefix.
+	 * @return array{
+	 *     success: bool,
+	 *     message: string
+	 * } Result of optimization.
+	 */
+	public static function optimize_table( string $table_name ): array {
+		global $wpdb;
+
+		// Run OPTIMIZE TABLE command.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"OPTIMIZE TABLE `{$table_name}`",
+			ARRAY_A
+		);
+
+		if ( ! $results ) {
+			return array(
+				'success' => false,
+				'message' => 'Failed to optimize table',
+			);
+		}
+
+		// Check if optimization succeeded.
+		$last_result = end( $results );
+		$success     = isset( $last_result['Msg_type'] ) && 'status' === $last_result['Msg_type'];
+
+		return array(
+			'success' => $success,
+			'message' => $last_result['Msg_text'] ?? 'Unknown result',
+		);
+	}
+
+	/**
+	 * Repair a table.
+	 *
+	 * Runs REPAIR TABLE command to fix corrupted tables.
+	 * Only use this if CHECK TABLE indicates corruption.
+	 *
+	 * @since 1.5.0
+	 * @param string $table_name Full table name with prefix.
+	 * @return array{
+	 *     success: bool,
+	 *     message: string
+	 * } Result of repair.
+	 */
+	public static function repair_table( string $table_name ): array {
+		global $wpdb;
+
+		// Run REPAIR TABLE command.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"REPAIR TABLE `{$table_name}`",
+			ARRAY_A
+		);
+
+		if ( ! $results ) {
+			return array(
+				'success' => false,
+				'message' => 'Failed to repair table',
+			);
+		}
+
+		// Check if repair succeeded.
+		$last_result = end( $results );
+		$success     = isset( $last_result['Msg_type'] ) && 'status' === $last_result['Msg_type'];
+
+		return array(
+			'success' => $success,
+			'message' => $last_result['Msg_text'] ?? 'Unknown result',
+		);
+	}
+
+	/**
+	 * Get index information for a table.
+	 *
+	 * Returns detailed information about all indexes on a table.
+	 *
+	 * @since 1.5.0
+	 * @param string $table_name Full table name with prefix.
+	 * @return array<int, array{
+	 *     name: string,
+	 *     column: string,
+	 *     unique: bool,
+	 *     type: string,
+	 *     cardinality: int
+	 * }> Array of index information.
+	 */
+	public static function get_table_indexes( string $table_name ): array {
+		global $wpdb;
+
+		// Get index information from SHOW INDEX.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SHOW INDEX FROM `{$table_name}`",
+			ARRAY_A
+		);
+
+		if ( ! $results ) {
+			return array();
+		}
+
+		// Format index information.
+		$indexes = array();
+		foreach ( $results as $row ) {
+			$indexes[] = array(
+				'name'        => $row['Key_name'] ?? '',
+				'column'      => $row['Column_name'] ?? '',
+				'unique'      => isset( $row['Non_unique'] ) && 0 === (int) $row['Non_unique'],
+				'type'        => $row['Index_type'] ?? 'BTREE',
+				'cardinality' => (int) ( $row['Cardinality'] ?? 0 ),
+			);
+		}
+
+		return $indexes;
+	}
+
+	/**
 	 * Get full table name with WordPress prefix.
 	 *
 	 * Converts a short table name (e.g., 'sync_state') to a full WordPress

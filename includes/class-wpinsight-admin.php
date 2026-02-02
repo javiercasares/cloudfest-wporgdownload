@@ -68,6 +68,7 @@ final class WPInsight_Admin {
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_dashboard_actions' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_debug_actions' ) );
+		add_action( 'admin_init', array( __CLASS__, 'handle_database_actions' ) );
 		add_action( 'admin_init', array( __CLASS__, 'handle_export_download' ) );
 	}
 
@@ -663,6 +664,232 @@ final class WPInsight_Admin {
 	}
 
 	/**
+	 * Handle database diagnostic actions.
+	 *
+	 * Processes database maintenance actions: check, optimize, repair tables.
+	 *
+	 * @since 1.5.0
+	 * @return void
+	 */
+	public static function handle_database_actions(): void {
+		// Only process on dashboard page.
+		if ( ! isset( $_GET['page'] ) || self::DASHBOARD_PAGE_SLUG !== $_GET['page'] ) {
+			return;
+		}
+
+		// Check if database action is set.
+		if ( ! isset( $_POST['wpinsight_db_action'] ) ) {
+			return;
+		}
+
+		// Verify nonce.
+		if ( ! isset( $_POST['wpinsight_db_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wpinsight_db_nonce'] ) ), 'wpinsight_db_action' ) ) {
+			add_settings_error( 'wpinsight_dashboard', 'invalid_nonce', __( 'Security check failed.', 'cloudfest-wporgdownload' ), 'error' );
+			return;
+		}
+
+		// Check user capabilities.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			add_settings_error( 'wpinsight_dashboard', 'insufficient_permissions', __( 'You do not have sufficient permissions.', 'cloudfest-wporgdownload' ), 'error' );
+			return;
+		}
+
+		$action = sanitize_text_field( wp_unslash( $_POST['wpinsight_db_action'] ) );
+
+		switch ( $action ) {
+			case 'check_table':
+				if ( ! isset( $_POST['table_name'] ) ) {
+					add_settings_error( 'wpinsight_dashboard', 'missing_table', __( 'Missing table name.', 'cloudfest-wporgdownload' ), 'error' );
+					break;
+				}
+
+				$table_short_name = sanitize_text_field( wp_unslash( $_POST['table_name'] ) );
+				$table_name       = WPInsight_DB::get_table_name( $table_short_name );
+
+				try {
+					$results = WPInsight_DB::check_table_health( $table_name );
+
+					$messages = array();
+					foreach ( $results as $row ) {
+						$messages[] = sprintf( '%s: %s', $row['msg_type'], $row['msg_text'] );
+					}
+
+					add_settings_error(
+						'wpinsight_dashboard',
+						'check_complete',
+						sprintf(
+							/* translators: 1: table name, 2: check results */
+							__( 'Table %1$s checked: %2$s', 'cloudfest-wporgdownload' ),
+							$table_short_name,
+							implode( ', ', $messages )
+						),
+						'success'
+					);
+				} catch ( Exception $e ) {
+					add_settings_error(
+						'wpinsight_dashboard',
+						'check_error',
+						sprintf(
+							/* translators: %s: error message */
+							__( 'Error checking table: %s', 'cloudfest-wporgdownload' ),
+							$e->getMessage()
+						),
+						'error'
+					);
+				}
+				break;
+
+			case 'optimize_table':
+				if ( ! isset( $_POST['table_name'] ) ) {
+					add_settings_error( 'wpinsight_dashboard', 'missing_table', __( 'Missing table name.', 'cloudfest-wporgdownload' ), 'error' );
+					break;
+				}
+
+				$table_short_name = sanitize_text_field( wp_unslash( $_POST['table_name'] ) );
+				$table_name       = WPInsight_DB::get_table_name( $table_short_name );
+
+				try {
+					$result = WPInsight_DB::optimize_table( $table_name );
+
+					if ( $result['success'] ) {
+						add_settings_error(
+							'wpinsight_dashboard',
+							'optimize_success',
+							sprintf(
+								/* translators: 1: table name, 2: result message */
+								__( 'Table %1$s optimized: %2$s', 'cloudfest-wporgdownload' ),
+								$table_short_name,
+								$result['message']
+							),
+							'success'
+						);
+						WPInsight_Logger::info( "Table {$table_short_name} optimized by user" );
+					} else {
+						add_settings_error(
+							'wpinsight_dashboard',
+							'optimize_failed',
+							sprintf(
+								/* translators: 1: table name, 2: error message */
+								__( 'Failed to optimize table %1$s: %2$s', 'cloudfest-wporgdownload' ),
+								$table_short_name,
+								$result['message']
+							),
+							'error'
+						);
+					}
+				} catch ( Exception $e ) {
+					add_settings_error(
+						'wpinsight_dashboard',
+						'optimize_error',
+						sprintf(
+							/* translators: %s: error message */
+							__( 'Error optimizing table: %s', 'cloudfest-wporgdownload' ),
+							$e->getMessage()
+						),
+						'error'
+					);
+				}
+				break;
+
+			case 'repair_table':
+				if ( ! isset( $_POST['table_name'] ) ) {
+					add_settings_error( 'wpinsight_dashboard', 'missing_table', __( 'Missing table name.', 'cloudfest-wporgdownload' ), 'error' );
+					break;
+				}
+
+				$table_short_name = sanitize_text_field( wp_unslash( $_POST['table_name'] ) );
+				$table_name       = WPInsight_DB::get_table_name( $table_short_name );
+
+				try {
+					$result = WPInsight_DB::repair_table( $table_name );
+
+					if ( $result['success'] ) {
+						add_settings_error(
+							'wpinsight_dashboard',
+							'repair_success',
+							sprintf(
+								/* translators: 1: table name, 2: result message */
+								__( 'Table %1$s repaired: %2$s', 'cloudfest-wporgdownload' ),
+								$table_short_name,
+								$result['message']
+							),
+							'success'
+						);
+						WPInsight_Logger::warning( "Table {$table_short_name} repaired by user" );
+					} else {
+						add_settings_error(
+							'wpinsight_dashboard',
+							'repair_failed',
+							sprintf(
+								/* translators: 1: table name, 2: error message */
+								__( 'Failed to repair table %1$s: %2$s', 'cloudfest-wporgdownload' ),
+								$table_short_name,
+								$result['message']
+							),
+							'error'
+						);
+					}
+				} catch ( Exception $e ) {
+					add_settings_error(
+						'wpinsight_dashboard',
+						'repair_error',
+						sprintf(
+							/* translators: %s: error message */
+							__( 'Error repairing table: %s', 'cloudfest-wporgdownload' ),
+							$e->getMessage()
+						),
+						'error'
+					);
+				}
+				break;
+
+			case 'optimize_all':
+				try {
+					$tables  = array( 'sync_state', 'zip_queue', 'artifacts', 'error_log' );
+					$results = array();
+
+					foreach ( $tables as $table_short_name ) {
+						$table_name = WPInsight_DB::get_table_name( $table_short_name );
+						$result     = WPInsight_DB::optimize_table( $table_name );
+						$results[ $table_short_name ] = $result;
+					}
+
+					$success_count = count( array_filter( $results, fn( $r ) => $r['success'] ) );
+					$total_count   = count( $results );
+
+					add_settings_error(
+						'wpinsight_dashboard',
+						'optimize_all_complete',
+						sprintf(
+							/* translators: 1: successful optimizations, 2: total tables */
+							__( 'Optimized %1$d of %2$d tables successfully.', 'cloudfest-wporgdownload' ),
+							$success_count,
+							$total_count
+						),
+						$success_count === $total_count ? 'success' : 'warning'
+					);
+					WPInsight_Logger::info( "All tables optimized by user: {$success_count}/{$total_count} successful" );
+				} catch ( Exception $e ) {
+					add_settings_error(
+						'wpinsight_dashboard',
+						'optimize_all_error',
+						sprintf(
+							/* translators: %s: error message */
+							__( 'Error optimizing tables: %s', 'cloudfest-wporgdownload' ),
+							$e->getMessage()
+						),
+						'error'
+					);
+				}
+				break;
+
+			default:
+				add_settings_error( 'wpinsight_dashboard', 'invalid_db_action', __( 'Invalid database action.', 'cloudfest-wporgdownload' ), 'error' );
+				break;
+		}
+	}
+
+	/**
 	 * Handle export download.
 	 *
 	 * Intercepts export requests and generates file download BEFORE any HTML is rendered.
@@ -778,6 +1005,10 @@ final class WPInsight_Admin {
 		$plugin_state = WPInsight_Sync::get_sync_state( 'plugin' );
 		$theme_state  = WPInsight_Sync::get_sync_state( 'theme' );
 		$queue_stats  = WPInsight_Zip_Queue::get_queue_stats();
+
+		// Get sync progress data for Phase 18.3
+		$plugin_progress = self::get_sync_progress_data( 'plugin' );
+		$theme_progress  = self::get_sync_progress_data( 'theme' );
 
 		// Pass admin class reference for helper methods.
 		$admin = __CLASS__;
@@ -1404,6 +1635,114 @@ final class WPInsight_Admin {
 				<p><strong><?php esc_html_e( 'Error Log Entries:', 'cloudfest-wporgdownload' ); ?></strong> <?php echo esc_html( number_format_i18n( $error_count ) ); ?></p>
 			</div>
 
+			<!-- Database Diagnostics -->
+			<h3><?php esc_html_e( 'Database Diagnostics', 'cloudfest-wporgdownload' ); ?></h3>
+			<p><?php esc_html_e( 'Detailed table statistics, health checks, and optimization tools.', 'cloudfest-wporgdownload' ); ?></p>
+			<?php
+			$table_stats = WPInsight_DB::get_all_tables_stats();
+			?>
+			<table class="widefat striped" style="margin-bottom: 20px;">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Table', 'cloudfest-wporgdownload' ); ?></th>
+						<th><?php esc_html_e( 'Rows', 'cloudfest-wporgdownload' ); ?></th>
+						<th><?php esc_html_e( 'Data Size', 'cloudfest-wporgdownload' ); ?></th>
+						<th><?php esc_html_e( 'Index Size', 'cloudfest-wporgdownload' ); ?></th>
+						<th><?php esc_html_e( 'Total Size', 'cloudfest-wporgdownload' ); ?></th>
+						<th><?php esc_html_e( 'Engine', 'cloudfest-wporgdownload' ); ?></th>
+						<th><?php esc_html_e( 'Last Optimize', 'cloudfest-wporgdownload' ); ?></th>
+						<th><?php esc_html_e( 'Actions', 'cloudfest-wporgdownload' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $table_stats as $table_short_name => $stats ) : ?>
+						<tr>
+							<td><strong><?php echo esc_html( $table_short_name ); ?></strong></td>
+							<td><?php echo esc_html( number_format_i18n( $stats['rows'] ) ); ?></td>
+							<td><?php echo esc_html( $stats['data_size_formatted'] ); ?></td>
+							<td><?php echo esc_html( $stats['index_size_formatted'] ); ?></td>
+							<td><strong><?php echo esc_html( $stats['total_size_formatted'] ); ?></strong></td>
+							<td><?php echo esc_html( $stats['engine'] ); ?></td>
+							<td>
+								<?php
+								if ( $stats['last_optimize'] ) {
+									$time_ago = human_time_diff( strtotime( $stats['last_optimize'] ), time() );
+									/* translators: %s: time ago */
+									echo esc_html( sprintf( __( '%s ago', 'cloudfest-wporgdownload' ), $time_ago ) );
+								} else {
+									esc_html_e( 'Never', 'cloudfest-wporgdownload' );
+								}
+								?>
+							</td>
+							<td>
+								<form method="post" style="display: inline-block; margin-right: 5px;">
+									<?php wp_nonce_field( 'wpinsight_db_action', 'wpinsight_db_nonce' ); ?>
+									<input type="hidden" name="wpinsight_db_action" value="check_table">
+									<input type="hidden" name="table_name" value="<?php echo esc_attr( $table_short_name ); ?>">
+									<button type="submit" class="button button-small">
+										<?php esc_html_e( 'Check', 'cloudfest-wporgdownload' ); ?>
+									</button>
+								</form>
+								<form method="post" style="display: inline-block; margin-right: 5px;">
+									<?php wp_nonce_field( 'wpinsight_db_action', 'wpinsight_db_nonce' ); ?>
+									<input type="hidden" name="wpinsight_db_action" value="optimize_table">
+									<input type="hidden" name="table_name" value="<?php echo esc_attr( $table_short_name ); ?>">
+									<button type="submit" class="button button-small">
+										<?php esc_html_e( 'Optimize', 'cloudfest-wporgdownload' ); ?>
+									</button>
+								</form>
+								<form method="post" style="display: inline-block;" onsubmit="return confirm('<?php esc_attr_e( 'Are you sure you want to repair this table? Only do this if CHECK indicates corruption.', 'cloudfest-wporgdownload' ); ?>');">
+									<?php wp_nonce_field( 'wpinsight_db_action', 'wpinsight_db_nonce' ); ?>
+									<input type="hidden" name="wpinsight_db_action" value="repair_table">
+									<input type="hidden" name="table_name" value="<?php echo esc_attr( $table_short_name ); ?>">
+									<button type="submit" class="button button-small">
+										<?php esc_html_e( 'Repair', 'cloudfest-wporgdownload' ); ?>
+									</button>
+								</form>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+				<tfoot>
+					<tr>
+						<td colspan="2"><strong><?php esc_html_e( 'Total', 'cloudfest-wporgdownload' ); ?></strong></td>
+						<td>
+							<?php
+							$total_data = array_sum( array_column( $table_stats, 'data_size' ) );
+							echo esc_html( size_format( $total_data, 2 ) );
+							?>
+						</td>
+						<td>
+							<?php
+							$total_index = array_sum( array_column( $table_stats, 'index_size' ) );
+							echo esc_html( size_format( $total_index, 2 ) );
+							?>
+						</td>
+						<td>
+							<strong>
+								<?php
+								$total_size = array_sum( array_column( $table_stats, 'total_size' ) );
+								echo esc_html( size_format( $total_size, 2 ) );
+								?>
+							</strong>
+						</td>
+						<td colspan="3"></td>
+					</tr>
+				</tfoot>
+			</table>
+
+			<div style="background: #f0f6fc; padding: 15px; border-left: 3px solid #0073aa; border-radius: 3px; margin-bottom: 20px;">
+				<h4 style="margin-top: 0;"><?php esc_html_e( 'Bulk Actions', 'cloudfest-wporgdownload' ); ?></h4>
+				<p><?php esc_html_e( 'Optimize all tables at once. This can take several minutes on large databases.', 'cloudfest-wporgdownload' ); ?></p>
+				<form method="post" onsubmit="return confirm('<?php esc_attr_e( 'Are you sure you want to optimize all tables? This may take several minutes.', 'cloudfest-wporgdownload' ); ?>');">
+					<?php wp_nonce_field( 'wpinsight_db_action', 'wpinsight_db_nonce' ); ?>
+					<input type="hidden" name="wpinsight_db_action" value="optimize_all">
+					<button type="submit" class="button button-secondary">
+						<?php esc_html_e( 'Optimize All Tables', 'cloudfest-wporgdownload' ); ?>
+					</button>
+				</form>
+			</div>
+
 			<!-- Action Scheduler / Cron Jobs -->
 			<h3><?php esc_html_e( 'Scheduled Workers (Cron Jobs)', 'cloudfest-wporgdownload' ); ?></h3>
 			<?php
@@ -1442,8 +1781,11 @@ final class WPInsight_Admin {
 					<tbody>
 						<?php foreach ( $workers as $hook => $worker_data ) : ?>
 							<?php
-							$next_run = as_next_scheduled_action( $hook, array(), WPINSIGHT_AS_GROUP );
+							$next_run     = as_next_scheduled_action( $hook, array(), WPINSIGHT_AS_GROUP );
 							$is_scheduled = false !== $next_run;
+							$stats        = self::get_action_scheduler_stats( $hook );
+							$history      = self::get_action_scheduler_history( $hook, 10 );
+							$worker_id    = sanitize_title( $hook );
 							?>
 							<tr>
 								<td>
@@ -1452,6 +1794,10 @@ final class WPInsight_Admin {
 									<span style="color: #646970; font-size: 12px;">
 										<?php echo esc_html( $worker_data['description'] ); ?>
 									</span>
+									<br>
+									<button type="button" class="button button-link" onclick="document.getElementById('stats-<?php echo esc_attr( $worker_id ); ?>').style.display = document.getElementById('stats-<?php echo esc_attr( $worker_id ); ?>').style.display === 'none' ? 'table-row' : 'none';">
+										<?php esc_html_e( 'Show Stats & History', 'cloudfest-wporgdownload' ); ?> ▼
+									</button>
 								</td>
 								<td>
 									<?php if ( $is_scheduled ) : ?>
@@ -1459,6 +1805,21 @@ final class WPInsight_Admin {
 									<?php else : ?>
 										<span style="color: #dc3232;">✗ <?php esc_html_e( 'Not Scheduled', 'cloudfest-wporgdownload' ); ?></span>
 									<?php endif; ?>
+									<br>
+									<small style="color: #646970;">
+										<?php
+										/* translators: %d: number of completed jobs */
+										echo esc_html( sprintf( __( '24h: %d completed', 'cloudfest-wporgdownload' ), $stats['completed'] ) );
+										?>
+										<?php if ( $stats['failed'] > 0 ) : ?>
+											<span style="color: #dc3232;">
+												<?php
+												/* translators: %d: number of failed jobs */
+												echo esc_html( sprintf( __( ', %d failed', 'cloudfest-wporgdownload' ), $stats['failed'] ) );
+												?>
+											</span>
+										<?php endif; ?>
+									</small>
 								</td>
 								<td>
 									<?php
@@ -1468,6 +1829,15 @@ final class WPInsight_Admin {
 										echo '—';
 									}
 									?>
+									<?php if ( $stats['avg_execution_time'] ) : ?>
+										<br>
+										<small style="color: #646970;">
+											<?php
+											/* translators: %s: average execution time */
+											echo esc_html( sprintf( __( 'Avg: %ss', 'cloudfest-wporgdownload' ), number_format( $stats['avg_execution_time'], 1 ) ) );
+											?>
+										</small>
+									<?php endif; ?>
 								</td>
 								<td>
 									<?php if ( ! $is_scheduled ) : ?>
@@ -1488,6 +1858,104 @@ final class WPInsight_Admin {
 											<?php esc_html_e( 'Run Now', 'cloudfest-wporgdownload' ); ?>
 										</button>
 									</form>
+								</td>
+							</tr>
+							<!-- Expandable Stats Row -->
+							<tr id="stats-<?php echo esc_attr( $worker_id ); ?>" style="display: none;">
+								<td colspan="4" style="background: #f6f7f7; padding: 15px;">
+									<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+										<!-- Left Column: Statistics -->
+										<div>
+											<h4 style="margin-top: 0;"><?php esc_html_e( '24-Hour Statistics', 'cloudfest-wporgdownload' ); ?></h4>
+											<table style="width: 100%;">
+												<tr>
+													<td><strong><?php esc_html_e( 'Completed:', 'cloudfest-wporgdownload' ); ?></strong></td>
+													<td style="color: #46b450;"><?php echo esc_html( number_format_i18n( $stats['completed'] ) ); ?></td>
+												</tr>
+												<tr>
+													<td><strong><?php esc_html_e( 'Failed:', 'cloudfest-wporgdownload' ); ?></strong></td>
+													<td style="color: <?php echo $stats['failed'] > 0 ? '#dc3232' : '#646970'; ?>;"><?php echo esc_html( number_format_i18n( $stats['failed'] ) ); ?></td>
+												</tr>
+												<tr>
+													<td><strong><?php esc_html_e( 'Pending:', 'cloudfest-wporgdownload' ); ?></strong></td>
+													<td><?php echo esc_html( number_format_i18n( $stats['pending'] ) ); ?></td>
+												</tr>
+												<tr>
+													<td><strong><?php esc_html_e( 'In Progress:', 'cloudfest-wporgdownload' ); ?></strong></td>
+													<td><?php echo esc_html( number_format_i18n( $stats['in_progress'] ) ); ?></td>
+												</tr>
+												<?php if ( $stats['avg_execution_time'] ) : ?>
+													<tr>
+														<td><strong><?php esc_html_e( 'Avg Duration:', 'cloudfest-wporgdownload' ); ?></strong></td>
+														<td><?php echo esc_html( number_format( $stats['avg_execution_time'], 2 ) ); ?>s</td>
+													</tr>
+												<?php endif; ?>
+												<?php if ( $stats['last_execution'] ) : ?>
+													<tr>
+														<td><strong><?php esc_html_e( 'Last Execution:', 'cloudfest-wporgdownload' ); ?></strong></td>
+														<td><?php echo esc_html( human_time_diff( strtotime( $stats['last_execution'] ), time() ) ); ?> <?php esc_html_e( 'ago', 'cloudfest-wporgdownload' ); ?></td>
+													</tr>
+												<?php endif; ?>
+											</table>
+											<?php if ( $stats['last_error'] ) : ?>
+												<div style="margin-top: 10px; padding: 10px; background: #fff; border-left: 3px solid #dc3232;">
+													<strong style="color: #dc3232;"><?php esc_html_e( 'Last Error:', 'cloudfest-wporgdownload' ); ?></strong>
+													<br>
+													<code style="font-size: 11px; word-break: break-all;"><?php echo esc_html( $stats['last_error'] ); ?></code>
+												</div>
+											<?php endif; ?>
+										</div>
+
+										<!-- Right Column: Execution History -->
+										<div>
+											<h4 style="margin-top: 0;"><?php esc_html_e( 'Recent Executions (Last 10)', 'cloudfest-wporgdownload' ); ?></h4>
+											<?php if ( ! empty( $history ) ) : ?>
+												<table style="width: 100%; font-size: 12px;">
+													<thead>
+														<tr style="background: #fff;">
+															<th style="text-align: left; padding: 5px;"><?php esc_html_e( 'Status', 'cloudfest-wporgdownload' ); ?></th>
+															<th style="text-align: left; padding: 5px;"><?php esc_html_e( 'Completed', 'cloudfest-wporgdownload' ); ?></th>
+															<th style="text-align: right; padding: 5px;"><?php esc_html_e( 'Duration', 'cloudfest-wporgdownload' ); ?></th>
+														</tr>
+													</thead>
+													<tbody>
+														<?php foreach ( $history as $execution ) : ?>
+															<tr style="border-bottom: 1px solid #ddd;">
+																<td style="padding: 5px;">
+																	<?php if ( 'complete' === $execution['status'] ) : ?>
+																		<span style="color: #46b450;">✓ <?php esc_html_e( 'Success', 'cloudfest-wporgdownload' ); ?></span>
+																	<?php else : ?>
+																		<span style="color: #dc3232;">✗ <?php esc_html_e( 'Failed', 'cloudfest-wporgdownload' ); ?></span>
+																	<?php endif; ?>
+																</td>
+																<td style="padding: 5px;">
+																	<?php
+																	if ( $execution['completed'] ) {
+																		echo esc_html( human_time_diff( strtotime( $execution['completed'] ), time() ) );
+																		echo ' ' . esc_html__( 'ago', 'cloudfest-wporgdownload' );
+																	} else {
+																		echo '—';
+																	}
+																	?>
+																</td>
+																<td style="padding: 5px; text-align: right;">
+																	<?php
+																	if ( $execution['duration'] !== null ) {
+																		echo esc_html( number_format( $execution['duration'], 1 ) ) . 's';
+																	} else {
+																		echo '—';
+																	}
+																	?>
+																</td>
+															</tr>
+														<?php endforeach; ?>
+													</tbody>
+												</table>
+											<?php else : ?>
+												<p style="color: #646970; font-style: italic;"><?php esc_html_e( 'No execution history available.', 'cloudfest-wporgdownload' ); ?></p>
+											<?php endif; ?>
+										</div>
+									</div>
 								</td>
 							</tr>
 						<?php endforeach; ?>
@@ -2195,5 +2663,453 @@ final class WPInsight_Admin {
 		);
 
 		return $html;
+	}
+
+	/**
+	 * Get Action Scheduler statistics for a specific hook in the last 24 hours.
+	 *
+	 * Returns execution statistics including completed, failed, and average execution time.
+	 *
+	 * @since 1.5.0
+	 * @param string $hook The Action Scheduler hook name.
+	 * @return array{
+	 *     completed: int,
+	 *     failed: int,
+	 *     pending: int,
+	 *     in_progress: int,
+	 *     avg_execution_time: float|null,
+	 *     last_execution: string|null,
+	 *     last_error: string|null
+	 * } Statistics array.
+	 */
+	private static function get_action_scheduler_stats( string $hook ): array {
+		global $wpdb;
+
+		$stats = array(
+			'completed'          => 0,
+			'failed'             => 0,
+			'pending'            => 0,
+			'in_progress'        => 0,
+			'avg_execution_time' => null,
+			'last_execution'     => null,
+			'last_error'         => null,
+		);
+
+		// Check if Action Scheduler tables exist.
+		$actions_table = $wpdb->prefix . 'actionscheduler_actions';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $actions_table ) );
+
+		if ( ! $table_exists ) {
+			return $stats;
+		}
+
+		// Get 24h statistics.
+		$twentyfour_hours_ago = gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS );
+
+		// Count by status (last 24h).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$counts = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT status, COUNT(*) as count
+				FROM {$actions_table}
+				WHERE hook = %s
+				AND last_attempt_gmt > %s
+				AND group_id = (
+					SELECT group_id FROM {$wpdb->prefix}actionscheduler_groups
+					WHERE slug = %s
+					LIMIT 1
+				)
+				GROUP BY status",
+				$hook,
+				$twentyfour_hours_ago,
+				WPINSIGHT_AS_GROUP
+			),
+			ARRAY_A
+		);
+
+		foreach ( $counts as $row ) {
+			$status = $row['status'];
+			$count  = (int) $row['count'];
+
+			if ( 'complete' === $status ) {
+				$stats['completed'] = $count;
+			} elseif ( 'failed' === $status ) {
+				$stats['failed'] = $count;
+			} elseif ( 'pending' === $status ) {
+				$stats['pending'] = $count;
+			} elseif ( 'in-progress' === $status ) {
+				$stats['in_progress'] = $count;
+			}
+		}
+
+		// Get average execution time (completed actions only, last 24h).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$avg_time = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT AVG(TIMESTAMPDIFF(SECOND, last_attempt_gmt, last_attempt_gmt))
+				FROM {$actions_table}
+				WHERE hook = %s
+				AND status = 'complete'
+				AND last_attempt_gmt > %s
+				AND group_id = (
+					SELECT group_id FROM {$wpdb->prefix}actionscheduler_groups
+					WHERE slug = %s
+					LIMIT 1
+				)",
+				$hook,
+				$twentyfour_hours_ago,
+				WPINSIGHT_AS_GROUP
+			)
+		);
+
+		if ( $avg_time ) {
+			$stats['avg_execution_time'] = (float) $avg_time;
+		}
+
+		// Get last execution time.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$last_execution = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT last_attempt_gmt
+				FROM {$actions_table}
+				WHERE hook = %s
+				AND status = 'complete'
+				AND group_id = (
+					SELECT group_id FROM {$wpdb->prefix}actionscheduler_groups
+					WHERE slug = %s
+					LIMIT 1
+				)
+				ORDER BY last_attempt_gmt DESC
+				LIMIT 1",
+				$hook,
+				WPINSIGHT_AS_GROUP
+			)
+		);
+
+		if ( $last_execution ) {
+			$stats['last_execution'] = $last_execution;
+		}
+
+		// Get last error message.
+		$logs_table = $wpdb->prefix . 'actionscheduler_logs';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$last_error = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT l.message
+				FROM {$logs_table} l
+				INNER JOIN {$actions_table} a ON l.action_id = a.action_id
+				WHERE a.hook = %s
+				AND a.status = 'failed'
+				AND a.group_id = (
+					SELECT group_id FROM {$wpdb->prefix}actionscheduler_groups
+					WHERE slug = %s
+					LIMIT 1
+				)
+				ORDER BY l.log_date_gmt DESC
+				LIMIT 1",
+				$hook,
+				WPINSIGHT_AS_GROUP
+			)
+		);
+
+		if ( $last_error ) {
+			$stats['last_error'] = $last_error;
+		}
+
+		return $stats;
+	}
+
+	/**
+	 * Get recent Action Scheduler execution history for a hook.
+	 *
+	 * Returns last 10 executions with timestamps and status.
+	 *
+	 * @since 1.5.0
+	 * @param string $hook The Action Scheduler hook name.
+	 * @param int    $limit Number of executions to retrieve (default: 10).
+	 * @return array<int, array{
+	 *     status: string,
+	 *     started: string,
+	 *     completed: string|null,
+	 *     duration: float|null
+	 * }> Array of execution history.
+	 */
+	private static function get_action_scheduler_history( string $hook, int $limit = 10 ): array {
+		global $wpdb;
+
+		$actions_table = $wpdb->prefix . 'actionscheduler_actions';
+
+		// Check if table exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $actions_table ) );
+
+		if ( ! $table_exists ) {
+			return array();
+		}
+
+		// Get recent executions.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT
+					status,
+					scheduled_date_gmt as started,
+					last_attempt_gmt as completed
+				FROM {$actions_table}
+				WHERE hook = %s
+				AND group_id = (
+					SELECT group_id FROM {$wpdb->prefix}actionscheduler_groups
+					WHERE slug = %s
+					LIMIT 1
+				)
+				AND status IN ('complete', 'failed')
+				ORDER BY last_attempt_gmt DESC
+				LIMIT %d",
+				$hook,
+				WPINSIGHT_AS_GROUP,
+				$limit
+			),
+			ARRAY_A
+		);
+
+		$history = array();
+		foreach ( $results as $row ) {
+			$started   = $row['started'];
+			$completed = $row['completed'];
+			$duration  = null;
+
+			if ( $started && $completed ) {
+				$start_time = strtotime( $started );
+				$end_time   = strtotime( $completed );
+				$duration   = $end_time - $start_time;
+			}
+
+			$history[] = array(
+				'status'    => $row['status'],
+				'started'   => $started,
+				'completed' => $completed,
+				'duration'  => $duration,
+			);
+		}
+
+		return $history;
+	}
+
+	/**
+	 * Get comprehensive sync progress data for dashboard.
+	 *
+	 * Returns progress information, ETA, status, and error count for sync operations.
+	 *
+	 * @since 1.5.0
+	 * @param string $entity_type Entity type ('plugin' or 'theme').
+	 * @return array{
+	 *     total_items: int,
+	 *     synced_items: int,
+	 *     current_page: int,
+	 *     total_pages: int,
+	 *     progress_percent: float,
+	 *     status: string,
+	 *     status_label: string,
+	 *     status_color: string,
+	 *     eta_seconds: int|null,
+	 *     eta_formatted: string|null,
+	 *     error_count: int,
+	 *     last_sync: string|null
+	 * } Progress data array.
+	 */
+	private static function get_sync_progress_data( string $entity_type ): array {
+		$state = WPInsight_Sync::get_sync_state( $entity_type );
+
+		// Get total count from WordPress.org API (estimated)
+		$total_estimated = 'plugin' === $entity_type ? 60000 : 12000;
+
+		// Get current synced count from CPTs
+		$cpt_type     = 'plugin' === $entity_type ? WPInsight_CPT::get_plugin_post_type() : WPInsight_CPT::get_theme_post_type();
+		$synced_count = wp_count_posts( $cpt_type )->publish ?? 0;
+
+		// Calculate progress
+		$progress_percent = $total_estimated > 0 ? ( $synced_count / $total_estimated ) * 100 : 0;
+		$progress_percent = min( $progress_percent, 100 ); // Cap at 100%
+
+		// Determine status and styling
+		$status       = $state['status'] ?? 'idle';
+		$status_label = '';
+		$status_color = '#646970';
+
+		switch ( $status ) {
+			case 'running':
+				$status_label = __( 'Running', 'cloudfest-wporgdownload' );
+				$status_color = '#00a32a'; // Green
+				break;
+			case 'queued':
+				$status_label = __( 'Queued', 'cloudfest-wporgdownload' );
+				$status_color = '#2271b1'; // Blue
+				break;
+			case 'completed':
+				$status_label = __( 'Completed', 'cloudfest-wporgdownload' );
+				$status_color = '#00a32a'; // Green
+				break;
+			case 'error':
+				$status_label = __( 'Error', 'cloudfest-wporgdownload' );
+				$status_color = '#d63638'; // Red
+				break;
+			case 'paused':
+				$status_label = __( 'Paused', 'cloudfest-wporgdownload' );
+				$status_color = '#dba617'; // Orange
+				break;
+			default:
+				$status_label = __( 'Idle', 'cloudfest-wporgdownload' );
+				$status_color = '#646970'; // Gray
+				break;
+		}
+
+		// Calculate ETA
+		$eta_seconds   = null;
+		$eta_formatted = null;
+
+		if ( 'running' === $status || 'queued' === $status ) {
+			$eta_data = self::calculate_sync_eta( $entity_type, $synced_count, $total_estimated );
+			$eta_seconds   = $eta_data['seconds'];
+			$eta_formatted = $eta_data['formatted'];
+		}
+
+		// Get error count from sync state
+		$error_count = 0;
+		if ( isset( $state['last_error'] ) && ! empty( $state['last_error'] ) ) {
+			$error_count = 1; // At least one error
+
+			// Try to get actual error count from error log
+			global $wpdb;
+			$logs_table = WPInsight_DB::get_table_name( 'error_log' );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$error_count = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM %i
+					WHERE severity IN ('ERROR', 'EMERGENCY')
+					AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+					AND (message LIKE %s OR context LIKE %s)",
+					$logs_table,
+					'%' . $wpdb->esc_like( $entity_type ) . '%',
+					'%' . $wpdb->esc_like( $entity_type ) . '%'
+				)
+			);
+		}
+
+		// Get last sync time
+		$last_sync = null;
+		if ( isset( $state['last_run_at'] ) && ! empty( $state['last_run_at'] ) ) {
+			$last_sync = human_time_diff( strtotime( $state['last_run_at'] ), time() ) . ' ' . __( 'ago', 'cloudfest-wporgdownload' );
+		}
+
+		return array(
+			'total_items'      => $total_estimated,
+			'synced_items'     => $synced_count,
+			'current_page'     => $state['current_page'] ?? 0,
+			'total_pages'      => $state['total_pages'] ?? 0,
+			'progress_percent' => round( $progress_percent, 1 ),
+			'status'           => $status,
+			'status_label'     => $status_label,
+			'status_color'     => $status_color,
+			'eta_seconds'      => $eta_seconds,
+			'eta_formatted'    => $eta_formatted,
+			'error_count'      => (int) $error_count,
+			'last_sync'        => $last_sync,
+		);
+	}
+
+	/**
+	 * Calculate ETA for sync completion.
+	 *
+	 * Estimates time remaining based on current progress and recent execution speed.
+	 *
+	 * @since 1.5.0
+	 * @param string $entity_type Entity type ('plugin' or 'theme').
+	 * @param int    $current Current number of synced items.
+	 * @param int    $total Total number of items to sync.
+	 * @return array{
+	 *     seconds: int|null,
+	 *     formatted: string|null
+	 * } ETA data.
+	 */
+	private static function calculate_sync_eta( string $entity_type, int $current, int $total ): array {
+		if ( $current >= $total || $current === 0 ) {
+			return array(
+				'seconds'   => null,
+				'formatted' => null,
+			);
+		}
+
+		// Get average execution time from Action Scheduler
+		$hook  = 'wpinsight_sync_tick';
+		$stats = self::get_action_scheduler_stats( $hook );
+
+		$avg_time_per_execution = $stats['avg_execution_time'] ?? 3; // Default 3 seconds
+
+		// Get items per execution (from settings)
+		$per_page = WPInsight_Settings::get( 'per_page', 250 );
+
+		// Calculate remaining items and executions
+		$remaining_items      = $total - $current;
+		$remaining_executions = ceil( $remaining_items / $per_page );
+
+		// Calculate ETA in seconds
+		$eta_seconds = $remaining_executions * $avg_time_per_execution;
+
+		// Add interval between executions (default: 5 minutes = 300 seconds)
+		$sync_interval = WPInsight_Settings::get( 'sync_interval', 300 );
+		$eta_seconds  += ( $remaining_executions - 1 ) * $sync_interval;
+
+		// Format ETA
+		$eta_formatted = self::format_eta( $eta_seconds );
+
+		return array(
+			'seconds'   => (int) $eta_seconds,
+			'formatted' => $eta_formatted,
+		);
+	}
+
+	/**
+	 * Format ETA seconds into human-readable string.
+	 *
+	 * @since 1.5.0
+	 * @param int $seconds Number of seconds.
+	 * @return string Formatted ETA string.
+	 */
+	private static function format_eta( int $seconds ): string {
+		if ( $seconds < 60 ) {
+			/* translators: %d: number of seconds */
+			return sprintf( __( '%d seconds', 'cloudfest-wporgdownload' ), $seconds );
+		}
+
+		if ( $seconds < 3600 ) {
+			$minutes = floor( $seconds / 60 );
+			/* translators: %d: number of minutes */
+			return sprintf( __( '%d minutes', 'cloudfest-wporgdownload' ), $minutes );
+		}
+
+		if ( $seconds < 86400 ) {
+			$hours   = floor( $seconds / 3600 );
+			$minutes = floor( ( $seconds % 3600 ) / 60 );
+
+			if ( $minutes > 0 ) {
+				/* translators: 1: number of hours, 2: number of minutes */
+				return sprintf( __( '%1$d hours %2$d minutes', 'cloudfest-wporgdownload' ), $hours, $minutes );
+			}
+
+			/* translators: %d: number of hours */
+			return sprintf( __( '%d hours', 'cloudfest-wporgdownload' ), $hours );
+		}
+
+		$days  = floor( $seconds / 86400 );
+		$hours = floor( ( $seconds % 86400 ) / 3600 );
+
+		if ( $hours > 0 ) {
+			/* translators: 1: number of days, 2: number of hours */
+			return sprintf( __( '%1$d days %2$d hours', 'cloudfest-wporgdownload' ), $days, $hours );
+		}
+
+		/* translators: %d: number of days */
+		return sprintf( __( '%d days', 'cloudfest-wporgdownload' ), $days );
 	}
 }

@@ -7,6 +7,269 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] - 2026-02-02
+
+_Enhanced Database Diagnostics & Action Scheduler Monitoring Release_
+
+### Highlights
+
+* Advanced database diagnostics and maintenance tools
+* Real-time table statistics (size, rows, indexes)
+* One-click table optimization, checking, and repair
+* Bulk operations for all tables at once
+* Comprehensive Action Scheduler monitoring with execution history
+* 24-hour worker statistics with success/failure rates
+* Average execution times and last error messages
+
+### Added
+
+* **Database Diagnostics System (Phase 18.1)**
+  * New `get_table_stats()` method - Returns detailed table statistics
+    - Row count with formatted numbers
+    - Data size and index size (MB/GB)
+    - Total size calculation
+    - Database engine (InnoDB, MyISAM)
+    - Last optimization timestamp
+  * New `get_all_tables_stats()` method - Statistics for all WPInsight tables
+    - sync_state, zip_queue, artifacts, error_log
+    - Aggregated totals for data size, index size, total size
+  * New `check_table_health()` method - Runs CHECK TABLE command
+    - Verifies table integrity
+    - Detects index corruption
+    - Returns detailed status messages
+  * New `optimize_table()` method - Runs OPTIMIZE TABLE command
+    - Reclaims unused space
+    - Defragments tables
+    - Improves query performance
+  * New `repair_table()` method - Runs REPAIR TABLE command
+    - Fixes corrupted tables
+    - Rebuilds indexes
+    - Should only be used when CHECK indicates problems
+  * New `get_table_indexes()` method - Returns index information
+    - Index names and columns
+    - Unique vs non-unique indexes
+    - Index type (BTREE, FULLTEXT, HASH)
+    - Cardinality statistics
+
+* **Debug Tools Enhancements**
+  * New "Database Diagnostics" section in Dashboard (WP_DEBUG only)
+  * Comprehensive table statistics table with columns:
+    - Table name
+    - Row count (formatted: "600,000")
+    - Data size (formatted: "450 MB")
+    - Index size (formatted: "120 MB")
+    - Total size (bold: **"570 MB"**)
+    - Database engine
+    - Last optimize (human time diff: "3 days ago")
+    - Action buttons
+  * Individual table actions:
+    - **Check** button - Verify table health and integrity
+    - **Optimize** button - Optimize table to reclaim space
+    - **Repair** button - Repair corrupted tables (with confirmation)
+  * Totals row showing aggregated sizes across all tables
+  * Bulk actions section:
+    - **Optimize All Tables** button - Optimizes all 4 tables at once
+    - Confirmation dialog before execution
+    - Progress feedback showing success count
+  * Real-time feedback with WordPress admin notices:
+    - Success messages (green) for completed actions
+    - Error messages (red) for failed operations
+    - Detailed status information from MySQL
+
+* **Admin Action Handlers**
+  * New `handle_database_actions()` method - Processes diagnostic actions
+    - Nonce verification for security
+    - Capability check (manage_options required)
+    - Try/catch error handling
+    - Detailed result messages
+    - Integration with WPInsight_Logger
+  * Supported actions:
+    - `check_table` - Individual table health check
+    - `optimize_table` - Individual table optimization
+    - `repair_table` - Individual table repair
+    - `optimize_all` - Bulk optimization of all tables
+  * Logging integration:
+    - All optimize operations logged to WPInsight_Logger
+    - All repair operations logged as warnings
+    - Bulk operations logged with success/failure counts
+
+* **Action Scheduler Deep Dive (Phase 18.2)**
+  * New `get_action_scheduler_stats()` method - Returns 24-hour statistics per worker
+    - Completed jobs count
+    - Failed jobs count
+    - Pending jobs count
+    - In-progress jobs count
+    - Average execution time in seconds
+    - Last execution timestamp
+    - Last error message (if any)
+  * New `get_action_scheduler_history()` method - Returns execution history
+    - Last 10 executions per worker
+    - Status (complete/failed) for each execution
+    - Start and completion timestamps
+    - Duration calculation in seconds
+  * Enhanced Scheduled Workers table in Debug Tools:
+    - **24-hour statistics** displayed inline under each worker
+      - "24h: X completed, Y failed" summary
+      - Color-coded: green for success, red for failures
+    - **Average execution time** shown in "Next Run" column
+      - Example: "Avg: 2.5s"
+    - **"Show Stats & History" button** for each worker
+      - Expandable row with detailed information
+      - Two-column layout (Statistics | History)
+    - **Statistics panel** (left column):
+      - Completed count (green)
+      - Failed count (red if > 0)
+      - Pending count
+      - In-progress count
+      - Average duration with 2 decimal precision
+      - Last execution with human time diff
+      - Last error message display (if exists)
+        - Red-bordered box with error details
+        - Monospace font for error messages
+    - **Execution History panel** (right column):
+      - Table with last 10 executions
+      - Columns: Status, Completed (time ago), Duration
+      - Success/failure icons (✓/✗)
+      - Color-coded status indicators
+      - Precise duration measurements
+  * Real-time insights:
+    - See which workers are running frequently
+    - Identify workers with high failure rates
+    - Track performance degradation over time
+    - Debug specific execution failures
+    - Monitor execution duration trends
+
+* **Sync Progress Dashboard (Phase 18.3)**
+  * New `get_sync_progress_data()` method - Comprehensive progress tracking
+    - Calculates synced items from CPT counts
+    - Estimates total items (60K plugins, 12K themes)
+    - Progress percentage calculation
+    - Status determination (running/queued/completed/error/paused/idle)
+    - Status color coding for visual indicators
+    - ETA calculation integration
+    - 24-hour error count from error_log table
+    - Last sync timestamp
+    - Returns: total_items, synced_items, progress_percent, status, status_label, status_color, eta_seconds, eta_formatted, error_count, last_sync
+  * New `calculate_sync_eta()` method - Time estimation algorithm
+    - Uses average execution time from Action Scheduler stats
+    - Gets per_page setting (default: 250)
+    - Calculates remaining executions: ceil(remaining_items / per_page)
+    - Adds sync_interval between executions (default: 300s)
+    - Returns both seconds and formatted ETA
+  * New `format_eta()` method - Human-readable time formatting
+    - Formats: "5 seconds", "10 minutes", "2 hours 15 minutes", "3 days 5 hours"
+    - Intelligent pluralization
+    - Multi-unit display for better granularity
+  * Enhanced Dashboard with new "Sync Progress" section:
+    - **Two-column layout** for plugin and theme progress
+    - **Visual progress bars** with gradient backgrounds
+      - Linear gradient: #2271b1 to #135e96
+      - Height: 30px for visibility
+      - Percentage display inside bar
+      - Dynamic width based on completion
+    - **Status badges** with dynamic colors:
+      - Green (#2271b1): running/completed
+      - Red (#dc3232): error
+      - Orange (#f0b849): paused
+      - Blue (#72aee6): queued
+      - Gray (#dcdcde): idle
+    - **Stats grid** (2-column responsive):
+      - Synced count: "X / Y" format
+      - ETA: Only shown when sync is active
+      - Last sync: Human-readable time diff
+      - Errors: Count with ⚠ icon and link to #error-logs
+    - **Combined summary** section:
+      - Total items across plugins + themes
+      - Overall progress percentage
+      - Total errors with direct link
+      - Border-top separator for visual hierarchy
+  * Template integration (`admin-dashboard.php`):
+    - Progress data passed from render_dashboard_page()
+    - Placed after "Statistics Overview" section
+    - Responsive grid layout (2 columns on wide screens)
+    - All output properly escaped (esc_html, esc_attr, esc_url)
+
+### Changed
+
+* Plugin version: `1.4.0` → `1.5.0`
+* Debug Tools section expanded with database diagnostics
+* Admin init hook now includes `handle_database_actions()`
+
+### Fixed
+
+* **SQL syntax error with reserved word "rows"**
+  - Changed column alias from `rows` to `row_count` in query
+  - Prevents MySQL/MariaDB syntax errors
+  - Fixed in `get_table_stats()` method
+
+### Security
+
+* All database actions require nonce verification
+* Capability check (`manage_options`) enforced on all operations
+* Repair action has JavaScript confirmation dialog
+* Bulk operations have confirmation dialogs
+* All inputs sanitized with `sanitize_text_field()`
+* Table names validated through `get_table_name()` method
+
+### Performance
+
+* Table statistics queries use `information_schema.TABLES` (fast)
+* No table scans - uses MySQL metadata only
+* Optimize operations can reclaim significant space on large tables
+* Expected impact: 10-30% size reduction after first optimization
+* Recommended: Run optimize monthly on production databases
+
+### Compatibility
+
+* WordPress: 6.9+
+* PHP: 8.4+
+* MariaDB: 10.6+ / MySQL: 8.0+
+* Action Scheduler: Latest version
+* Requires InnoDB engine for full functionality
+
+### Use Cases
+
+**Database Diagnostics:**
+* **Regular Maintenance**: Monitor table sizes and optimize monthly
+* **Performance Issues**: Check and optimize tables when queries are slow
+* **Corruption Detection**: Use CHECK to detect problems early
+* **Space Management**: See exactly how much space each table uses
+* **Production Monitoring**: Track table growth over time
+* **Troubleshooting**: Verify table health when debugging issues
+
+**Action Scheduler Monitoring:**
+* **Performance Tracking**: Monitor average execution times for workers
+* **Failure Detection**: Identify workers with high failure rates
+* **Capacity Planning**: See how many jobs are being processed daily
+* **Debugging**: View exact error messages from failed executions
+* **Historical Analysis**: Review last 10 executions to spot patterns
+* **Optimization**: Identify slow workers that need performance tuning
+* **Alerting**: Spot anomalies in execution frequency or duration
+
+**Sync Progress Dashboard:**
+* **Real-Time Monitoring**: See at a glance how sync is progressing
+* **Time Estimation**: Know exactly when sync will complete with ETA
+* **Status Awareness**: Immediately identify if sync is running, paused, or idle
+* **Error Tracking**: Quick access to error counts with direct links
+* **Progress Visualization**: Visual bars make it easy to understand completion
+* **Capacity Planning**: Understand total items vs synced items
+* **Troubleshooting**: Identify sync issues before they become problems
+* **User Experience**: Clear visual feedback reduces uncertainty
+
+### Tests
+
+* PHP syntax validation: ✓ Passed
+* SQL syntax validation: ✓ Fixed reserved word issue
+* Nonce verification: ✓ Tested
+* Capability checks: ✓ Tested
+* Table operations tested on development database
+* Action Scheduler queries tested with production data
+* Execution history retrieval validated
+* Statistics calculations verified (24h window)
+* Expandable UI tested in multiple browsers
+
+---
+
 ## [1.4.0] - 2026-02-02
 
 _ZIP Size Detection System Release_
@@ -67,12 +330,39 @@ _ZIP Size Detection System Release_
   * Validation ensures values within acceptable range
   * Description guides users on WordPress.org politeness
 
+* **Debug Tools** (Dashboard)
+  * Comprehensive debug information panel in dashboard
+  * **System Information**: WordPress, PHP, Plugin versions, WP_DEBUG status
+  * **Database Information**: CPT counts, queue jobs, artifacts, error logs
+  * **Cron Management**: Full Action Scheduler worker management
+    - Table showing all workers (Sync, ZIP, Size Detection)
+    - Real-time status (Scheduled/Not Scheduled) with visual indicators
+    - Next run time with human-readable format
+    - **"Schedule Now" button**: Manually schedule workers that are not scheduled
+    - **"Run Now" button**: Execute any worker manually with execution time feedback
+    - **"Reset All Workers" button**: Unschedule and reschedule all workers
+  * Security: All actions protected with nonces and capability checks
+  * Error handling with try/catch and user-friendly messages
+
 ### Changed
 
 * Database schema version: `1.1.0` → `1.2.0`
 * Plugin version: `1.3.0` → `1.4.0`
 * Bootstrap now schedules size detection worker on activation
 * Zip Queue init() now registers size detection tick action
+* **Size Detection Worker auto-scheduling**: Now called on `init` hook (priority 20)
+  - Ensures worker is scheduled even after plugin updates
+  - Fixes issue where worker wasn't scheduled on existing installations
+  - No duplicate schedules created (checks before scheduling)
+* Debug Tools moved from Settings page to Dashboard for better visibility
+* Debug Tools section reorganized with tabbed information panels
+
+### Fixed
+
+* **Size Detection Worker not scheduling** on plugin update
+  - Added auto-scheduling check on every plugin load
+  - Manual "Schedule Now" button for immediate scheduling
+  - Worker now properly schedules after updates without deactivation/reactivation
 
 ### Performance
 

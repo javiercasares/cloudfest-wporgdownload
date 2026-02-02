@@ -67,6 +67,151 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	</div>
 
+	<!-- Sync Progress Dashboard (Phase 18.3) -->
+	<div style="background: #fff; padding: 20px; margin: 20px 0; border-left: 4px solid #2271b1; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+		<h2 style="margin: 0 0 15px 0; font-size: 18px;">
+			<?php esc_html_e( 'Sync Progress', 'cloudfest-wporgdownload' ); ?>
+		</h2>
+
+		<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+			<!-- Plugin Sync Progress -->
+			<div>
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+					<h3 style="margin: 0; font-size: 14px;">
+						<?php esc_html_e( 'Plugins', 'cloudfest-wporgdownload' ); ?>
+					</h3>
+					<span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; background: <?php echo esc_attr( $plugin_progress['status_color'] ); ?>; color: #fff;">
+						<?php echo esc_html( $plugin_progress['status_label'] ); ?>
+					</span>
+				</div>
+
+				<!-- Progress Bar -->
+				<div style="background: #f0f0f1; border-radius: 4px; height: 30px; position: relative; margin-bottom: 10px; overflow: hidden;">
+					<div style="background: linear-gradient(90deg, #2271b1 0%, #135e96 100%); height: 100%; width: <?php echo esc_attr( $plugin_progress['progress_percent'] ); ?>%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center;">
+						<span style="color: #fff; font-size: 12px; font-weight: 600; position: relative; z-index: 2;">
+							<?php echo esc_html( $plugin_progress['progress_percent'] ); ?>%
+						</span>
+					</div>
+				</div>
+
+				<!-- Stats Grid -->
+				<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 12px;">
+					<div>
+						<span style="color: #646970;"><?php esc_html_e( 'Synced:', 'cloudfest-wporgdownload' ); ?></span>
+						<strong><?php echo esc_html( number_format_i18n( $plugin_progress['synced_items'] ) ); ?></strong>
+						<span style="color: #646970;">/ <?php echo esc_html( number_format_i18n( $plugin_progress['total_items'] ) ); ?></span>
+					</div>
+					<?php if ( $plugin_progress['eta_formatted'] ) : ?>
+						<div>
+							<span style="color: #646970;"><?php esc_html_e( 'ETA:', 'cloudfest-wporgdownload' ); ?></span>
+							<strong><?php echo esc_html( $plugin_progress['eta_formatted'] ); ?></strong>
+						</div>
+					<?php endif; ?>
+					<?php if ( $plugin_progress['last_sync'] ) : ?>
+						<div>
+							<span style="color: #646970;"><?php esc_html_e( 'Last Sync:', 'cloudfest-wporgdownload' ); ?></span>
+							<strong><?php echo esc_html( $plugin_progress['last_sync'] ); ?></strong>
+						</div>
+					<?php endif; ?>
+					<?php if ( $plugin_progress['error_count'] > 0 ) : ?>
+						<div>
+							<span style="color: #d63638;"><?php esc_html_e( 'Errors:', 'cloudfest-wporgdownload' ); ?></span>
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=wpinsight-dashboard#error-logs' ) ); ?>" style="color: #d63638; text-decoration: none; font-weight: 600;">
+								<?php echo esc_html( number_format_i18n( $plugin_progress['error_count'] ) ); ?> ⚠
+							</a>
+						</div>
+					<?php endif; ?>
+				</div>
+			</div>
+
+			<!-- Theme Sync Progress -->
+			<div>
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+					<h3 style="margin: 0; font-size: 14px;">
+						<?php esc_html_e( 'Themes', 'cloudfest-wporgdownload' ); ?>
+					</h3>
+					<span style="padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; background: <?php echo esc_attr( $theme_progress['status_color'] ); ?>; color: #fff;">
+						<?php echo esc_html( $theme_progress['status_label'] ); ?>
+					</span>
+				</div>
+
+				<!-- Progress Bar -->
+				<div style="background: #f0f0f1; border-radius: 4px; height: 30px; position: relative; margin-bottom: 10px; overflow: hidden;">
+					<div style="background: linear-gradient(90deg, #2271b1 0%, #135e96 100%); height: 100%; width: <?php echo esc_attr( $theme_progress['progress_percent'] ); ?>%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center;">
+						<span style="color: #fff; font-size: 12px; font-weight: 600; position: relative; z-index: 2;">
+							<?php echo esc_html( $theme_progress['progress_percent'] ); ?>%
+						</span>
+					</div>
+				</div>
+
+				<!-- Stats Grid -->
+				<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 12px;">
+					<div>
+						<span style="color: #646970;"><?php esc_html_e( 'Synced:', 'cloudfest-wporgdownload' ); ?></span>
+						<strong><?php echo esc_html( number_format_i18n( $theme_progress['synced_items'] ) ); ?></strong>
+						<span style="color: #646970;">/ <?php echo esc_html( number_format_i18n( $theme_progress['total_items'] ) ); ?></span>
+					</div>
+					<?php if ( $theme_progress['eta_formatted'] ) : ?>
+						<div>
+							<span style="color: #646970;"><?php esc_html_e( 'ETA:', 'cloudfest-wporgdownload' ); ?></span>
+							<strong><?php echo esc_html( $theme_progress['eta_formatted'] ); ?></strong>
+						</div>
+					<?php endif; ?>
+					<?php if ( $theme_progress['last_sync'] ) : ?>
+						<div>
+							<span style="color: #646970;"><?php esc_html_e( 'Last Sync:', 'cloudfest-wporgdownload' ); ?></span>
+							<strong><?php echo esc_html( $theme_progress['last_sync'] ); ?></strong>
+						</div>
+					<?php endif; ?>
+					<?php if ( $theme_progress['error_count'] > 0 ) : ?>
+						<div>
+							<span style="color: #d63638;"><?php esc_html_e( 'Errors:', 'cloudfest-wporgdownload' ); ?></span>
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=wpinsight-dashboard#error-logs' ) ); ?>" style="color: #d63638; text-decoration: none; font-weight: 600;">
+								<?php echo esc_html( number_format_i18n( $theme_progress['error_count'] ) ); ?> ⚠
+							</a>
+						</div>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+
+		<!-- Combined Summary -->
+		<div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #f0f0f1;">
+			<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; font-size: 12px; text-align: center;">
+				<div>
+					<div style="color: #646970; margin-bottom: 5px;"><?php esc_html_e( 'Total Items', 'cloudfest-wporgdownload' ); ?></div>
+					<div style="font-size: 20px; font-weight: 600; color: #2271b1;">
+						<?php echo esc_html( number_format_i18n( $plugin_progress['synced_items'] + $theme_progress['synced_items'] ) ); ?>
+					</div>
+				</div>
+				<div>
+					<div style="color: #646970; margin-bottom: 5px;"><?php esc_html_e( 'Overall Progress', 'cloudfest-wporgdownload' ); ?></div>
+					<div style="font-size: 20px; font-weight: 600; color: #2271b1;">
+						<?php
+						$total_synced = $plugin_progress['synced_items'] + $theme_progress['synced_items'];
+						$total_items  = $plugin_progress['total_items'] + $theme_progress['total_items'];
+						$overall_percent = $total_items > 0 ? round( ( $total_synced / $total_items ) * 100, 1 ) : 0;
+						echo esc_html( $overall_percent );
+						?>%
+					</div>
+				</div>
+				<?php
+				$total_errors = $plugin_progress['error_count'] + $theme_progress['error_count'];
+				if ( $total_errors > 0 ) :
+					?>
+					<div>
+						<div style="color: #d63638; margin-bottom: 5px;"><?php esc_html_e( 'Total Errors', 'cloudfest-wporgdownload' ); ?></div>
+						<div style="font-size: 20px; font-weight: 600; color: #d63638;">
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=wpinsight-dashboard#error-logs' ) ); ?>" style="color: #d63638; text-decoration: none;">
+								<?php echo esc_html( number_format_i18n( $total_errors ) ); ?> ⚠
+							</a>
+						</div>
+					</div>
+				<?php endif; ?>
+			</div>
+		</div>
+	</div>
+
 	<!-- ZIP Size Statistics -->
 	<?php
 	$size_stats = WPInsight_Zip_Queue::get_size_statistics();

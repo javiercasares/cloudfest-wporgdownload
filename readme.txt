@@ -319,12 +319,27 @@ Yes! This plugin was developed during CloudFest Hackathon. Contributions welcome
   * Configurable via Settings > WPInsight > Rate Limiting
   * Balance between speed and WordPress.org politeness
 
+* **Debug Tools (Dashboard)**
+  * System info: WordPress, PHP, Plugin versions, WP_DEBUG status
+  * Database stats: CPT counts, queue jobs, artifacts, error logs
+  * Cron management: View, schedule, run, and reset workers
+  * "Schedule Now" button for workers not scheduled
+  * "Run Now" button to execute workers manually
+  * "Reset All Workers" button to fix scheduling issues
+  * Real-time worker status with next run times
+
 * **Performance**
   * HEAD requests with configurable rate (default: 3 req/sec)
   * Batch processing (600 URLs per tick)
   * 600 ZIPs @ 3 req/sec = ~3.3 minutes per batch
   * Cached statistics queries
   * 10-second timeout per request
+  * Auto-scheduling check on every plugin load
+
+* **Bug Fixes**
+  * Fixed Size Detection Worker not scheduling after updates
+  * Debug Tools relocated to Dashboard for better accessibility
+  * Auto-recovery for unscheduled workers
 
 **Compatibility:**
 * WordPress: 6.9+
@@ -461,7 +476,7 @@ Full changelog with detailed changes available at:
 == Upgrade Notice ==
 
 = 1.4.0 =
-ZIP size detection system with configurable rate limiting! Automatically detects file sizes via HEAD requests (600 ZIPs per batch, 3 req/sec by default). Dashboard shows total storage requirements and detection progress. New setting for rate limit configuration. Database schema upgraded to v1.2.0 (automatic migration).
+ZIP size detection system with configurable rate limiting! Automatically detects file sizes via HEAD requests (600 ZIPs per batch, 3 req/sec by default). Dashboard shows total storage requirements and detection progress. New Debug Tools section with complete cron management (schedule, run, reset workers). Fixes Size Detection Worker scheduling issue. Database schema upgraded to v1.2.0 (automatic migration).
 
 = 1.3.0 =
 Enhanced CPT detail views with comprehensive plugin/theme information, ZIP downloads table, quick stats widget, and public URLs. Major UX improvement for data visibility.
