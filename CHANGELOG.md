@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0] - 2026-02-02
 
-_Enhanced Database Diagnostics & Action Scheduler Monitoring Release_
+_Enhanced Database Diagnostics, Action Scheduler Monitoring & Download Queue Control Release_
 
 ### Highlights
 
@@ -20,6 +20,10 @@ _Enhanced Database Diagnostics & Action Scheduler Monitoring Release_
 * Comprehensive Action Scheduler monitoring with execution history
 * 24-hour worker statistics with success/failure rates
 * Average execution times and last error messages
+* Real-time download queue monitoring with active downloads display
+* Pause/Resume controls for bandwidth management
+* Disk space monitoring with warnings
+* Download speed tracking and progress visualization
 
 ### Added
 
@@ -189,11 +193,68 @@ _Enhanced Database Diagnostics & Action Scheduler Monitoring Release_
     - Responsive grid layout (2 columns on wide screens)
     - All output properly escaped (esc_html, esc_attr, esc_url)
 
+* **Download Queue Monitor (Phase 18.4)**
+  * New `get_active_downloads()` method - Real-time active downloads tracking
+    - Queries currently processing downloads (last 10 minutes)
+    - Returns: id, slug, version, item_type, remote_filesize, started_at
+    - Calculates elapsed seconds since download started
+    - Estimates download speed (bytes per second)
+    - Progress percentage estimation (50% while processing)
+    - Limits to last 10 active downloads for performance
+  * New `get_disk_space_info()` method - Disk space monitoring
+    - Uses `disk_total_space()` and `disk_free_space()` on uploads directory
+    - Calculates used space and percentage
+    - Queries artifacts table for downloaded files size
+    - Queries queue table for pending downloads size (with remote_filesize)
+    - Returns: total_space, free_space, used_space, used_percent, artifacts_size, pending_size, total_required
+    - Warning detection when required space exceeds free space
+  * New `handle_download_control_actions()` method - Pause/Resume functionality
+    - Handles `pause_downloads` action - Sets downloads_paused setting to true
+    - Handles `resume_downloads` action - Sets downloads_paused setting to false
+    - Nonce verification for security
+    - Capability check (manage_options required)
+    - Integration with WPInsight_Logger
+    - Admin notices for success/error feedback
+    - Redirects back to dashboard after action
+  * Enhanced Dashboard with new "Download Queue Monitor" section:
+    - **Pause/Resume controls**:
+      - "⏸ Pause Downloads" button (orange) when active
+      - "▶ Resume Downloads" button (green) when paused
+      - Border color changes based on state (green/orange)
+      - Pause alert banner when downloads are paused
+    - **Active Downloads table** (left column):
+      - Shows currently processing downloads (max 10)
+      - Columns: ZIP File, Progress, Speed
+      - ZIP name with version and file size
+      - Visual progress bar with percentage (50% estimated)
+      - Download speed in MB/s or KB/s
+      - Elapsed time display when size unknown
+      - Badge showing active download count
+      - "No active downloads" message when idle
+    - **Disk Space panel** (right column):
+      - Visual disk usage progress bar
+      - Color-coded: green (<75%), orange (75-90%), red (>90%)
+      - Statistics table:
+        - Total space available
+        - Free space (green)
+        - Downloaded files size
+        - Pending downloads size (orange)
+        - Total required (blue)
+      - Warning alert when disk space insufficient
+      - Warning appears when total_required > free_space
+  * Worker integration (`class-wpinsight-zip-queue.php`):
+    - Added pause check in `worker_tick()` method
+    - Worker skips processing when downloads_paused is true
+    - No new downloads start while paused
+    - Already processing downloads continue until completion
+
 ### Changed
 
 * Plugin version: `1.4.0` → `1.5.0`
 * Debug Tools section expanded with database diagnostics
-* Admin init hook now includes `handle_database_actions()`
+* Admin init hook now includes `handle_database_actions()` and `handle_download_control_actions()`
+* Template variables documentation updated with new Phase 18.4 variables
+* ZIP worker checks for downloads_paused setting before processing jobs
 
 ### Fixed
 
@@ -256,17 +317,32 @@ _Enhanced Database Diagnostics & Action Scheduler Monitoring Release_
 * **Troubleshooting**: Identify sync issues before they become problems
 * **User Experience**: Clear visual feedback reduces uncertainty
 
+**Download Queue Monitor:**
+* **Bandwidth Management**: Pause downloads during high-traffic periods or when bandwidth is needed
+* **Active Monitoring**: See exactly which ZIPs are downloading right now
+* **Speed Tracking**: Monitor download speeds to detect network issues
+* **Capacity Planning**: Know if you have enough disk space for pending downloads
+* **Resource Control**: Resume downloads when bandwidth becomes available
+* **Progress Visibility**: Visual feedback on download completion percentage
+* **Disk Space Warnings**: Proactive alerts when running out of storage
+* **Operations Management**: Pause before system maintenance, resume after
+
 ### Tests
 
-* PHP syntax validation: ✓ Passed
+* PHP syntax validation: ✓ Passed (all 3 modified files)
 * SQL syntax validation: ✓ Fixed reserved word issue
-* Nonce verification: ✓ Tested
-* Capability checks: ✓ Tested
+* Nonce verification: ✓ Tested (database actions, download controls)
+* Capability checks: ✓ Tested (manage_options required)
 * Table operations tested on development database
 * Action Scheduler queries tested with production data
 * Execution history retrieval validated
 * Statistics calculations verified (24h window)
 * Expandable UI tested in multiple browsers
+* Pause/Resume functionality: ✓ Tested
+* Active downloads display: ✓ Tested with processing jobs
+* Disk space calculations: ✓ Validated
+* Download speed estimation: ✓ Verified
+* Template escaping: ✓ All output properly escaped
 
 ---
 
