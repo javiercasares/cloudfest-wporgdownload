@@ -468,9 +468,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 								</div>
 							</div>
 
-							<div style="margin-top: 10px; padding: 8px; background: #fff3cd; border-left: 3px solid #856404; font-size: 12px; color: #856404;">
+							<div style="margin-top: 10px; padding: 8px; background: #d5e5f2; border-left: 3px solid #2271b1; font-size: 12px; color: #135e96;">
 								<strong><?php esc_html_e( 'Sync in progress...', 'cloudfest-wporgdownload' ); ?></strong>
-								<?php esc_html_e( 'This page will auto-refresh every 10 seconds.', 'cloudfest-wporgdownload' ); ?>
+								<?php esc_html_e( 'Progress updates automatically in real-time.', 'cloudfest-wporgdownload' ); ?>
 							</div>
 						<?php else : ?>
 							<div style="padding: 20px; text-align: center; background: #f0f0f1; border-radius: 4px; color: #646970;">
@@ -560,9 +560,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 								</div>
 							</div>
 
-							<div style="margin-top: 10px; padding: 8px; background: #fff3cd; border-left: 3px solid #856404; font-size: 12px; color: #856404;">
+							<div style="margin-top: 10px; padding: 8px; background: #d5e5f2; border-left: 3px solid #2271b1; font-size: 12px; color: #135e96;">
 								<strong><?php esc_html_e( 'Sync in progress...', 'cloudfest-wporgdownload' ); ?></strong>
-								<?php esc_html_e( 'This page will auto-refresh every 10 seconds.', 'cloudfest-wporgdownload' ); ?>
+								<?php esc_html_e( 'Progress updates automatically in real-time.', 'cloudfest-wporgdownload' ); ?>
 							</div>
 						<?php else : ?>
 							<div style="padding: 20px; text-align: center; background: #f0f0f1; border-radius: 4px; color: #646970;">
@@ -935,18 +935,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <script>
 (function() {
-	// Check if any sync is running or queued
-	var pluginSyncRunning = <?php echo wp_json_encode( in_array( $plugin_state['status'], array( 'running', 'syncing', 'queued' ), true ) ); ?>;
-	var themeSyncRunning = <?php echo wp_json_encode( in_array( $theme_state['status'], array( 'running', 'syncing', 'queued' ), true ) ); ?>;
-
-	if (pluginSyncRunning || themeSyncRunning) {
-		// Auto-refresh every 10 seconds when sync is active
-		setTimeout(function() {
-			window.location.reload();
-		}, 10000);
-		
-		// Add visual indicator
-		console.log('WPInsight: Sync in progress, auto-refresh in 10 seconds...');
-	}
+	// Real-time updates are now handled by dashboard-live.js via AJAX
+	// No page refresh needed!
+	console.log('WPInsight: Live AJAX updates enabled - no page refresh needed');
 })();
 </script>
