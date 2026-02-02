@@ -81,6 +81,10 @@ final class WPInsight_Sync {
 		// Register sync tick handler.
 		add_action( WPINSIGHT_SYNC_TICK_ACTION, array( __CLASS__, 'sync_tick' ) );
 
+		// Register incremental sync handlers.
+		add_action( 'wpinsight_sync_plugins', array( __CLASS__, 'sync_plugins_handler' ) );
+		add_action( 'wpinsight_sync_themes', array( __CLASS__, 'sync_themes_handler' ) );
+
 		// Register full sync handlers.
 		add_action( 'wpinsight_full_sync_plugins', array( __CLASS__, 'full_sync_plugins_handler' ) );
 		add_action( 'wpinsight_full_sync_themes', array( __CLASS__, 'full_sync_themes_handler' ) );
@@ -875,6 +879,44 @@ final class WPInsight_Sync {
 			'status'          => $status,
 			'message'         => $message,
 		);
+	}
+
+	/**
+	 * Incremental sync plugins handler for Action Scheduler.
+	 *
+	 * This is called by Action Scheduler when an incremental plugin sync is requested.
+	 * Processes the next page of plugins and updates sync state.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function sync_plugins_handler(): void {
+		$result = self::sync_plugins();
+
+		if ( $result ) {
+			WPInsight_Logger::info( 'Incremental plugin sync completed successfully via Action Scheduler.' );
+		} else {
+			WPInsight_Logger::error( 'Incremental plugin sync failed via Action Scheduler.' );
+		}
+	}
+
+	/**
+	 * Incremental sync themes handler for Action Scheduler.
+	 *
+	 * This is called by Action Scheduler when an incremental theme sync is requested.
+	 * Processes the next page of themes and updates sync state.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function sync_themes_handler(): void {
+		$result = self::sync_themes();
+
+		if ( $result ) {
+			WPInsight_Logger::info( 'Incremental theme sync completed successfully via Action Scheduler.' );
+		} else {
+			WPInsight_Logger::error( 'Incremental theme sync failed via Action Scheduler.' );
+		}
 	}
 
 	/**

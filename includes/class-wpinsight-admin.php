@@ -307,20 +307,22 @@ final class WPInsight_Admin {
 
 		switch ( $action ) {
 			case 'sync_plugins':
-				$result = WPInsight_Sync::sync_plugins();
-				if ( $result ) {
-					add_settings_error( 'wpinsight_dashboard', 'sync_success', __( 'Plugin sync completed successfully.', 'cloudfest-wporgdownload' ), 'success' );
+				// Enqueue sync job in Action Scheduler (async).
+				if ( function_exists( 'as_enqueue_async_action' ) ) {
+					as_enqueue_async_action( 'wpinsight_sync_plugins', array(), WPINSIGHT_AS_GROUP );
+					add_settings_error( 'wpinsight_dashboard', 'sync_enqueued', __( 'Plugin sync started. Check progress below.', 'cloudfest-wporgdownload' ), 'success' );
 				} else {
-					add_settings_error( 'wpinsight_dashboard', 'sync_error', __( 'Plugin sync failed. Check logs for details.', 'cloudfest-wporgdownload' ), 'error' );
+					add_settings_error( 'wpinsight_dashboard', 'sync_error', __( 'Action Scheduler not available. Cannot start sync.', 'cloudfest-wporgdownload' ), 'error' );
 				}
 				break;
 
 			case 'sync_themes':
-				$result = WPInsight_Sync::sync_themes();
-				if ( $result ) {
-					add_settings_error( 'wpinsight_dashboard', 'sync_success', __( 'Theme sync completed successfully.', 'cloudfest-wporgdownload' ), 'success' );
+				// Enqueue sync job in Action Scheduler (async).
+				if ( function_exists( 'as_enqueue_async_action' ) ) {
+					as_enqueue_async_action( 'wpinsight_sync_themes', array(), WPINSIGHT_AS_GROUP );
+					add_settings_error( 'wpinsight_dashboard', 'sync_enqueued', __( 'Theme sync started. Check progress below.', 'cloudfest-wporgdownload' ), 'success' );
 				} else {
-					add_settings_error( 'wpinsight_dashboard', 'sync_error', __( 'Theme sync failed. Check logs for details.', 'cloudfest-wporgdownload' ), 'error' );
+					add_settings_error( 'wpinsight_dashboard', 'sync_error', __( 'Action Scheduler not available. Cannot start sync.', 'cloudfest-wporgdownload' ), 'error' );
 				}
 				break;
 
@@ -355,6 +357,30 @@ final class WPInsight_Admin {
 					),
 					'success'
 				);
+				break;
+
+			case 'full_sync_plugins':
+				// Enqueue full sync job in Action Scheduler (async).
+				if ( function_exists( 'as_enqueue_async_action' ) ) {
+					// Reset sync state to start fresh.
+					WPInsight_Sync::reset_sync_state( 'plugin' );
+					as_enqueue_async_action( 'wpinsight_full_sync_plugins', array(), WPINSIGHT_AS_GROUP );
+					add_settings_error( 'wpinsight_dashboard', 'full_sync_enqueued', __( 'Full plugin sync started in background. This may take hours. Check progress below.', 'cloudfest-wporgdownload' ), 'success' );
+				} else {
+					add_settings_error( 'wpinsight_dashboard', 'sync_error', __( 'Action Scheduler not available. Cannot start sync.', 'cloudfest-wporgdownload' ), 'error' );
+				}
+				break;
+
+			case 'full_sync_themes':
+				// Enqueue full sync job in Action Scheduler (async).
+				if ( function_exists( 'as_enqueue_async_action' ) ) {
+					// Reset sync state to start fresh.
+					WPInsight_Sync::reset_sync_state( 'theme' );
+					as_enqueue_async_action( 'wpinsight_full_sync_themes', array(), WPINSIGHT_AS_GROUP );
+					add_settings_error( 'wpinsight_dashboard', 'full_sync_enqueued', __( 'Full theme sync started in background. This may take hours. Check progress below.', 'cloudfest-wporgdownload' ), 'success' );
+				} else {
+					add_settings_error( 'wpinsight_dashboard', 'sync_error', __( 'Action Scheduler not available. Cannot start sync.', 'cloudfest-wporgdownload' ), 'error' );
+				}
 				break;
 
 			case 'reset_sync_plugins':
