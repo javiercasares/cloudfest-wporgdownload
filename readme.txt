@@ -3,10 +3,10 @@ Contributors: javiercasares
 Tags: wordpress.org, plugins, themes, archive, mirror, backup, downloader
 Requires at least: 6.9
 Tested up to: 6.9
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 Requires PHP: 8.4
 Requires Plugins: action-scheduler
-Version: 1.1.0
+Version: 1.2.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -287,6 +287,33 @@ Yes! This plugin was developed during CloudFest Hackathon. Contributions welcome
 
 == Changelog ==
 
+= 1.2.0 - 2026-02-02 =
+
+**Import/Export System Release**
+
+* **Import/Export System**
+  * Export plugin and theme metadata (CPT data only, no ZIP files)
+  * Import from JSON/JSON.gz backup files
+  * Admin UI with export/import forms (Tools > WPInsight Import/Export)
+  * WP-CLI commands: `wp wpinsight export` and `wp wpinsight import`
+  * Gzip compression support (70-80% size reduction)
+  * Duplicate handling: skip or update existing items
+  * Dry run mode for preview without changes
+  * Batch processing for large imports (100 items per batch)
+  * File validation and size limits (max 50MB)
+
+* **Use Cases**
+  * Backup metadata before major updates
+  * Migration between environments
+  * Disaster recovery without storing ZIP files
+  * Testing with realistic data
+  * Sharing datasets for research
+
+**Compatibility:**
+* WordPress: 6.9+
+* PHP: 8.4+
+* MariaDB: 10.6+
+
 = 1.1.0 - 2026-02-02 =
 
 **Performance & Optimization Release**
@@ -361,6 +388,9 @@ Full changelog with detailed changes available at:
 [CHANGELOG.md](https://github.com/javiercasares/cloudfest-wporgdownload/blob/main/CHANGELOG.md)
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+New import/export system for backing up and migrating plugin/theme metadata (without ZIP files). Includes admin UI and WP-CLI commands. Perfect for backups, migrations, and disaster recovery.
 
 = 1.1.0 =
 Major performance improvements with 90%+ faster batch operations. Adds centralized error logging system and admin UI enhancements. Database schema upgraded to v1.1.0 (automatic migration).

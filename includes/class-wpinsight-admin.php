@@ -110,6 +110,15 @@ final class WPInsight_Admin {
 				array( __CLASS__, 'render_error_log_page' )               // Callback.
 			);
 		}
+
+		// Add Import/Export page under Tools menu.
+		add_management_page(
+			__( 'WPInsight Import/Export', 'cloudfest-wporgdownload' ), // Page title.
+			__( 'WPInsight Import/Export', 'cloudfest-wporgdownload' ), // Menu title.
+			'manage_options',                                             // Capability.
+			'wpinsight-import-export',                                    // Menu slug.
+			array( __CLASS__, 'render_import_export_page' )              // Callback.
+		);
 	}
 
 	/**
@@ -810,6 +819,282 @@ final class WPInsight_Admin {
 						<?php esc_html_e( 'Clear Old Logs', 'cloudfest-wporgdownload' ); ?>
 					</button>
 				</form>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render import/export page.
+	 *
+	 * Displays the import/export interface for backing up and restoring
+	 * plugin and theme metadata (CPT data only, no ZIP files).
+	 *
+	 * @since 1.2.0
+	 * @return void
+	 */
+	public static function render_import_export_page(): void {
+		// Check user capabilities.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'cloudfest-wporgdownload' ) );
+		}
+
+		// Handle export form submission.
+		if ( isset( $_POST['wpinsight_export'] ) && check_admin_referer( 'wpinsight_export' ) ) {
+			$export_type = isset( $_POST['export_type'] ) ? sanitize_text_field( wp_unslash( $_POST['export_type'] ) ) : 'all';
+			$compress    = isset( $_POST['compress'] );
+
+			// Generate export data.
+			$data = '';
+			switch ( $export_type ) {
+				case 'plugins':
+					$data = WPInsight_Export::export_plugins( $compress );
+					break;
+				case 'themes':
+					$data = WPInsight_Export::export_themes( $compress );
+					break;
+				case 'all':
+				default:
+					$data = WPInsight_Export::export_all( $compress );
+					break;
+			}
+
+			if ( ! empty( $data ) ) {
+				$filename = 'wpinsight-export-' . $export_type . '-' . gmdate( 'Y-m-d-His' ) . '.json' . ( $compress ? '.gz' : '' );
+
+				// Set headers for download.
+				header( 'Content-Type: application/' . ( $compress ? 'gzip' : 'json' ) );
+				header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+				header( 'Content-Length: ' . strlen( $data ) );
+				header( 'Pragma: no-cache' );
+				header( 'Expires: 0' );
+
+				// Output and exit.
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Binary data, JSON, or compressed content.
+				echo $data;
+				exit;
+			} else {
+				add_settings_error(
+					'wpinsight_import_export',
+					'export_failed',
+					__( 'Failed to generate export. Please check error logs.', 'cloudfest-wporgdownload' ),
+					'error'
+				);
+			}
+		}
+
+		// Handle import form submission.
+		if ( isset( $_POST['wpinsight_import'] ) && check_admin_referer( 'wpinsight_import' ) ) {
+			// Validate file upload.
+			if ( empty( $_FILES['import_file']['tmp_name'] ) ) {
+				add_settings_error(
+					'wpinsight_import_export',
+					'no_file',
+					__( 'Please select a file to import.', 'cloudfest-wporgdownload' ),
+					'error'
+				);
+			} else {
+				$file     = $_FILES['import_file'];
+				$tmp_name = $file['tmp_name'];
+				$filename = $file['name'];
+
+				// Validate file type.
+				$allowed_extensions = array( 'json', 'gz' );
+				$file_ext           = pathinfo( $filename, PATHINFO_EXTENSION );
+
+				if ( ! in_array( $file_ext, $allowed_extensions, true ) ) {
+					add_settings_error(
+						'wpinsight_import_export',
+						'invalid_file_type',
+						__( 'Invalid file type. Only .json and .json.gz files are allowed.', 'cloudfest-wporgdownload' ),
+						'error'
+					);
+				} else {
+					// Validate file size (max 50MB).
+					$max_size = 50 * 1024 * 1024; // 50MB in bytes.
+					if ( $file['size'] > $max_size ) {
+						add_settings_error(
+							'wpinsight_import_export',
+							'file_too_large',
+							sprintf(
+								/* translators: %d: maximum file size in MB */
+								__( 'File is too large. Maximum size: %d MB.', 'cloudfest-wporgdownload' ),
+								50
+							),
+							'error'
+						);
+					} else {
+						// Prepare import options.
+						$options = array(
+							'skip_existing'   => isset( $_POST['skip_existing'] ),
+							'update_existing' => isset( $_POST['update_existing'] ),
+							'dry_run'         => isset( $_POST['dry_run'] ),
+						);
+
+						// Perform import.
+						$results = WPInsight_Import::import_all( $tmp_name, $options );
+
+						if ( $results['success'] ) {
+							$message = sprintf(
+								/* translators: 1: imported count, 2: updated count, 3: skipped count, 4: failed count */
+								__( 'Import completed: %1$d imported, %2$d updated, %3$d skipped, %4$d failed.', 'cloudfest-wporgdownload' ),
+								$results['imported'],
+								$results['updated'],
+								$results['skipped'],
+								$results['failed']
+							);
+
+							if ( $options['dry_run'] ) {
+								$message .= ' ' . __( '(Dry run - no changes were made)', 'cloudfest-wporgdownload' );
+							}
+
+							add_settings_error(
+								'wpinsight_import_export',
+								'import_success',
+								$message,
+								$results['failed'] > 0 ? 'warning' : 'success'
+							);
+
+							// Show errors if any.
+							if ( ! empty( $results['errors'] ) ) {
+								foreach ( $results['errors'] as $slug => $error ) {
+									add_settings_error(
+										'wpinsight_import_export',
+										'import_error_' . $slug,
+										sprintf(
+											/* translators: 1: item slug, 2: error message */
+											__( '%1$s: %2$s', 'cloudfest-wporgdownload' ),
+											$slug,
+											$error
+										),
+										'warning'
+									);
+								}
+							}
+						} else {
+							add_settings_error(
+								'wpinsight_import_export',
+								'import_failed',
+								isset( $results['error'] ) ? $results['error'] : __( 'Import failed.', 'cloudfest-wporgdownload' ),
+								'error'
+							);
+						}
+					}
+				}
+			}
+		}
+
+		// Get export statistics.
+		$stats = WPInsight_Export::get_export_stats();
+
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+
+			<p><?php esc_html_e( 'Export and import plugin and theme metadata for backups and migrations. Note: This exports CPT data only, not ZIP files.', 'cloudfest-wporgdownload' ); ?></p>
+
+			<?php settings_errors( 'wpinsight_import_export' ); ?>
+
+			<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-top: 20px;">
+				<!-- Export Section -->
+				<div class="card">
+					<h2><?php esc_html_e( 'Export Data', 'cloudfest-wporgdownload' ); ?></h2>
+
+					<div style="background: #f0f0f1; padding: 12px; border-radius: 4px; margin-bottom: 20px;">
+						<strong><?php esc_html_e( 'Available Data:', 'cloudfest-wporgdownload' ); ?></strong><br />
+						<?php
+						printf(
+							/* translators: 1: plugin count, 2: theme count */
+							esc_html__( 'Plugins: %1$s | Themes: %2$s', 'cloudfest-wporgdownload' ),
+							'<strong>' . esc_html( number_format_i18n( $stats['plugins'] ) ) . '</strong>',
+							'<strong>' . esc_html( number_format_i18n( $stats['themes'] ) ) . '</strong>'
+						);
+						?>
+					</div>
+
+					<form method="post">
+						<?php wp_nonce_field( 'wpinsight_export' ); ?>
+
+						<table class="form-table">
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Export Type', 'cloudfest-wporgdownload' ); ?></th>
+								<td>
+									<fieldset>
+										<label><input type="radio" name="export_type" value="all" checked="checked" /> <?php esc_html_e( 'Both (Plugins & Themes)', 'cloudfest-wporgdownload' ); ?></label><br />
+										<label><input type="radio" name="export_type" value="plugins" /> <?php esc_html_e( 'Plugins Only', 'cloudfest-wporgdownload' ); ?></label><br />
+										<label><input type="radio" name="export_type" value="themes" /> <?php esc_html_e( 'Themes Only', 'cloudfest-wporgdownload' ); ?></label>
+									</fieldset>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Compression', 'cloudfest-wporgdownload' ); ?></th>
+								<td>
+									<label>
+										<input type="checkbox" name="compress" value="1" checked="checked" />
+										<?php esc_html_e( 'Compress with Gzip (recommended for large exports)', 'cloudfest-wporgdownload' ); ?>
+									</label>
+								</td>
+							</tr>
+						</table>
+
+						<p class="submit">
+							<button type="submit" name="wpinsight_export" class="button button-primary">
+								<?php esc_html_e( 'Export Data', 'cloudfest-wporgdownload' ); ?>
+							</button>
+						</p>
+					</form>
+				</div>
+
+				<!-- Import Section -->
+				<div class="card">
+					<h2><?php esc_html_e( 'Import Data', 'cloudfest-wporgdownload' ); ?></h2>
+
+					<div style="background: #fff3cd; border: 1px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 20px;">
+						<strong><?php esc_html_e( 'Warning:', 'cloudfest-wporgdownload' ); ?></strong>
+						<?php esc_html_e( 'Importing will add or update posts in your database. Use "Dry Run" to preview changes first.', 'cloudfest-wporgdownload' ); ?>
+					</div>
+
+					<form method="post" enctype="multipart/form-data">
+						<?php wp_nonce_field( 'wpinsight_import' ); ?>
+
+						<table class="form-table">
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Import File', 'cloudfest-wporgdownload' ); ?></th>
+								<td>
+									<input type="file" name="import_file" accept=".json,.gz" required />
+									<p class="description"><?php esc_html_e( 'Select a .json or .json.gz export file.', 'cloudfest-wporgdownload' ); ?></p>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Import Options', 'cloudfest-wporgdownload' ); ?></th>
+								<td>
+									<fieldset>
+										<label><input type="radio" name="duplicate_handling" value="skip" checked="checked" onclick="document.querySelector('input[name=skip_existing]').checked = true; document.querySelector('input[name=update_existing]').checked = false;" /> <?php esc_html_e( 'Skip Existing', 'cloudfest-wporgdownload' ); ?></label><br />
+										<label><input type="radio" name="duplicate_handling" value="update" onclick="document.querySelector('input[name=skip_existing]').checked = false; document.querySelector('input[name=update_existing]').checked = true;" /> <?php esc_html_e( 'Update Existing', 'cloudfest-wporgdownload' ); ?></label><br />
+										<input type="hidden" name="skip_existing" value="1" />
+										<input type="hidden" name="update_existing" value="0" />
+									</fieldset>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Preview Mode', 'cloudfest-wporgdownload' ); ?></th>
+								<td>
+									<label>
+										<input type="checkbox" name="dry_run" value="1" />
+										<?php esc_html_e( 'Dry Run (Preview Only - No Changes)', 'cloudfest-wporgdownload' ); ?>
+									</label>
+									<p class="description"><?php esc_html_e( 'Test import without modifying the database.', 'cloudfest-wporgdownload' ); ?></p>
+								</td>
+							</tr>
+						</table>
+
+						<p class="submit">
+							<button type="submit" name="wpinsight_import" class="button button-primary" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to import this file?', 'cloudfest-wporgdownload' ); ?>');">
+								<?php esc_html_e( 'Import Data', 'cloudfest-wporgdownload' ); ?>
+							</button>
+						</p>
+					</form>
+				</div>
 			</div>
 		</div>
 		<?php

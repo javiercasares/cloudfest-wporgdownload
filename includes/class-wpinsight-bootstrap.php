@@ -81,6 +81,12 @@ final class WPInsight_Bootstrap {
 		// Load ZIP Queue Worker (Phase 7).
 		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-zip-queue.php';
 
+		// Load Export class (Phase 19).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-export.php';
+
+		// Load Import class (Phase 19).
+		require_once WPINSIGHT_PLUGIN_DIR . 'includes/class-wpinsight-import.php';
+
 		// Register CPTs on init hook (Phase 3).
 		add_action( 'init', array( 'WPInsight_CPT', 'register' ) );
 

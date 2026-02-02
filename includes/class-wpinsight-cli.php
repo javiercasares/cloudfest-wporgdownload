@@ -41,6 +41,8 @@ final class WPInsight_CLI {
 		WP_CLI::add_command( 'wpinsight stats', array( __CLASS__, 'stats' ) );
 		WP_CLI::add_command( 'wpinsight queue', array( __CLASS__, 'queue' ) );
 		WP_CLI::add_command( 'wpinsight reset', array( __CLASS__, 'reset' ) );
+		WP_CLI::add_command( 'wpinsight export', array( __CLASS__, 'export' ) );
+		WP_CLI::add_command( 'wpinsight import', array( __CLASS__, 'import' ) );
 	}
 
 	/**
@@ -539,5 +541,208 @@ final class WPInsight_CLI {
 		}
 
 		return $size;
+	}
+
+	/**
+	 * Export plugin and theme data to JSON file.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--type=<type>]
+	 * : Type to export: plugins, themes, or all.
+	 * ---
+	 * default: all
+	 * options:
+	 *   - plugins
+	 *   - themes
+	 *   - all
+	 * ---
+	 *
+	 * [--output=<file>]
+	 * : Output file path. If not specified, outputs to stdout.
+	 *
+	 * [--compress]
+	 * : Compress output with gzip.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wpinsight export --type=all --output=backup.json.gz --compress
+	 *     wp wpinsight export --type=plugins --output=plugins.json
+	 *     wp wpinsight export > export.json
+	 *
+	 * @since 1.2.0
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
+	 * @return void
+	 */
+	public static function export( array $args, array $assoc_args ): void {
+		$type     = $assoc_args['type'] ?? 'all';
+		$output   = $assoc_args['output'] ?? null;
+		$compress = isset( $assoc_args['compress'] );
+
+		// Validate type.
+		if ( ! in_array( $type, array( 'plugins', 'themes', 'all' ), true ) ) {
+			WP_CLI::error( 'Invalid type. Must be: plugins, themes, or all.' );
+		}
+
+		WP_CLI::log( sprintf( 'Exporting %s data...', $type ) );
+
+		// Generate export data.
+		$data = '';
+		switch ( $type ) {
+			case 'plugins':
+				$data = WPInsight_Export::export_plugins( $compress );
+				break;
+			case 'themes':
+				$data = WPInsight_Export::export_themes( $compress );
+				break;
+			case 'all':
+			default:
+				$data = WPInsight_Export::export_all( $compress );
+				break;
+		}
+
+		if ( empty( $data ) ) {
+			WP_CLI::error( 'Failed to generate export data.' );
+		}
+
+		// Output to file or stdout.
+		if ( $output ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- CLI context, local file.
+			$result = file_put_contents( $output, $data );
+
+			if ( false === $result ) {
+				WP_CLI::error( sprintf( 'Failed to write to file: %s', $output ) );
+			}
+
+			$size = size_format( strlen( $data ), 2 );
+			WP_CLI::success( sprintf( 'Export complete: %s (%s)', $output, $size ) );
+		} else {
+			// Output to stdout.
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Binary data, JSON, or compressed content.
+			echo $data;
+		}
+	}
+
+	/**
+	 * Import plugin and theme data from JSON file.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <file>
+	 * : Path to JSON or JSON.gz export file.
+	 *
+	 * [--skip-existing]
+	 * : Skip items that already exist (default behavior).
+	 *
+	 * [--update-existing]
+	 * : Update items that already exist.
+	 *
+	 * [--dry-run]
+	 * : Preview import without making changes.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wpinsight import backup.json.gz --dry-run
+	 *     wp wpinsight import backup.json.gz --update-existing
+	 *     wp wpinsight import backup.json.gz --skip-existing
+	 *
+	 * @since 1.2.0
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
+	 * @return void
+	 */
+	public static function import( array $args, array $assoc_args ): void {
+		if ( empty( $args[0] ) ) {
+			WP_CLI::error( 'Please specify an import file.' );
+		}
+
+		$file = $args[0];
+
+		if ( ! file_exists( $file ) ) {
+			WP_CLI::error( sprintf( 'File not found: %s', $file ) );
+		}
+
+		// Prepare options.
+		$options = array(
+			'skip_existing'   => isset( $assoc_args['skip-existing'] ) || ! isset( $assoc_args['update-existing'] ),
+			'update_existing' => isset( $assoc_args['update-existing'] ),
+			'dry_run'         => isset( $assoc_args['dry-run'] ),
+		);
+
+		WP_CLI::log( sprintf( 'Importing from: %s', $file ) );
+
+		if ( $options['dry_run'] ) {
+			WP_CLI::log( 'DRY RUN MODE - No changes will be made' );
+		}
+
+		// Show progress bar.
+		$progress = null;
+
+		// Validate file first.
+		WP_CLI::log( 'Validating import file...' );
+		$validation = WPInsight_Import::validate_import_file( $file );
+
+		if ( is_wp_error( $validation ) ) {
+			WP_CLI::error( $validation->get_error_message() );
+		}
+
+		WP_CLI::log(
+			sprintf(
+				'Found: %d plugins, %d themes',
+				$validation['plugins_count'],
+				$validation['themes_count']
+			)
+		);
+
+		if ( ! empty( $validation['warnings'] ) ) {
+			foreach ( $validation['warnings'] as $warning ) {
+				WP_CLI::warning( $warning );
+			}
+		}
+
+		$total_items = $validation['plugins_count'] + $validation['themes_count'];
+
+		if ( $total_items > 0 ) {
+			$progress = \WP_CLI\Utils\make_progress_bar( 'Importing', $total_items );
+		}
+
+		// Perform import.
+		$results = WPInsight_Import::import_all( $file, $options );
+
+		if ( $progress ) {
+			$progress->finish();
+		}
+
+		// Display results.
+		if ( ! $results['success'] ) {
+			WP_CLI::error( $results['error'] ?? 'Import failed.' );
+		}
+
+		WP_CLI::log( '' );
+		WP_CLI::log( 'Import Results:' );
+		WP_CLI::log( sprintf( '  Imported: %d', $results['imported'] ) );
+		WP_CLI::log( sprintf( '  Updated:  %d', $results['updated'] ) );
+		WP_CLI::log( sprintf( '  Skipped:  %d', $results['skipped'] ) );
+		WP_CLI::log( sprintf( '  Failed:   %d', $results['failed'] ) );
+
+		if ( ! empty( $results['errors'] ) ) {
+			WP_CLI::log( '' );
+			WP_CLI::log( 'Errors:' );
+			foreach ( array_slice( $results['errors'], 0, 10 ) as $slug => $error ) {
+				WP_CLI::log( sprintf( '  %s: %s', $slug, $error ) );
+			}
+
+			if ( count( $results['errors'] ) > 10 ) {
+				WP_CLI::log( sprintf( '  ... and %d more errors', count( $results['errors'] ) - 10 ) );
+			}
+		}
+
+		if ( $options['dry_run'] ) {
+			WP_CLI::log( '' );
+			WP_CLI::warning( 'DRY RUN - No changes were made. Remove --dry-run to perform actual import.' );
+		} else {
+			WP_CLI::success( 'Import complete!' );
+		}
 	}
 }
