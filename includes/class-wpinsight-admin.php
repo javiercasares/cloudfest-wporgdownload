@@ -367,6 +367,23 @@ final class WPInsight_Admin {
 				);
 				break;
 
+			case 'clear_old_logs':
+				if ( check_admin_referer( 'wpinsight_clear_old_logs', 'wpinsight_clear_logs_nonce' ) ) {
+					$days    = 30; // Clear logs older than 30 days.
+					$deleted = WPInsight_Logger::clear_old_logs( $days );
+					add_settings_error(
+						'wpinsight_dashboard',
+						'logs_cleared',
+						sprintf(
+							/* translators: %d: number of logs cleared */
+							__( '%d old log entries cleared.', 'cloudfest-wporgdownload' ),
+							$deleted
+						),
+						'success'
+					);
+				}
+				break;
+
 			case 'full_sync_plugins':
 				// Enqueue full sync job in Action Scheduler (async).
 				if ( function_exists( 'as_enqueue_async_action' ) ) {
@@ -1408,7 +1425,7 @@ final class WPInsight_Admin {
 	 * @param int $number Number to format.
 	 * @return string Formatted number with abbreviation.
 	 */
-	private static function format_number_abbreviated( int $number ): string {
+	public static function format_number_abbreviated( int $number ): string {
 		if ( $number < 1000 ) {
 			return (string) number_format_i18n( $number );
 		}
@@ -1433,7 +1450,7 @@ final class WPInsight_Admin {
 	 * @param array<string, mixed> $sync_state Sync state array with page, total_pages.
 	 * @return string Progress bar HTML.
 	 */
-	private static function render_progress_bar( array $sync_state ): string {
+	public static function render_progress_bar( array $sync_state ): string {
 		if ( empty( $sync_state['total_pages'] ) || $sync_state['total_pages'] <= 0 ) {
 			return '';
 		}

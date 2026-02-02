@@ -16,6 +16,47 @@
 
 ---
 
+## Automatic Sync Behavior (Critical Feature)
+
+**⚙️ Incremental Sync runs automatically every 5 minutes via Action Scheduler**
+
+This is the core synchronization mechanism that keeps the local mirror up to date with WordPress.org:
+
+- **What runs:** `sync_plugins()` and `sync_themes()` methods (same as clicking "Sync Now" button)
+- **Frequency:** Every 5 minutes (configurable via `sync_interval` setting, default: 300 seconds)
+- **Items per execution:** One page (default: 250 plugins + 250 themes, configurable via `per_page` setting)
+- **Scheduled by:** Action Scheduler (recurring action: `wpinsight_sync_tick`)
+- **Can be disabled:** Yes, via `auto_sync_enabled` setting (default: enabled)
+- **State persistence:** Current page and status saved in `wpinsight_sync_state` table
+- **Resume capability:** If interrupted, next execution continues from last saved page
+
+**How it works:**
+1. Plugin activation calls `WPInsight_Sync::ensure_scheduled()`
+2. Action Scheduler schedules `wpinsight_sync_tick` to run every 5 minutes
+3. Each execution fetches 1 page from WordPress.org API (plugins "updated" feed + themes "updated" feed)
+4. Creates/updates CPTs for each plugin/theme
+5. Enqueues ZIP downloads for new/updated versions
+6. Updates sync state (page number) in database
+7. Next execution continues from next page
+
+**Settings:**
+- `sync_interval`: Time between executions in seconds (default: 300 = 5 minutes)
+- `per_page`: Items to fetch per page (default: 250)
+- `auto_sync_enabled`: Enable/disable automatic sync (default: true)
+- `sync_plugins_enabled`: Enable/disable plugin sync (default: true)
+- `sync_themes_enabled`: Enable/disable theme sync (default: true)
+
+**Manual override:**
+- WP-CLI: `wp wpinsight sync --type=plugins` (runs one page immediately)
+- Admin UI: Click "Sync Now" button (enqueues immediate execution via Action Scheduler)
+
+**Monitoring:**
+- Check Action Scheduler logs: WordPress Admin > Tools > Scheduled Actions
+- Check sync state: Database table `wpinsight_sync_state`
+- Check dashboard: Admin UI shows current status and progress
+
+---
+
 ## Phase 0: Project Foundation
 
 ### Step 0.1: Create base plugin file
@@ -854,12 +895,23 @@ CREATE TABLE {prefix}wpinsight_artifacts (
 - [ ] In `run_tick()`, call `sync_recent('plugin', 'updated')`
 - [ ] In `run_tick()`, call `sync_recent('plugin', 'new')`
 
+**Automatic Execution (IMPORTANT):**
+- ✅ The incremental sync (`sync_plugins()` and `sync_themes()`) is **automatically scheduled** to run every 5 minutes via Action Scheduler
+- ✅ Each execution processes **one page** (default: 250 items per page, configurable in settings)
+- ✅ This is equivalent to clicking "Sync Now" button automatically every 5 minutes
+- ✅ The interval can be configured in settings: `sync_interval` (default: 300 seconds = 5 minutes)
+- ✅ Auto-sync can be disabled via settings: `auto_sync_enabled` (default: true)
+- ✅ Action Scheduler handles retry logic automatically if a sync fails
+- ✅ The sync state (current page, status) is persisted in database (`wpinsight_sync_state` table)
+
 **Validation:**
 - [ ] Activate plugin
 - [ ] Check Action Scheduler logs (Tools > Scheduled Actions)
-- [ ] Verify `wpinsight_sync_tick` is scheduled
+- [ ] Verify `wpinsight_sync_tick` is scheduled to run every 5 minutes
 - [ ] Wait 5 minutes or trigger manually
-- [ ] Verify CPT posts are created
+- [ ] Verify CPT posts are created (250 new posts per sync for plugins, 250 for themes)
+- [ ] Check sync state updates in database after each run
+- [ ] Verify sync continues from last page on next execution
 - [ ] Check for errors in logs
 
 ---
@@ -2286,6 +2338,360 @@ wp wpinsight import backup.json.gz --update-existing
 - Export to external storage (S3, FTP, etc.)
 - Import from WordPress.org API directly
 - Delta imports (only changes since last export)
+
+---
+
+## Phase 20: CPT Detail View Enhancement
+
+**Goal:** Enhance the single CPT view for plugins and themes to display comprehensive read-only data including metadata, ZIP file list with download status, and public URLs.
+
+**Priority:** High (improves usability and data visibility)
+
+**Dependencies:** Phase 3 (Custom Post Types), Phase 9 (Storage Manager)
+
+---
+
+### Step 20.1: Custom CPT Meta Box - Plugin/Theme Information
+
+**File:** `includes/class-wpinsight-cpt.php` (add methods)
+
+**Tasks:**
+- [ ] Add custom meta box to plugin/theme CPT single view
+- [ ] Implement `add_cpt_meta_boxes()` method:
+  - Register meta box for 'wpinsight_plugin' CPT
+  - Register meta box for 'wpinsight_theme' CPT
+  - Hook to `add_meta_boxes` action
+- [ ] Implement `render_plugin_info_meta_box( $post )` method:
+  - Display plugin metadata in read-only format
+  - Fields: Description, Version, Author, Homepage, Requires WP, Requires PHP, Tested up to, Tags, etc.
+  - Use WordPress admin table styling (.form-table)
+  - Escape all output properly
+- [ ] Implement `render_theme_info_meta_box( $post )` method:
+  - Similar structure for theme metadata
+  - Fields: Description, Version, Author, Theme URI, Tags, etc.
+- [ ] Add CSS styling for better presentation:
+  - Use WordPress admin colors
+  - Highlight key information
+  - Responsive layout
+
+**Meta Box Display:**
+```
+┌─────────────────────────────────────┐
+│ Plugin Information                  │
+├─────────────────────────────────────┤
+│ Description:  [Plugin description]  │
+│ Version:      5.3.1                 │
+│ Author:       Plugin Author         │
+│ Homepage:     https://example.com   │
+│ Requires WP:  6.0+                  │
+│ Requires PHP: 8.0+                  │
+│ Tested up to: 6.9                   │
+│ Tags:         tag1, tag2, tag3      │
+└─────────────────────────────────────┘
+```
+
+**Validation:**
+- [ ] Meta box displays on CPT edit screen
+- [ ] All metadata fields shown correctly
+- [ ] Read-only (no edit functionality)
+- [ ] Proper escaping applied
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+
+---
+
+### Step 20.2: ZIP Downloads Meta Box
+
+**File:** `includes/class-wpinsight-cpt.php` (add methods)
+
+**Tasks:**
+- [ ] Add "ZIP Downloads" meta box to plugin/theme CPT
+- [ ] Implement `render_zip_downloads_meta_box( $post )` method:
+  - Query `wpinsight_artifacts` table for all versions
+  - Query `wpinsight_zip_queue` table for pending/failed downloads
+  - Display table with columns:
+    - Version
+    - Status (Downloaded, Pending, Failed, Processing)
+    - File Size (if downloaded)
+    - Download Date
+    - Public URL (if downloaded)
+    - Download Action (if not downloaded)
+  - Color-code by status (green=downloaded, yellow=pending, red=failed, blue=processing)
+  - Add "Download Now" button for pending items
+  - Show progress bar if currently downloading
+- [ ] Implement `get_artifact_data( string $slug, string $entity_type ): array` helper:
+  - Join artifacts and queue tables
+  - Return combined data with status
+- [ ] Implement `get_public_url( string $path ): string` helper:
+  - Convert filesystem path to public URL
+  - Handle uploads directory structure
+
+**Meta Box Display:**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ ZIP Downloads (25 versions)                                     │
+├─────────┬──────────────┬──────────┬─────────────┬──────────────┤
+│ Version │ Status       │ Size     │ Date        │ Actions      │
+├─────────┼──────────────┼──────────┼─────────────┼──────────────┤
+│ 5.3.1   │ ✓ Downloaded │ 2.5 MB   │ 2026-02-01  │ [View URL]   │
+│ 5.3.0   │ ✓ Downloaded │ 2.4 MB   │ 2026-01-28  │ [View URL]   │
+│ 5.2.0   │ ⏳ Pending   │ -        │ -           │ [Download]   │
+│ 5.1.0   │ ✗ Failed     │ -        │ 2026-01-25  │ [Retry]      │
+└─────────┴──────────────┴──────────┴─────────────┴──────────────┘
+```
+
+**Validation:**
+- [ ] ZIP downloads table displays correctly
+- [ ] Status indicators accurate
+- [ ] Public URLs work
+- [ ] Download/Retry buttons functional
+- [ ] Proper security (nonces for actions)
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+
+---
+
+### Step 20.3: Version History Meta Box
+
+**File:** `includes/class-wpinsight-cpt.php` (add methods)
+
+**Tasks:**
+- [ ] Add "Version History" meta box (optional, detailed view)
+- [ ] Implement `render_version_history_meta_box( $post )` method:
+  - Display all versions with release dates
+  - Show changelog for each version (if available from API)
+  - Collapsible sections for each version
+  - Link to WordPress.org version page
+- [ ] Add JavaScript for expand/collapse functionality
+- [ ] Style as accordion or collapsible list
+
+**Meta Box Display:**
+```
+┌─────────────────────────────────────┐
+│ Version History                     │
+├─────────────────────────────────────┤
+│ ▼ 5.3.1 (2026-01-15)                │
+│   - Bug fixes                       │
+│   - Performance improvements        │
+│   [View on WordPress.org]           │
+│                                     │
+│ ▶ 5.3.0 (2026-01-01)                │
+│ ▶ 5.2.0 (2025-12-15)                │
+└─────────────────────────────────────┘
+```
+
+**Validation:**
+- [ ] Version history displays correctly
+- [ ] Expand/collapse works
+- [ ] Links to WP.org work
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+
+---
+
+### Step 20.4: Quick Stats Dashboard Widget
+
+**File:** `includes/class-wpinsight-cpt.php` (add methods)
+
+**Tasks:**
+- [ ] Add dashboard widget to CPT edit screen showing quick stats
+- [ ] Implement `render_quick_stats_meta_box( $post )` method:
+  - Total downloads (if tracked)
+  - Active installs (from WP.org API)
+  - Last updated date
+  - Rating and reviews count
+  - Download trend (if historical data available)
+- [ ] Format numbers with abbreviations (1.2M, 500K, etc.)
+- [ ] Add visual indicators (stars for ratings, etc.)
+
+**Meta Box Display:**
+```
+┌─────────────────────────────────────┐
+│ Quick Stats                         │
+├─────────────────────────────────────┤
+│ Active Installs:  5M+               │
+│ Downloads:        50M+              │
+│ Rating:           ★★★★★ (4.8)       │
+│ Reviews:          1,234             │
+│ Last Updated:     2 weeks ago       │
+└─────────────────────────────────────┘
+```
+
+**Validation:**
+- [ ] Stats display correctly
+- [ ] Numbers formatted properly
+- [ ] Visual elements render correctly
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+
+---
+
+### Step 20.5: AJAX Actions for Download Management
+
+**File:** `includes/class-wpinsight-admin.php` (add methods)
+
+**Tasks:**
+- [ ] Implement AJAX handler for "Download Now" button
+- [ ] Implement `ajax_download_zip()` method:
+  - Verify nonce and capability
+  - Get slug, version, entity_type from request
+  - Check if already in queue
+  - Enqueue download with high priority
+  - Return JSON response with status
+- [ ] Implement AJAX handler for "Retry Failed"
+- [ ] Implement `ajax_retry_failed_zip()` method:
+  - Similar to download handler
+  - Reset attempts counter
+  - Re-enqueue with original priority
+- [ ] Add JavaScript for AJAX calls:
+  - Show loading spinner during request
+  - Update status after success
+  - Show error message on failure
+- [ ] Register AJAX actions:
+  - `wp_ajax_wpinsight_download_zip`
+  - `wp_ajax_wpinsight_retry_zip`
+
+**Validation:**
+- [ ] AJAX calls work correctly
+- [ ] Security checks pass (nonce, capability)
+- [ ] UI updates after action
+- [ ] Error handling works
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+
+---
+
+### Step 20.6: Public URL Generation
+
+**File:** `includes/class-wpinsight-storage.php` (add methods)
+
+**Tasks:**
+- [ ] Implement `get_public_url( string $path ): string` method:
+  - Convert absolute filesystem path to public URL
+  - Handle wp-content/uploads/wpinsight/ structure
+  - Validate path is within uploads directory (security)
+  - Return empty string if file doesn't exist or is outside allowed directory
+- [ ] Add helper `is_file_public( string $path ): bool`:
+  - Check if file should be publicly accessible
+  - Check .htaccess rules
+  - Verify file exists and is readable
+- [ ] Add filter `wpinsight_public_url` for customization
+
+**Security Considerations:**
+- Only allow URLs within uploads/wpinsight/ directory
+- Prevent directory traversal attacks
+- Validate file extension (.zip only)
+- Check file exists before generating URL
+
+**Validation:**
+- [ ] URLs generated correctly
+- [ ] Security checks prevent unauthorized access
+- [ ] Files are accessible via URL
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+
+---
+
+### Step 20.7: UI Polish and Responsive Design
+
+**File:** `assets/css/admin-cpt.css` (new file)
+
+**Tasks:**
+- [ ] Create CSS file for CPT detail view styling
+- [ ] Enqueue stylesheet on CPT edit screens only
+- [ ] Add responsive styles for mobile/tablet
+- [ ] Style meta boxes consistently
+- [ ] Add hover effects for interactive elements
+- [ ] Use WordPress color scheme
+- [ ] Add icons for status indicators (downloaded, pending, failed)
+- [ ] Implement copy-to-clipboard for public URLs
+
+**File:** `assets/js/admin-cpt.js` (new file)
+
+**Tasks:**
+- [ ] Add expand/collapse functionality for version history
+- [ ] Add AJAX handlers for download actions
+- [ ] Add copy-to-clipboard functionality
+- [ ] Add confirmation dialogs for destructive actions
+- [ ] Show loading states during operations
+- [ ] Handle errors gracefully with user-friendly messages
+
+**Validation:**
+- [ ] UI looks professional and consistent
+- [ ] Works on mobile devices
+- [ ] JavaScript works without errors
+- [ ] Accessibility standards met (keyboard navigation, screen readers)
+- [ ] PHPStan: 0 errors (for any PHP)
+- [ ] PHPCS: 0 errors
+- [ ] No console errors
+
+---
+
+### Step 20.8: Tests & Documentation
+
+**Files:** `tests/test-class-wpinsight-cpt-metabox.php`
+
+**Tasks:**
+- [ ] Test meta box registration
+- [ ] Test meta box rendering
+- [ ] Test data retrieval methods
+- [ ] Test public URL generation
+- [ ] Test AJAX handlers (with mock data)
+- [ ] Test security (nonces, capabilities)
+- [ ] Update documentation:
+  - Add CPT detail view section to README.md
+  - Document available meta boxes
+  - Document AJAX endpoints
+  - Add screenshots (optional)
+
+**Validation:**
+- [ ] All tests pass
+- [ ] Code coverage > 80%
+- [ ] PHPStan: 0 errors
+- [ ] PHPCS: 0 errors
+- [ ] Documentation complete
+
+---
+
+### Implementation Priority
+
+**High Priority (Next Release):**
+1. Step 20.1 - Plugin/Theme Information Meta Box (essential for data visibility)
+2. Step 20.2 - ZIP Downloads Meta Box (core feature)
+3. Step 20.6 - Public URL Generation (required for downloads)
+
+**Medium Priority:**
+4. Step 20.5 - AJAX Actions (improves UX)
+5. Step 20.4 - Quick Stats Widget (nice to have)
+
+**Low Priority (Future Enhancement):**
+6. Step 20.3 - Version History Meta Box (detailed view)
+7. Step 20.7 - UI Polish (optional refinement)
+
+---
+
+### Technical Notes
+
+**Performance:**
+- Cache artifact queries with transients (5-minute TTL)
+- Limit version history display (e.g., last 50 versions)
+- Use pagination for large datasets
+- Lazy-load version history accordion
+
+**Security:**
+- All actions require `manage_options` capability
+- Nonce verification for AJAX requests
+- Validate and sanitize all inputs
+- Escape all outputs
+- Path validation for public URLs
+
+**UX Considerations:**
+- Make data easily scannable
+- Use consistent color coding
+- Provide clear action buttons
+- Show loading states
+- Display helpful error messages
+- Add contextual help text
 
 ---
 

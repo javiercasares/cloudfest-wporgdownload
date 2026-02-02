@@ -864,7 +864,7 @@ final class WPInsight_Sync {
 			}
 
 			// Check if we have more pages.
-			$total_pages = isset( $response['info']->pages ) ? (int) $response['info']->pages : 0;
+			$total_pages = isset( $response['info']['pages'] ) ? (int) $response['info']['pages'] : 0;
 			$has_more    = $current_page < $total_pages && $page_count > 0;
 
 			// Move to next page.

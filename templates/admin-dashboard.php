@@ -45,19 +45,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="wpinsight-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
 		<div style="background: #fff; padding: 20px; border-left: 4px solid #2271b1; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
 			<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Plugins', 'cloudfest-wporgdownload' ); ?></h3>
-			<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( number_format_i18n( $plugin_count ) ); ?></div>
+			<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( $admin::format_number_abbreviated( $plugin_count ) ); ?></div>
 			<div style="font-size: 11px; color: #646970; margin-top: 5px;" title="<?php echo esc_attr( number_format_i18n( $plugin_count ) ); ?>"><?php echo esc_html( number_format_i18n( $plugin_count ) ); ?> total</div>
 		</div>
 
 		<div style="background: #fff; padding: 20px; border-left: 4px solid #2271b1; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
 			<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Themes', 'cloudfest-wporgdownload' ); ?></h3>
-			<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( number_format_i18n( $theme_count ) ); ?></div>
+			<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( $admin::format_number_abbreviated( $theme_count ) ); ?></div>
 			<div style="font-size: 11px; color: #646970; margin-top: 5px;" title="<?php echo esc_attr( number_format_i18n( $theme_count ) ); ?>"><?php echo esc_html( number_format_i18n( $theme_count ) ); ?> total</div>
 		</div>
 
 		<div style="background: #fff; padding: 20px; border-left: 4px solid #00a32a; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
 			<h3 style="margin: 0 0 10px 0; font-size: 14px; color: #646970;"><?php esc_html_e( 'Downloaded ZIPs', 'cloudfest-wporgdownload' ); ?></h3>
-			<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( number_format_i18n( $artifact_count ) ); ?></div>
+			<div style="font-size: 32px; font-weight: 400; color: #1d2327;"><?php echo esc_html( $admin::format_number_abbreviated( $artifact_count ) ); ?></div>
 			<div style="font-size: 11px; color: #646970; margin-top: 5px;" title="<?php echo esc_attr( number_format_i18n( $artifact_count ) ); ?>"><?php echo esc_html( number_format_i18n( $artifact_count ) ); ?> total</div>
 		</div>
 
@@ -410,23 +410,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<tbody>
 					<tr>
 						<th><?php esc_html_e( 'Pending', 'cloudfest-wporgdownload' ); ?>:</th>
-						<td><strong><?php echo esc_html( number_format_i18n( $queue_stats['pending'] ) ); ?></strong></td>
+						<td><strong><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['pending'] ) ); ?></strong></td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Processing', 'cloudfest-wporgdownload' ); ?>:</th>
-						<td><?php echo esc_html( number_format_i18n( $queue_stats['processing'] ) ); ?></td>
+						<td><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['processing'] ) ); ?></td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Completed', 'cloudfest-wporgdownload' ); ?>:</th>
-						<td style="color: #00a32a;"><strong><?php echo esc_html( number_format_i18n( $queue_stats['completed'] ) ); ?></strong></td>
+						<td style="color: #00a32a;"><strong><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['completed'] ) ); ?></strong></td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Failed', 'cloudfest-wporgdownload' ); ?>:</th>
-						<td style="color: #d63638;"><strong><?php echo esc_html( number_format_i18n( $queue_stats['failed'] ) ); ?></strong></td>
+						<td style="color: #d63638;"><strong><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['failed'] ) ); ?></strong></td>
 					</tr>
 					<tr>
 						<th><?php esc_html_e( 'Total', 'cloudfest-wporgdownload' ); ?>:</th>
-						<td><strong><?php echo esc_html( number_format_i18n( $queue_stats['total'] ) ); ?></strong></td>
+						<td><strong><?php echo esc_html( $admin::format_number_abbreviated( $queue_stats['total'] ) ); ?></strong></td>
 					</tr>
 				</tbody>
 			</table>
@@ -461,7 +461,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div>
 			<!-- Error Logs -->
 			<div class="card">
-				<h2><?php esc_html_e( 'Error Logs (Last 10)', 'cloudfest-wporgdownload' ); ?></h2>
+				<h2>
+					<?php esc_html_e( 'Error Logs (Last 10)', 'cloudfest-wporgdownload' ); ?>
+					<?php if ( ! empty( $recent_logs ) ) : ?>
+						<span style="display: inline-block; margin-left: 8px; padding: 4px 10px; background: #d63638; color: #fff; border-radius: 10px; font-size: 12px; font-weight: 600;">
+							<?php echo esc_html( count( $recent_logs ) ); ?>
+						</span>
+					<?php endif; ?>
+				</h2>
 				<?php if ( empty( $recent_logs ) ) : ?>
 					<p><?php esc_html_e( 'No errors found.', 'cloudfest-wporgdownload' ); ?></p>
 				<?php else : ?>
@@ -493,6 +500,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<?php endforeach; ?>
 						</tbody>
 					</table>
+
+					<div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+						<?php if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) : ?>
+							<a href="<?php echo esc_url( admin_url( 'tools.php?page=wpinsight-error-log' ) ); ?>" class="button button-small">
+								<?php esc_html_e( 'View Full Log', 'cloudfest-wporgdownload' ); ?>
+							</a>
+						<?php endif; ?>
+						<form method="post" style="display: inline; margin: 0;">
+							<?php wp_nonce_field( 'wpinsight_clear_old_logs', 'wpinsight_clear_logs_nonce' ); ?>
+							<input type="hidden" name="wpinsight_action" value="clear_old_logs">
+							<button type="submit" class="button button-small" onclick="return confirm('<?php esc_attr_e( 'Clear logs older than 30 days?', 'cloudfest-wporgdownload' ); ?>');">
+								<?php esc_html_e( 'Clear Old Logs', 'cloudfest-wporgdownload' ); ?>
+							</button>
+						</form>
+					</div>
 				<?php endif; ?>
 			</div>
 		</div>
