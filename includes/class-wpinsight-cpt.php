@@ -106,7 +106,7 @@ final class WPInsight_CPT {
 	 * @return void
 	 */
 	private static function register_plugin_cpt(): void {
-		$labels = array(
+		$labels = [
 			'name'                  => _x( 'Plugins', 'Post type general name', 'cloudfest-wporgdownload' ),
 			'singular_name'         => _x( 'Plugin', 'Post type singular name', 'cloudfest-wporgdownload' ),
 			'menu_name'             => _x( 'WP.org Plugins', 'Admin Menu text', 'cloudfest-wporgdownload' ),
@@ -123,9 +123,9 @@ final class WPInsight_CPT {
 			'filter_items_list'     => _x( 'Filter plugins list', 'Screen reader text', 'cloudfest-wporgdownload' ),
 			'items_list_navigation' => _x( 'Plugins list navigation', 'Screen reader text', 'cloudfest-wporgdownload' ),
 			'items_list'            => _x( 'Plugins list', 'Screen reader text', 'cloudfest-wporgdownload' ),
-		);
+		];
 
-		$args = array(
+		$args = [
 			'labels'             => $labels,
 			'description'        => __( 'WordPress.org plugins from the plugin repository', 'cloudfest-wporgdownload' ),
 			'public'             => false,
@@ -139,9 +139,9 @@ final class WPInsight_CPT {
 			'capability_type'    => 'post',
 			'has_archive'        => false,
 			'hierarchical'       => false,
-			'supports'           => array( 'title', 'custom-fields' ),
+			'supports'           => [ 'title', 'custom-fields' ],
 			'show_in_rest'       => false,
-		);
+		];
 
 		register_post_type( self::PLUGIN_POST_TYPE, $args );
 	}
@@ -162,7 +162,7 @@ final class WPInsight_CPT {
 	 * @return void
 	 */
 	private static function register_theme_cpt(): void {
-		$labels = array(
+		$labels = [
 			'name'                  => _x( 'Themes', 'Post type general name', 'cloudfest-wporgdownload' ),
 			'singular_name'         => _x( 'Theme', 'Post type singular name', 'cloudfest-wporgdownload' ),
 			'menu_name'             => _x( 'WP.org Themes', 'Admin Menu text', 'cloudfest-wporgdownload' ),
@@ -179,9 +179,9 @@ final class WPInsight_CPT {
 			'filter_items_list'     => _x( 'Filter themes list', 'Screen reader text', 'cloudfest-wporgdownload' ),
 			'items_list_navigation' => _x( 'Themes list navigation', 'Screen reader text', 'cloudfest-wporgdownload' ),
 			'items_list'            => _x( 'Themes list', 'Screen reader text', 'cloudfest-wporgdownload' ),
-		);
+		];
 
-		$args = array(
+		$args = [
 			'labels'             => $labels,
 			'description'        => __( 'WordPress.org themes from the theme repository', 'cloudfest-wporgdownload' ),
 			'public'             => false,
@@ -195,9 +195,9 @@ final class WPInsight_CPT {
 			'capability_type'    => 'post',
 			'has_archive'        => false,
 			'hierarchical'       => false,
-			'supports'           => array( 'title', 'custom-fields' ),
+			'supports'           => [ 'title', 'custom-fields' ],
 			'show_in_rest'       => false,
-		);
+		];
 
 		register_post_type( self::THEME_POST_TYPE, $args );
 	}
@@ -216,13 +216,13 @@ final class WPInsight_CPT {
 	public static function find_or_create_plugin( string $slug, string $name ): int {
 		// Try to find existing post by slug (post_name).
 		$existing = get_posts(
-			array(
+			[
 				'post_type'      => self::PLUGIN_POST_TYPE,
 				'name'           => $slug,
 				'posts_per_page' => 1,
 				'fields'         => 'ids',
 				'post_status'    => 'any',
-			)
+			]
 		);
 
 		if ( ! empty( $existing ) ) {
@@ -231,12 +231,12 @@ final class WPInsight_CPT {
 
 		// Create new post.
 		$post_id = wp_insert_post(
-			array(
+			[
 				'post_type'   => self::PLUGIN_POST_TYPE,
 				'post_title'  => $name,
 				'post_name'   => $slug,
 				'post_status' => 'publish',
-			)
+			]
 		);
 
 		if ( is_wp_error( $post_id ) ) {
@@ -260,13 +260,13 @@ final class WPInsight_CPT {
 	public static function find_or_create_theme( string $slug, string $name ): int {
 		// Try to find existing post by slug (post_name).
 		$existing = get_posts(
-			array(
+			[
 				'post_type'      => self::THEME_POST_TYPE,
 				'name'           => $slug,
 				'posts_per_page' => 1,
 				'fields'         => 'ids',
 				'post_status'    => 'any',
-			)
+			]
 		);
 
 		if ( ! empty( $existing ) ) {
@@ -275,12 +275,12 @@ final class WPInsight_CPT {
 
 		// Create new post.
 		$post_id = wp_insert_post(
-			array(
+			[
 				'post_type'   => self::THEME_POST_TYPE,
 				'post_title'  => $name,
 				'post_name'   => $slug,
 				'post_status' => 'publish',
-			)
+			]
 		);
 
 		if ( is_wp_error( $post_id ) ) {
@@ -307,7 +307,7 @@ final class WPInsight_CPT {
 		}
 
 		// Map of API field => meta key.
-		$meta_map = array(
+		$meta_map = [
 			'slug'              => '_wpinsight_slug',
 			'author'            => '_wpinsight_author',
 			'version'           => '_wpinsight_version',
@@ -323,7 +323,7 @@ final class WPInsight_CPT {
 			'download_link'     => '_wpinsight_download_url',
 			'short_description' => '_wpinsight_short_description',
 			'description'       => '_wpinsight_description',
-		);
+		];
 
 		// Save scalar fields.
 		foreach ( $meta_map as $api_field => $meta_key ) {
@@ -333,13 +333,13 @@ final class WPInsight_CPT {
 		}
 
 		// Save array fields (serialized).
-		$array_fields = array(
+		$array_fields = [
 			'sections' => '_wpinsight_sections',
 			'tags'     => '_wpinsight_tags',
 			'versions' => '_wpinsight_versions',
 			'banners'  => '_wpinsight_banners',
 			'icons'    => '_wpinsight_icons',
-		);
+		];
 
 		foreach ( $array_fields as $api_field => $meta_key ) {
 			if ( isset( $data[ $api_field ] ) && is_array( $data[ $api_field ] ) ) {
@@ -367,7 +367,7 @@ final class WPInsight_CPT {
 		}
 
 		// Map of API field => meta key.
-		$meta_map = array(
+		$meta_map = [
 			'slug'          => '_wpinsight_slug',
 			'author'        => '_wpinsight_author',
 			'version'       => '_wpinsight_version',
@@ -380,7 +380,7 @@ final class WPInsight_CPT {
 			'homepage'      => '_wpinsight_homepage',
 			'download_link' => '_wpinsight_download_url',
 			'description'   => '_wpinsight_description',
-		);
+		];
 
 		// Save scalar fields.
 		foreach ( $meta_map as $api_field => $meta_key ) {
@@ -390,11 +390,11 @@ final class WPInsight_CPT {
 		}
 
 		// Save array fields (serialized).
-		$array_fields = array(
+		$array_fields = [
 			'tags'           => '_wpinsight_tags',
 			'versions'       => '_wpinsight_versions',
 			'screenshot_url' => '_wpinsight_screenshot_url',
-		);
+		];
 
 		foreach ( $array_fields as $api_field => $meta_key ) {
 			if ( isset( $data[ $api_field ] ) ) {
@@ -416,10 +416,10 @@ final class WPInsight_CPT {
 	 */
 	public static function get_plugin_meta( int $post_id ): array {
 		if ( empty( $post_id ) ) {
-			return array();
+			return [];
 		}
 
-		$meta_keys = array(
+		$meta_keys = [
 			'slug',
 			'author',
 			'version',
@@ -440,9 +440,9 @@ final class WPInsight_CPT {
 			'versions',
 			'banners',
 			'icons',
-		);
+		];
 
-		$meta = array();
+		$meta = [];
 		foreach ( $meta_keys as $key ) {
 			$meta_value = get_post_meta( $post_id, '_wpinsight_' . $key, true );
 			if ( ! empty( $meta_value ) ) {
@@ -464,10 +464,10 @@ final class WPInsight_CPT {
 	 */
 	public static function get_theme_meta( int $post_id ): array {
 		if ( empty( $post_id ) ) {
-			return array();
+			return [];
 		}
 
-		$meta_keys = array(
+		$meta_keys = [
 			'slug',
 			'author',
 			'version',
@@ -483,9 +483,9 @@ final class WPInsight_CPT {
 			'tags',
 			'versions',
 			'screenshot_url',
-		);
+		];
 
-		$meta = array();
+		$meta = [];
 		foreach ( $meta_keys as $key ) {
 			$meta_value = get_post_meta( $post_id, '_wpinsight_' . $key, true );
 			if ( ! empty( $meta_value ) ) {
@@ -507,12 +507,12 @@ final class WPInsight_CPT {
 	 */
 	private static function setup_admin_columns(): void {
 		// Plugin columns.
-		add_filter( 'manage_' . self::PLUGIN_POST_TYPE . '_posts_columns', array( __CLASS__, 'plugin_columns' ) );
-		add_action( 'manage_' . self::PLUGIN_POST_TYPE . '_posts_custom_column', array( __CLASS__, 'plugin_column_content' ), 10, 2 );
+		add_filter( 'manage_' . self::PLUGIN_POST_TYPE . '_posts_columns', [ __CLASS__, 'plugin_columns' ] );
+		add_action( 'manage_' . self::PLUGIN_POST_TYPE . '_posts_custom_column', [ __CLASS__, 'plugin_column_content' ], 10, 2 );
 
 		// Theme columns.
-		add_filter( 'manage_' . self::THEME_POST_TYPE . '_posts_columns', array( __CLASS__, 'theme_columns' ) );
-		add_action( 'manage_' . self::THEME_POST_TYPE . '_posts_custom_column', array( __CLASS__, 'theme_column_content' ), 10, 2 );
+		add_filter( 'manage_' . self::THEME_POST_TYPE . '_posts_columns', [ __CLASS__, 'theme_columns' ] );
+		add_action( 'manage_' . self::THEME_POST_TYPE . '_posts_custom_column', [ __CLASS__, 'theme_column_content' ], 10, 2 );
 	}
 
 	/**
@@ -530,7 +530,7 @@ final class WPInsight_CPT {
 		unset( $columns['date'] );
 
 		// Build new column structure.
-		$new_columns = array(
+		$new_columns = [
 			'cb'              => $columns['cb'], // Checkbox.
 			'title'           => $columns['title'], // Title.
 			'slug'            => __( 'Slug', 'cloudfest-wporgdownload' ),
@@ -540,7 +540,7 @@ final class WPInsight_CPT {
 			'active_installs' => __( 'Active Installs', 'cloudfest-wporgdownload' ),
 			'rating'          => __( 'Rating', 'cloudfest-wporgdownload' ),
 			'last_updated'    => __( 'Last Updated', 'cloudfest-wporgdownload' ),
-		);
+		];
 
 		return $new_columns;
 	}
@@ -560,7 +560,7 @@ final class WPInsight_CPT {
 		unset( $columns['date'] );
 
 		// Build new column structure.
-		$new_columns = array(
+		$new_columns = [
 			'cb'           => $columns['cb'], // Checkbox.
 			'title'        => $columns['title'], // Title.
 			'slug'         => __( 'Slug', 'cloudfest-wporgdownload' ),
@@ -569,7 +569,7 @@ final class WPInsight_CPT {
 			'downloads'    => __( 'Downloads', 'cloudfest-wporgdownload' ),
 			'rating'       => __( 'Rating', 'cloudfest-wporgdownload' ),
 			'last_updated' => __( 'Last Updated', 'cloudfest-wporgdownload' ),
-		);
+		];
 
 		return $new_columns;
 	}
@@ -709,7 +709,7 @@ final class WPInsight_CPT {
 	 * @return void
 	 */
 	private static function setup_meta_boxes(): void {
-		add_action( 'add_meta_boxes', array( __CLASS__, 'add_cpt_meta_boxes' ) );
+		add_action( 'add_meta_boxes', [ __CLASS__, 'add_cpt_meta_boxes' ] );
 	}
 
 	/**
@@ -725,7 +725,7 @@ final class WPInsight_CPT {
 		add_meta_box(
 			'wpinsight_plugin_info',
 			__( 'Plugin Information', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_plugin_info_meta_box' ),
+			[ __CLASS__, 'render_plugin_info_meta_box' ],
 			self::PLUGIN_POST_TYPE,
 			'normal',
 			'high'
@@ -735,7 +735,7 @@ final class WPInsight_CPT {
 		add_meta_box(
 			'wpinsight_theme_info',
 			__( 'Theme Information', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_theme_info_meta_box' ),
+			[ __CLASS__, 'render_theme_info_meta_box' ],
 			self::THEME_POST_TYPE,
 			'normal',
 			'high'
@@ -745,8 +745,8 @@ final class WPInsight_CPT {
 		add_meta_box(
 			'wpinsight_zip_downloads',
 			__( 'ZIP Downloads', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_zip_downloads_meta_box' ),
-			array( self::PLUGIN_POST_TYPE, self::THEME_POST_TYPE ),
+			[ __CLASS__, 'render_zip_downloads_meta_box' ],
+			[ self::PLUGIN_POST_TYPE, self::THEME_POST_TYPE ],
 			'normal',
 			'high'
 		);
@@ -755,8 +755,8 @@ final class WPInsight_CPT {
 		add_meta_box(
 			'wpinsight_quick_stats',
 			__( 'Quick Stats', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_quick_stats_meta_box' ),
-			array( self::PLUGIN_POST_TYPE, self::THEME_POST_TYPE ),
+			[ __CLASS__, 'render_quick_stats_meta_box' ],
+			[ self::PLUGIN_POST_TYPE, self::THEME_POST_TYPE ],
 			'side',
 			'default'
 		);
@@ -926,7 +926,7 @@ final class WPInsight_CPT {
 		}
 
 		// Get full API data for changelog.
-		$sections = get_post_meta( $post->ID, 'sections', true );
+		$sections  = get_post_meta( $post->ID, 'sections', true );
 		$changelog = isset( $sections['changelog'] ) ? $sections['changelog'] : '';
 
 		// Get artifact data (downloaded ZIPs).
@@ -936,7 +936,7 @@ final class WPInsight_CPT {
 		$queue = self::get_queue_data( $slug, $entity_type );
 
 		// Combine data.
-		$version_data = array();
+		$version_data = [];
 		foreach ( $versions as $version => $download_url ) {
 			$status = 'not_queued';
 			$size   = null;
@@ -955,13 +955,13 @@ final class WPInsight_CPT {
 				$date   = $queue[ $version ]['queued_at'];
 			}
 
-			$version_data[ $version ] = array(
+			$version_data[ $version ] = [
 				'status' => $status,
 				'size'   => $size,
 				'date'   => $date,
 				'path'   => $path,
 				'url'    => $download_url,
-			);
+			];
 		}
 
 		// Sort by version (descending).
@@ -1049,7 +1049,7 @@ final class WPInsight_CPT {
 			<?php
 			$version_index = 0;
 			foreach ( $version_data as $version => $data ) :
-				$version_index++;
+				++$version_index;
 				$accordion_id = 'version-' . esc_attr( $slug . '-' . $version );
 
 				// Extract changelog for this version.
@@ -1104,8 +1104,8 @@ final class WPInsight_CPT {
 							<?php endif; ?>
 
 							<a href="<?php echo esc_url( 'https://wordpress.org/' . ( 'plugin' === $entity_type ? 'plugins' : 'themes' ) . '/' . $slug . '/' ); ?>"
-							   target="_blank"
-							   class="button button-small">
+								target="_blank"
+								class="button button-small">
 								<?php esc_html_e( 'View on WordPress.org', 'cloudfest-wporgdownload' ); ?>
 							</a>
 
@@ -1274,7 +1274,7 @@ final class WPInsight_CPT {
 			ARRAY_A
 		);
 
-		$artifacts = array();
+		$artifacts = [];
 		if ( is_array( $results ) ) {
 			foreach ( $results as $row ) {
 				$artifacts[ $row['version'] ] = $row;
@@ -1317,7 +1317,7 @@ final class WPInsight_CPT {
 			ARRAY_A
 		);
 
-		$queue = array();
+		$queue = [];
 		if ( is_array( $results ) ) {
 			foreach ( $results as $row ) {
 				$queue[ $row['version'] ] = $row;
@@ -1337,14 +1337,14 @@ final class WPInsight_CPT {
 	 * @return string HTML for status badge.
 	 */
 	private static function get_status_badge( string $status ): string {
-		$badges = array(
-			'downloaded'  => '<span style="display: inline-block; padding: 3px 8px; background: #00a32a; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">✓ ' . __( 'Downloaded', 'cloudfest-wporgdownload' ) . '</span>',
-			'pending'     => '<span style="display: inline-block; padding: 3px 8px; background: #dba617; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">⏳ ' . __( 'Pending', 'cloudfest-wporgdownload' ) . '</span>',
-			'queued'      => '<span style="display: inline-block; padding: 3px 8px; background: #dba617; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">⏳ ' . __( 'Queued', 'cloudfest-wporgdownload' ) . '</span>',
-			'processing'  => '<span style="display: inline-block; padding: 3px 8px; background: #2271b1; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">⟳ ' . __( 'Processing', 'cloudfest-wporgdownload' ) . '</span>',
-			'failed'      => '<span style="display: inline-block; padding: 3px 8px; background: #d63638; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">✗ ' . __( 'Failed', 'cloudfest-wporgdownload' ) . '</span>',
-			'not_queued'  => '<span style="display: inline-block; padding: 3px 8px; background: #dcdcde; color: #50575e; border-radius: 3px; font-size: 11px; font-weight: 600;">—</span>',
-		);
+		$badges = [
+			'downloaded' => '<span style="display: inline-block; padding: 3px 8px; background: #00a32a; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">✓ ' . __( 'Downloaded', 'cloudfest-wporgdownload' ) . '</span>',
+			'pending'    => '<span style="display: inline-block; padding: 3px 8px; background: #dba617; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">⏳ ' . __( 'Pending', 'cloudfest-wporgdownload' ) . '</span>',
+			'queued'     => '<span style="display: inline-block; padding: 3px 8px; background: #dba617; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">⏳ ' . __( 'Queued', 'cloudfest-wporgdownload' ) . '</span>',
+			'processing' => '<span style="display: inline-block; padding: 3px 8px; background: #2271b1; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">⟳ ' . __( 'Processing', 'cloudfest-wporgdownload' ) . '</span>',
+			'failed'     => '<span style="display: inline-block; padding: 3px 8px; background: #d63638; color: #fff; border-radius: 3px; font-size: 11px; font-weight: 600;">✗ ' . __( 'Failed', 'cloudfest-wporgdownload' ) . '</span>',
+			'not_queued' => '<span style="display: inline-block; padding: 3px 8px; background: #dcdcde; color: #50575e; border-radius: 3px; font-size: 11px; font-weight: 600;">—</span>',
+		];
 
 		return $badges[ $status ] ?? $badges['not_queued'];
 	}

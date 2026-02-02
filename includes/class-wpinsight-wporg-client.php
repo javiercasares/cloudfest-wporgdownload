@@ -92,24 +92,24 @@ final class WPInsight_WPOrg_Client {
 	 *     }
 	 * }
 	 */
-	public static function query_plugins( array $args = array() ): array|false {
-		$defaults = array(
+	public static function query_plugins( array $args = [] ): array|false {
+		$defaults = [
 			'browse'   => 'updated',
 			'page'     => 1,
 			'per_page' => 250,
-		);
+		];
 
 		$args = wp_parse_args( $args, $defaults );
 
 		// Build query string URL (GET method).
 		$url = add_query_arg(
-			array(
+			[
 				'action'                    => 'query_plugins',
 				'request[browse]'           => $args['browse'],
 				'request[page]'             => $args['page'],
 				'request[per_page]'         => $args['per_page'],
 				'request[fields][versions]' => '1',
-			),
+			],
 			self::PLUGINS_API_URL
 		);
 
@@ -134,7 +134,7 @@ final class WPInsight_WPOrg_Client {
 
 		// Build query string URL (GET method).
 		$url = add_query_arg(
-			array(
+			[
 				'action'                             => 'plugin_information',
 				'request[slug]'                      => $slug,
 				'request[fields][versions]'          => '1',
@@ -153,7 +153,7 @@ final class WPInsight_WPOrg_Client {
 				'request[fields][support_threads_resolved]' => '0',
 				'request[fields][homepage]'          => '1',
 				'request[fields][donate_link]'       => '1',
-			),
+			],
 			self::PLUGINS_API_URL
 		);
 
@@ -187,24 +187,24 @@ final class WPInsight_WPOrg_Client {
 	 *     }
 	 * }
 	 */
-	public static function query_themes( array $args = array() ): array|false {
-		$defaults = array(
+	public static function query_themes( array $args = [] ): array|false {
+		$defaults = [
 			'browse'   => 'updated',
 			'page'     => 1,
 			'per_page' => 250,
-		);
+		];
 
 		$args = wp_parse_args( $args, $defaults );
 
 		// Build query string URL (GET method).
 		$url = add_query_arg(
-			array(
+			[
 				'action'                    => 'query_themes',
 				'request[browse]'           => $args['browse'],
 				'request[page]'             => $args['page'],
 				'request[per_page]'         => $args['per_page'],
 				'request[fields][versions]' => '1',
-			),
+			],
 			self::THEMES_API_URL
 		);
 
@@ -229,7 +229,7 @@ final class WPInsight_WPOrg_Client {
 
 		// Build query string URL (GET method).
 		$url = add_query_arg(
-			array(
+			[
 				'action'                           => 'theme_information',
 				'request[slug]'                    => $slug,
 				'request[fields][versions]'        => '1',
@@ -244,7 +244,7 @@ final class WPInsight_WPOrg_Client {
 				'request[fields][ratings]'         => '1',
 				'request[fields][num_ratings]'     => '1',
 				'request[fields][homepage]'        => '1',
-			),
+			],
 			self::THEMES_API_URL
 		);
 
@@ -269,9 +269,9 @@ final class WPInsight_WPOrg_Client {
 
 			$response = wp_remote_get(
 				$url,
-				array(
+				[
 					'timeout' => self::HTTP_TIMEOUT,
-				)
+				]
 			);
 
 			// Check for HTTP errors.
@@ -395,10 +395,10 @@ final class WPInsight_WPOrg_Client {
 	public static function is_api_accessible(): bool {
 		// Try to query first page of plugins.
 		$result = self::query_plugins(
-			array(
+			[
 				'page'     => 1,
 				'per_page' => 1,
-			)
+			]
 		);
 
 		return false !== $result;
@@ -417,22 +417,22 @@ final class WPInsight_WPOrg_Client {
 		// Make a minimal API request to check health.
 		$response = wp_remote_get(
 			self::PLUGINS_API_URL,
-			array(
+			[
 				'timeout' => 10,
-				'headers' => array(
+				'headers' => [
 					'User-Agent' => 'WPInsight/' . WPINSIGHT_VERSION,
-				),
-				'body'    => array(
+				],
+				'body'    => [
 					'action'  => 'query_plugins',
 					'request' => wp_json_encode(
-						array(
+						[
 							'browse'   => 'updated',
 							'page'     => 1,
 							'per_page' => 1,
-						)
+						]
 					),
-				),
-			)
+				],
+			]
 		);
 
 		// Check for errors.

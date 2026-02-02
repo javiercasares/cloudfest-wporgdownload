@@ -64,16 +64,16 @@ final class WPInsight_Admin {
 	 * @return void
 	 */
 	public static function init(): void {
-		add_action( 'admin_menu', array( __CLASS__, 'add_admin_menu' ) );
-		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
-		add_action( 'admin_init', array( __CLASS__, 'handle_dashboard_actions' ) );
-		add_action( 'admin_init', array( __CLASS__, 'handle_debug_actions' ) );
-		add_action( 'admin_init', array( __CLASS__, 'handle_database_actions' ) );
-		add_action( 'admin_init', array( __CLASS__, 'handle_download_control_actions' ) );
-		add_action( 'admin_init', array( __CLASS__, 'handle_diagnostic_export' ) );
-		add_action( 'admin_init', array( __CLASS__, 'handle_settings_import' ) );
-		add_action( 'admin_init', array( __CLASS__, 'handle_export_download' ) );
-		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
+		add_action( 'admin_menu', [ __CLASS__, 'add_admin_menu' ] );
+		add_action( 'admin_init', [ __CLASS__, 'register_settings' ] );
+		add_action( 'admin_init', [ __CLASS__, 'handle_dashboard_actions' ] );
+		add_action( 'admin_init', [ __CLASS__, 'handle_debug_actions' ] );
+		add_action( 'admin_init', [ __CLASS__, 'handle_database_actions' ] );
+		add_action( 'admin_init', [ __CLASS__, 'handle_download_control_actions' ] );
+		add_action( 'admin_init', [ __CLASS__, 'handle_diagnostic_export' ] );
+		add_action( 'admin_init', [ __CLASS__, 'handle_settings_import' ] );
+		add_action( 'admin_init', [ __CLASS__, 'handle_export_download' ] );
+		add_action( 'admin_enqueue_scripts', [ __CLASS__, 'enqueue_admin_assets' ] );
 	}
 
 	/**
@@ -95,7 +95,7 @@ final class WPInsight_Admin {
 		wp_enqueue_script(
 			'wpinsight-dashboard-live',
 			WPINSIGHT_PLUGIN_URL . 'assets/js/dashboard-live.js',
-			array( 'jquery' ),
+			[ 'jquery' ],
 			WPINSIGHT_VERSION,
 			true
 		);
@@ -104,18 +104,18 @@ final class WPInsight_Admin {
 		wp_localize_script(
 			'wpinsight-dashboard-live',
 			'wpinsightLive',
-			array(
-				'endpoints' => array(
-					'dashboardStats'   => rest_url( 'wpinsight/v1/dashboard-stats' ),
-					'activeDownloads'  => rest_url( 'wpinsight/v1/active-downloads' ),
-					'syncStatus'       => rest_url( 'wpinsight/v1/sync-status' ),
-					'downloadNow'      => rest_url( 'wpinsight/v1/download-now' ),
-					'pauseDownloads'   => rest_url( 'wpinsight/v1/pause-downloads' ),
-					'resumeDownloads'  => rest_url( 'wpinsight/v1/resume-downloads' ),
-				),
+			[
+				'endpoints'    => [
+					'dashboardStats'  => rest_url( 'wpinsight/v1/dashboard-stats' ),
+					'activeDownloads' => rest_url( 'wpinsight/v1/active-downloads' ),
+					'syncStatus'      => rest_url( 'wpinsight/v1/sync-status' ),
+					'downloadNow'     => rest_url( 'wpinsight/v1/download-now' ),
+					'pauseDownloads'  => rest_url( 'wpinsight/v1/pause-downloads' ),
+					'resumeDownloads' => rest_url( 'wpinsight/v1/resume-downloads' ),
+				],
 				'nonce'        => wp_create_nonce( 'wp_rest' ),
 				'pollInterval' => 5000, // 5 seconds
-			)
+			]
 		);
 
 		// Enqueue inline CSS for animations.
@@ -155,7 +155,7 @@ final class WPInsight_Admin {
 			__( 'WPInsight', 'cloudfest-wporgdownload' ) . $error_badge,      // Menu title with badge.
 			'manage_options',                                                   // Capability.
 			self::DASHBOARD_PAGE_SLUG,                                          // Menu slug.
-			array( __CLASS__, 'render_dashboard_page' )                              // Callback.
+			[ __CLASS__, 'render_dashboard_page' ]                              // Callback.
 		);
 
 		// Add Settings page under Settings menu.
@@ -164,7 +164,7 @@ final class WPInsight_Admin {
 			__( 'WPInsight', 'cloudfest-wporgdownload' ),           // Menu title.
 			'manage_options',                                        // Capability.
 			self::SETTINGS_PAGE_SLUG,                                // Menu slug.
-			array( __CLASS__, 'render_settings_page' )                    // Callback.
+			[ __CLASS__, 'render_settings_page' ]                    // Callback.
 		);
 
 		// Add Error Log page under Tools menu (only visible when WP_DEBUG is enabled).
@@ -174,7 +174,7 @@ final class WPInsight_Admin {
 				__( 'WPInsight Errors', 'cloudfest-wporgdownload' ),     // Menu title.
 				'manage_options',                                          // Capability.
 				'wpinsight-error-log',                                     // Menu slug.
-				array( __CLASS__, 'render_error_log_page' )               // Callback.
+				[ __CLASS__, 'render_error_log_page' ]               // Callback.
 			);
 		}
 
@@ -184,7 +184,7 @@ final class WPInsight_Admin {
 			__( 'WPInsight Import/Export', 'cloudfest-wporgdownload' ), // Menu title.
 			'manage_options',                                             // Capability.
 			'wpinsight-import-export',                                    // Menu slug.
-			array( __CLASS__, 'render_import_export_page' )              // Callback.
+			[ __CLASS__, 'render_import_export_page' ]              // Callback.
 		);
 	}
 
@@ -201,17 +201,17 @@ final class WPInsight_Admin {
 		register_setting(
 			self::SETTINGS_GROUP,
 			WPINSIGHT_SETTINGS_OPTION,
-			array(
+			[
 				'type'              => 'array',
-				'sanitize_callback' => array( __CLASS__, 'sanitize_settings' ),
-			)
+				'sanitize_callback' => [ __CLASS__, 'sanitize_settings' ],
+			]
 		);
 
 		// General Settings Section.
 		add_settings_section(
 			'wpinsight_general',
 			__( 'General Settings', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_section_general' ),
+			[ __CLASS__, 'render_section_general' ],
 			self::SETTINGS_PAGE_SLUG
 		);
 
@@ -219,7 +219,7 @@ final class WPInsight_Admin {
 		add_settings_section(
 			'wpinsight_sync',
 			__( 'Sync Settings', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_section_sync' ),
+			[ __CLASS__, 'render_section_sync' ],
 			self::SETTINGS_PAGE_SLUG
 		);
 
@@ -227,7 +227,7 @@ final class WPInsight_Admin {
 		add_settings_section(
 			'wpinsight_rate_limiting',
 			__( 'Rate Limiting', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_section_rate_limiting' ),
+			[ __CLASS__, 'render_section_rate_limiting' ],
 			self::SETTINGS_PAGE_SLUG
 		);
 
@@ -235,7 +235,7 @@ final class WPInsight_Admin {
 		add_settings_section(
 			'wpinsight_notifications',
 			__( 'Error Notifications', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_section_notifications' ),
+			[ __CLASS__, 'render_section_notifications' ],
 			self::SETTINGS_PAGE_SLUG
 		);
 
@@ -243,7 +243,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'delete_on_uninstall',
 			__( 'Delete Data on Uninstall', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_delete_on_uninstall' ),
+			[ __CLASS__, 'render_field_delete_on_uninstall' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_general'
 		);
@@ -252,7 +252,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'auto_sync_enabled',
 			__( 'Enable Auto Sync', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_auto_sync_enabled' ),
+			[ __CLASS__, 'render_field_auto_sync_enabled' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -260,7 +260,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'sync_plugins_enabled',
 			__( 'Sync Plugins', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_sync_plugins_enabled' ),
+			[ __CLASS__, 'render_field_sync_plugins_enabled' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -268,7 +268,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'sync_themes_enabled',
 			__( 'Sync Themes', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_sync_themes_enabled' ),
+			[ __CLASS__, 'render_field_sync_themes_enabled' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -276,7 +276,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'download_plugin_zips_enabled',
 			__( 'Download Plugin ZIPs', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_download_plugin_zips_enabled' ),
+			[ __CLASS__, 'render_field_download_plugin_zips_enabled' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -284,7 +284,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'download_theme_zips_enabled',
 			__( 'Download Theme ZIPs', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_download_theme_zips_enabled' ),
+			[ __CLASS__, 'render_field_download_theme_zips_enabled' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -292,7 +292,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'sync_interval',
 			__( 'Sync Interval (seconds)', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_sync_interval' ),
+			[ __CLASS__, 'render_field_sync_interval' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_sync'
 		);
@@ -301,7 +301,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'max_concurrent_downloads',
 			__( 'Max Concurrent Downloads', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_max_concurrent_downloads' ),
+			[ __CLASS__, 'render_field_max_concurrent_downloads' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
@@ -309,7 +309,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'max_size_detection_rate',
 			__( 'Size Detection Rate (req/sec)', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_max_size_detection_rate' ),
+			[ __CLASS__, 'render_field_max_size_detection_rate' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
@@ -317,7 +317,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'zip_worker_interval',
 			__( 'ZIP Worker Interval (seconds)', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_zip_worker_interval' ),
+			[ __CLASS__, 'render_field_zip_worker_interval' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
@@ -325,7 +325,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'max_retries',
 			__( 'Max Download Retries', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_max_retries' ),
+			[ __CLASS__, 'render_field_max_retries' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_rate_limiting'
 		);
@@ -334,7 +334,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'admin_email_notifications_enabled',
 			__( 'Enable Email Notifications', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_admin_email_notifications_enabled' ),
+			[ __CLASS__, 'render_field_admin_email_notifications_enabled' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_notifications'
 		);
@@ -342,7 +342,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'admin_notification_email',
 			__( 'Notification Email', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_admin_notification_email' ),
+			[ __CLASS__, 'render_field_admin_notification_email' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_notifications'
 		);
@@ -350,7 +350,7 @@ final class WPInsight_Admin {
 		add_settings_field(
 			'log_retention_days',
 			__( 'Log Retention (days)', 'cloudfest-wporgdownload' ),
-			array( __CLASS__, 'render_field_log_retention_days' ),
+			[ __CLASS__, 'render_field_log_retention_days' ],
 			self::SETTINGS_PAGE_SLUG,
 			'wpinsight_notifications'
 		);
@@ -393,13 +393,13 @@ final class WPInsight_Admin {
 			case 'sync_plugins':
 				// Check current state and reset if completed/error.
 				$state = WPInsight_Sync::get_sync_state( 'plugin' );
-				if ( in_array( $state['status'], array( 'completed', 'error' ), true ) ) {
+				if ( in_array( $state['status'], [ 'completed', 'error' ], true ) ) {
 					WPInsight_Sync::reset_sync_state( 'plugin' );
 				}
 
 				// Enqueue sync job in Action Scheduler (async).
 				if ( function_exists( 'as_enqueue_async_action' ) ) {
-					as_enqueue_async_action( 'wpinsight_sync_plugins', array(), WPINSIGHT_AS_GROUP );
+					as_enqueue_async_action( 'wpinsight_sync_plugins', [], WPINSIGHT_AS_GROUP );
 					// Set state to queued for immediate user feedback.
 					WPInsight_Sync::update_sync_state( 'plugin', 'queued', 1 );
 					add_settings_error( 'wpinsight_dashboard', 'sync_enqueued', __( 'Plugin sync queued. It will start processing shortly.', 'cloudfest-wporgdownload' ), 'success' );
@@ -411,13 +411,13 @@ final class WPInsight_Admin {
 			case 'sync_themes':
 				// Check current state and reset if completed/error.
 				$state = WPInsight_Sync::get_sync_state( 'theme' );
-				if ( in_array( $state['status'], array( 'completed', 'error' ), true ) ) {
+				if ( in_array( $state['status'], [ 'completed', 'error' ], true ) ) {
 					WPInsight_Sync::reset_sync_state( 'theme' );
 				}
 
 				// Enqueue sync job in Action Scheduler (async).
 				if ( function_exists( 'as_enqueue_async_action' ) ) {
-					as_enqueue_async_action( 'wpinsight_sync_themes', array(), WPINSIGHT_AS_GROUP );
+					as_enqueue_async_action( 'wpinsight_sync_themes', [], WPINSIGHT_AS_GROUP );
 					// Set state to queued for immediate user feedback.
 					WPInsight_Sync::update_sync_state( 'theme', 'queued', 1 );
 					add_settings_error( 'wpinsight_dashboard', 'sync_enqueued', __( 'Theme sync queued. It will start processing shortly.', 'cloudfest-wporgdownload' ), 'success' );
@@ -481,7 +481,7 @@ final class WPInsight_Admin {
 				if ( function_exists( 'as_enqueue_async_action' ) ) {
 					// Reset sync state to start fresh.
 					WPInsight_Sync::reset_sync_state( 'plugin' );
-					as_enqueue_async_action( 'wpinsight_full_sync_plugins', array(), WPINSIGHT_AS_GROUP );
+					as_enqueue_async_action( 'wpinsight_full_sync_plugins', [], WPINSIGHT_AS_GROUP );
 					// Set state to queued for immediate user feedback.
 					WPInsight_Sync::update_sync_state( 'plugin', 'queued', 1 );
 					add_settings_error( 'wpinsight_dashboard', 'full_sync_enqueued', __( 'Full plugin sync queued. It will start processing shortly. This may take hours.', 'cloudfest-wporgdownload' ), 'success' );
@@ -495,7 +495,7 @@ final class WPInsight_Admin {
 				if ( function_exists( 'as_enqueue_async_action' ) ) {
 					// Reset sync state to start fresh.
 					WPInsight_Sync::reset_sync_state( 'theme' );
-					as_enqueue_async_action( 'wpinsight_full_sync_themes', array(), WPINSIGHT_AS_GROUP );
+					as_enqueue_async_action( 'wpinsight_full_sync_themes', [], WPINSIGHT_AS_GROUP );
 					// Set state to queued for immediate user feedback.
 					WPInsight_Sync::update_sync_state( 'theme', 'queued', 1 );
 					add_settings_error( 'wpinsight_dashboard', 'full_sync_enqueued', __( 'Full theme sync queued. It will start processing shortly. This may take hours.', 'cloudfest-wporgdownload' ), 'success' );
@@ -510,8 +510,8 @@ final class WPInsight_Admin {
 
 				// Cancel all pending Action Scheduler jobs for plugin sync.
 				if ( function_exists( 'as_unschedule_all_actions' ) ) {
-					as_unschedule_all_actions( 'wpinsight_sync_plugins', array(), WPINSIGHT_AS_GROUP );
-					as_unschedule_all_actions( 'wpinsight_full_sync_plugins', array(), WPINSIGHT_AS_GROUP );
+					as_unschedule_all_actions( 'wpinsight_sync_plugins', [], WPINSIGHT_AS_GROUP );
+					as_unschedule_all_actions( 'wpinsight_full_sync_plugins', [], WPINSIGHT_AS_GROUP );
 				}
 
 				add_settings_error( 'wpinsight_dashboard', 'reset_success', __( 'Plugin sync state reset and pending jobs cancelled.', 'cloudfest-wporgdownload' ), 'success' );
@@ -523,8 +523,8 @@ final class WPInsight_Admin {
 
 				// Cancel all pending Action Scheduler jobs for theme sync.
 				if ( function_exists( 'as_unschedule_all_actions' ) ) {
-					as_unschedule_all_actions( 'wpinsight_sync_themes', array(), WPINSIGHT_AS_GROUP );
-					as_unschedule_all_actions( 'wpinsight_full_sync_themes', array(), WPINSIGHT_AS_GROUP );
+					as_unschedule_all_actions( 'wpinsight_sync_themes', [], WPINSIGHT_AS_GROUP );
+					as_unschedule_all_actions( 'wpinsight_full_sync_themes', [], WPINSIGHT_AS_GROUP );
 				}
 
 				add_settings_error( 'wpinsight_dashboard', 'reset_success', __( 'Theme sync state reset and pending jobs cancelled.', 'cloudfest-wporgdownload' ), 'success' );
@@ -579,7 +579,7 @@ final class WPInsight_Admin {
 				$hook = sanitize_text_field( wp_unslash( $_POST['cron_hook'] ) );
 
 				// Validate hook is one of ours.
-				$valid_hooks = array( 'wpinsight_sync_tick', 'wpinsight_zip_worker_tick', 'wpinsight_size_detection_tick' );
+				$valid_hooks = [ 'wpinsight_sync_tick', 'wpinsight_zip_worker_tick', 'wpinsight_size_detection_tick' ];
 				if ( ! in_array( $hook, $valid_hooks, true ) ) {
 					add_settings_error( 'wpinsight_dashboard', 'invalid_hook', __( 'Invalid cron hook.', 'cloudfest-wporgdownload' ), 'error' );
 					break;
@@ -643,7 +643,7 @@ final class WPInsight_Admin {
 				$hook = sanitize_text_field( wp_unslash( $_POST['cron_hook'] ) );
 
 				// Validate hook is one of ours.
-				$valid_hooks = array( 'wpinsight_sync_tick', 'wpinsight_zip_worker_tick', 'wpinsight_size_detection_tick' );
+				$valid_hooks = [ 'wpinsight_sync_tick', 'wpinsight_zip_worker_tick', 'wpinsight_size_detection_tick' ];
 				if ( ! in_array( $hook, $valid_hooks, true ) ) {
 					add_settings_error( 'wpinsight_dashboard', 'invalid_hook', __( 'Invalid cron hook.', 'cloudfest-wporgdownload' ), 'error' );
 					break;
@@ -704,9 +704,9 @@ final class WPInsight_Admin {
 				}
 
 				// Unschedule all existing workers.
-				as_unschedule_all_actions( 'wpinsight_sync_tick', array(), WPINSIGHT_AS_GROUP );
-				as_unschedule_all_actions( 'wpinsight_zip_worker_tick', array(), WPINSIGHT_AS_GROUP );
-				as_unschedule_all_actions( 'wpinsight_size_detection_tick', array(), WPINSIGHT_AS_GROUP );
+				as_unschedule_all_actions( 'wpinsight_sync_tick', [], WPINSIGHT_AS_GROUP );
+				as_unschedule_all_actions( 'wpinsight_zip_worker_tick', [], WPINSIGHT_AS_GROUP );
+				as_unschedule_all_actions( 'wpinsight_size_detection_tick', [], WPINSIGHT_AS_GROUP );
 
 				// Reschedule workers.
 				WPInsight_Sync::ensure_scheduled();
@@ -773,7 +773,7 @@ final class WPInsight_Admin {
 				try {
 					$results = WPInsight_DB::check_table_health( $table_name );
 
-					$messages = array();
+					$messages = [];
 					foreach ( $results as $row ) {
 						$messages[] = sprintf( '%s: %s', $row['msg_type'], $row['msg_text'] );
 					}
@@ -909,12 +909,12 @@ final class WPInsight_Admin {
 
 			case 'optimize_all':
 				try {
-					$tables  = array( 'sync_state', 'zip_queue', 'artifacts', 'error_log' );
-					$results = array();
+					$tables  = [ 'sync_state', 'zip_queue', 'artifacts', 'error_log' ];
+					$results = [];
 
 					foreach ( $tables as $table_short_name ) {
-						$table_name = WPInsight_DB::get_table_name( $table_short_name );
-						$result     = WPInsight_DB::optimize_table( $table_name );
+						$table_name                   = WPInsight_DB::get_table_name( $table_short_name );
+						$result                       = WPInsight_DB::optimize_table( $table_name );
 						$results[ $table_short_name ] = $result;
 					}
 
@@ -988,7 +988,7 @@ final class WPInsight_Admin {
 		$compress    = isset( $_POST['compress'] );
 
 		// Validate export type.
-		if ( ! in_array( $export_type, array( 'plugins', 'themes', 'all' ), true ) ) {
+		if ( ! in_array( $export_type, [ 'plugins', 'themes', 'all' ], true ) ) {
 			wp_die( esc_html__( 'Invalid export type.', 'cloudfest-wporgdownload' ) );
 		}
 
@@ -1055,8 +1055,13 @@ final class WPInsight_Admin {
 		$theme_count  = wp_count_posts( WPInsight_CPT::get_theme_post_type() )->publish ?? 0;
 
 		$artifacts_table = WPInsight_DB::get_table_name( 'artifacts' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Simple COUNT query on custom table for dashboard statistics. Table name from get_table_name() is safe.
-		$artifact_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$artifacts_table}" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$artifact_count = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM %i',
+				$artifacts_table
+			)
+		);
 
 		$upload_dir   = wp_upload_dir();
 		$base_path    = WPInsight_Settings::get( 'storage_base_path', 'wpinsight' );
@@ -1080,7 +1085,7 @@ final class WPInsight_Admin {
 		$downloads_paused = WPInsight_Settings::get( 'downloads_paused', false );
 
 		// Get system health data for Phase 18.6
-		$system_health = self::get_system_health_data();
+		$system_health  = self::get_system_health_data();
 		$overall_health = self::get_overall_health_status( $system_health );
 
 		// Get API health data for Phase 18.5
@@ -1187,13 +1192,13 @@ final class WPInsight_Admin {
 	 * @return string HTML badge markup.
 	 */
 	public static function get_severity_badge_html( string $severity ): string {
-		$colors = array(
+		$colors = [
 			'emergency' => '#d63638', // Red.
 			'error'     => '#d63638', // Red.
 			'warning'   => '#f0b849', // Orange.
 			'info'      => '#2271b1', // Blue.
 			'debug'     => '#646970', // Gray.
-		);
+		];
 
 		$color = $colors[ $severity ] ?? '#646970';
 
@@ -1377,14 +1382,14 @@ final class WPInsight_Admin {
 							<?php
 							echo wp_kses_post(
 								paginate_links(
-									array(
+									[
 										'base'      => add_query_arg( 'paged', '%#%' ),
 										'format'    => '',
 										'current'   => $page_num,
 										'total'     => $total_pages,
 										'prev_text' => __( '&laquo; Previous', 'cloudfest-wporgdownload' ),
 										'next_text' => __( 'Next &raquo;', 'cloudfest-wporgdownload' ),
-									)
+									]
 								)
 							);
 							?>
@@ -1447,7 +1452,7 @@ final class WPInsight_Admin {
 				$filename = $file['name'];
 
 				// Validate file type.
-				$allowed_extensions = array( 'json', 'gz' );
+				$allowed_extensions = [ 'json', 'gz' ];
 				$file_ext           = pathinfo( $filename, PATHINFO_EXTENSION );
 
 				if ( ! in_array( $file_ext, $allowed_extensions, true ) ) {
@@ -1473,11 +1478,11 @@ final class WPInsight_Admin {
 						);
 					} else {
 						// Prepare import options.
-						$options = array(
+						$options = [
 							'skip_existing'   => isset( $_POST['skip_existing'] ),
 							'update_existing' => isset( $_POST['update_existing'] ),
 							'dry_run'         => isset( $_POST['dry_run'] ),
-						);
+						];
 
 						// Perform import.
 						$results = WPInsight_Import::import_all( $tmp_name, $options );
@@ -1829,20 +1834,20 @@ final class WPInsight_Admin {
 				</div>
 				<?php
 			} else {
-				$workers = array(
-					'wpinsight_sync_tick'            => array(
+				$workers = [
+					'wpinsight_sync_tick'           => [
 						'name'        => __( 'Sync Worker', 'cloudfest-wporgdownload' ),
 						'description' => __( 'Fetches new plugins/themes from WordPress.org API', 'cloudfest-wporgdownload' ),
-					),
-					'wpinsight_zip_worker_tick'      => array(
+					],
+					'wpinsight_zip_worker_tick'     => [
 						'name'        => __( 'ZIP Worker', 'cloudfest-wporgdownload' ),
 						'description' => __( 'Downloads ZIP files from download.wordpress.org', 'cloudfest-wporgdownload' ),
-					),
-					'wpinsight_size_detection_tick'  => array(
+					],
+					'wpinsight_size_detection_tick' => [
 						'name'        => __( 'Size Detection Worker', 'cloudfest-wporgdownload' ),
 						'description' => __( 'Detects ZIP file sizes via HEAD requests', 'cloudfest-wporgdownload' ),
-					),
-				);
+					],
+				];
 
 				?>
 				<table class="widefat striped" style="margin-bottom: 20px;">
@@ -1857,7 +1862,7 @@ final class WPInsight_Admin {
 					<tbody>
 						<?php foreach ( $workers as $hook => $worker_data ) : ?>
 							<?php
-							$next_run     = as_next_scheduled_action( $hook, array(), WPINSIGHT_AS_GROUP );
+							$next_run     = as_next_scheduled_action( $hook, [], WPINSIGHT_AS_GROUP );
 							$is_scheduled = false !== $next_run;
 							$stats        = self::get_action_scheduler_stats( $hook );
 							$history      = self::get_action_scheduler_history( $hook, 10 );
@@ -2084,14 +2089,39 @@ final class WPInsight_Admin {
 			$size_stats     = WPInsight_Zip_Queue::get_size_statistics();
 		} catch ( \Exception $e ) {
 			// If health check data fails, provide empty arrays to prevent template errors.
-			$system_health  = array();
-			$overall_health = array( 'status' => 'error', 'message' => 'Health check failed', 'error_count' => 0, 'warning_count' => 0 );
-			$api_health     = array();
-			$size_stats     = array(
-				'plugins' => array( 'detection_progress' => 0, 'downloaded_size' => 0, 'pending_size' => 0, 'total_size' => 0, 'count_with_size' => 0, 'total_count' => 0 ),
-				'themes'  => array( 'detection_progress' => 0, 'downloaded_size' => 0, 'pending_size' => 0, 'total_size' => 0, 'count_with_size' => 0, 'total_count' => 0 ),
+			$system_health  = [];
+			$overall_health = [
+				'status'        => 'error',
+				'message'       => 'Health check failed',
+				'error_count'   => 0,
+				'warning_count' => 0,
+			];
+			$api_health     = [];
+			$size_stats     = [
+				'plugins' => [
+					'detection_progress' => 0,
+					'downloaded_size'    => 0,
+					'pending_size'       => 0,
+					'total_size'         => 0,
+					'count_with_size'    => 0,
+					'total_count'        => 0,
+				],
+				'themes'  => [
+					'detection_progress' => 0,
+					'downloaded_size'    => 0,
+					'pending_size'       => 0,
+					'total_size'         => 0,
+					'count_with_size'    => 0,
+					'total_count'        => 0,
+				],
+			];
+			WPInsight_Logger::error(
+				'Health check data preparation failed',
+				[
+					'error' => $e->getMessage(),
+					'trace' => $e->getTraceAsString(),
+				]
 			);
-			error_log( 'WPInsight health check error: ' . $e->getMessage() );
 		}
 
 		// Load template.
@@ -2400,10 +2430,10 @@ final class WPInsight_Admin {
 	 * @return array<string, mixed> Sanitized settings.
 	 */
 	public static function sanitize_settings( array $input ): array {
-		$sanitized = array();
+		$sanitized = [];
 
 		// Convert checkbox values: empty strings become false, '1' becomes true.
-		$checkboxes = array(
+		$checkboxes = [
 			'delete_on_uninstall',
 			'auto_sync_enabled',
 			'sync_plugins_enabled',
@@ -2411,21 +2441,21 @@ final class WPInsight_Admin {
 			'download_plugin_zips_enabled',
 			'download_theme_zips_enabled',
 			'admin_email_notifications_enabled', // v1.1.0+.
-		);
+		];
 		foreach ( $checkboxes as $key ) {
 			$sanitized[ $key ] = isset( $input[ $key ] ) && '1' === $input[ $key ];
 		}
 
 		// Validate and sanitize number fields using Settings validation only.
 		// IMPORTANT: Do NOT call WPInsight_Settings::update() here as it causes infinite loop.
-		$number_fields = array(
+		$number_fields = [
 			'max_concurrent_downloads',
 			'max_size_detection_rate',
 			'sync_interval',
 			'zip_worker_interval',
 			'max_retries',
 			'log_retention_days',
-		);
+		];
 
 		foreach ( $number_fields as $key ) {
 			if ( isset( $input[ $key ] ) ) {
@@ -2534,10 +2564,10 @@ final class WPInsight_Admin {
 			} catch ( Exception $e ) {
 				WPInsight_Logger::warning(
 					'RecursiveIterator failed for directory size calculation',
-					array(
+					[
 						'path'  => $path,
 						'error' => $e->getMessage(),
-					)
+					]
 				);
 			}
 		}
@@ -2616,7 +2646,7 @@ final class WPInsight_Admin {
 
 		// Sanitize path and execute du command.
 		$escaped_path = escapeshellarg( $path );
-		$output       = array();
+		$output       = [];
 		$return_var   = 0;
 
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec
@@ -2779,7 +2809,7 @@ final class WPInsight_Admin {
 	private static function get_action_scheduler_stats( string $hook ): array {
 		global $wpdb;
 
-		$stats = array(
+		$stats = [
 			'completed'          => 0,
 			'failed'             => 0,
 			'pending'            => 0,
@@ -2787,7 +2817,7 @@ final class WPInsight_Admin {
 			'avg_execution_time' => null,
 			'last_execution'     => null,
 			'last_error'         => null,
-		);
+		];
 
 		// Check if Action Scheduler tables exist.
 		$actions_table = $wpdb->prefix . 'actionscheduler_actions';
@@ -2806,17 +2836,19 @@ final class WPInsight_Admin {
 		$counts = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT status, COUNT(*) as count
-				FROM {$actions_table}
+				FROM %i
 				WHERE hook = %s
 				AND last_attempt_gmt > %s
 				AND group_id = (
-					SELECT group_id FROM {$wpdb->prefix}actionscheduler_groups
+					SELECT group_id FROM %i
 					WHERE slug = %s
 					LIMIT 1
 				)
 				GROUP BY status",
+				$actions_table,
 				$hook,
 				$twentyfour_hours_ago,
+				$wpdb->prefix . 'actionscheduler_groups',
 				WPINSIGHT_AS_GROUP
 			),
 			ARRAY_A
@@ -2842,17 +2874,19 @@ final class WPInsight_Admin {
 		$avg_time = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT AVG(TIMESTAMPDIFF(SECOND, last_attempt_gmt, last_attempt_gmt))
-				FROM {$actions_table}
+				FROM %i
 				WHERE hook = %s
 				AND status = 'complete'
 				AND last_attempt_gmt > %s
 				AND group_id = (
-					SELECT group_id FROM {$wpdb->prefix}actionscheduler_groups
+					SELECT group_id FROM %i
 					WHERE slug = %s
 					LIMIT 1
 				)",
+				$actions_table,
 				$hook,
 				$twentyfour_hours_ago,
+				$wpdb->prefix . 'actionscheduler_groups',
 				WPINSIGHT_AS_GROUP
 			)
 		);
@@ -2866,17 +2900,19 @@ final class WPInsight_Admin {
 		$last_execution = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT last_attempt_gmt
-				FROM {$actions_table}
+				FROM %i
 				WHERE hook = %s
 				AND status = 'complete'
 				AND group_id = (
-					SELECT group_id FROM {$wpdb->prefix}actionscheduler_groups
+					SELECT group_id FROM %i
 					WHERE slug = %s
 					LIMIT 1
 				)
 				ORDER BY last_attempt_gmt DESC
 				LIMIT 1",
+				$actions_table,
 				$hook,
+				$wpdb->prefix . 'actionscheduler_groups',
 				WPINSIGHT_AS_GROUP
 			)
 		);
@@ -2891,18 +2927,21 @@ final class WPInsight_Admin {
 		$last_error = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT l.message
-				FROM {$logs_table} l
-				INNER JOIN {$actions_table} a ON l.action_id = a.action_id
+				FROM %i l
+				INNER JOIN %i a ON l.action_id = a.action_id
 				WHERE a.hook = %s
 				AND a.status = 'failed'
 				AND a.group_id = (
-					SELECT group_id FROM {$wpdb->prefix}actionscheduler_groups
+					SELECT group_id FROM %i
 					WHERE slug = %s
 					LIMIT 1
 				)
 				ORDER BY l.log_date_gmt DESC
 				LIMIT 1",
+				$logs_table,
+				$actions_table,
 				$hook,
+				$wpdb->prefix . 'actionscheduler_groups',
 				WPINSIGHT_AS_GROUP
 			)
 		);
@@ -2939,7 +2978,7 @@ final class WPInsight_Admin {
 		$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $actions_table ) );
 
 		if ( ! $table_exists ) {
-			return array();
+			return [];
 		}
 
 		// Get recent executions.
@@ -2950,24 +2989,26 @@ final class WPInsight_Admin {
 					status,
 					scheduled_date_gmt as started,
 					last_attempt_gmt as completed
-				FROM {$actions_table}
+				FROM %i
 				WHERE hook = %s
 				AND group_id = (
-					SELECT group_id FROM {$wpdb->prefix}actionscheduler_groups
+					SELECT group_id FROM %i
 					WHERE slug = %s
 					LIMIT 1
 				)
 				AND status IN ('complete', 'failed')
 				ORDER BY last_attempt_gmt DESC
 				LIMIT %d",
+				$actions_table,
 				$hook,
+				$wpdb->prefix . 'actionscheduler_groups',
 				WPINSIGHT_AS_GROUP,
 				$limit
 			),
 			ARRAY_A
 		);
 
-		$history = array();
+		$history = [];
 		foreach ( $results as $row ) {
 			$started   = $row['started'];
 			$completed = $row['completed'];
@@ -2979,12 +3020,12 @@ final class WPInsight_Admin {
 				$duration   = $end_time - $start_time;
 			}
 
-			$history[] = array(
+			$history[] = [
 				'status'    => $row['status'],
 				'started'   => $started,
 				'completed' => $completed,
 				'duration'  => $duration,
-			);
+			];
 		}
 
 		return $history;
@@ -3063,7 +3104,7 @@ final class WPInsight_Admin {
 		$eta_formatted = null;
 
 		if ( 'running' === $status || 'queued' === $status ) {
-			$eta_data = self::calculate_sync_eta( $entity_type, $synced_count, $total_estimated );
+			$eta_data      = self::calculate_sync_eta( $entity_type, $synced_count, $total_estimated );
 			$eta_seconds   = $eta_data['seconds'];
 			$eta_formatted = $eta_data['formatted'];
 		}
@@ -3096,7 +3137,7 @@ final class WPInsight_Admin {
 			$last_sync = human_time_diff( strtotime( $state['last_run_at'] ), time() ) . ' ' . __( 'ago', 'cloudfest-wporgdownload' );
 		}
 
-		return array(
+		return [
 			'total_items'      => $total_estimated,
 			'synced_items'     => $synced_count,
 			'current_page'     => $state['current_page'] ?? 0,
@@ -3109,7 +3150,7 @@ final class WPInsight_Admin {
 			'eta_formatted'    => $eta_formatted,
 			'error_count'      => (int) $error_count,
 			'last_sync'        => $last_sync,
-		);
+		];
 	}
 
 	/**
@@ -3128,10 +3169,10 @@ final class WPInsight_Admin {
 	 */
 	private static function calculate_sync_eta( string $entity_type, int $current, int $total ): array {
 		if ( $current >= $total || $current === 0 ) {
-			return array(
+			return [
 				'seconds'   => null,
 				'formatted' => null,
-			);
+			];
 		}
 
 		// Get average execution time from Action Scheduler
@@ -3157,10 +3198,10 @@ final class WPInsight_Admin {
 		// Format ETA
 		$eta_formatted = self::format_eta( $eta_seconds );
 
-		return array(
+		return [
 			'seconds'   => (int) $eta_seconds,
 			'formatted' => $eta_formatted,
-		);
+		];
 	}
 
 	/**
@@ -3246,7 +3287,7 @@ final class WPInsight_Admin {
 		);
 
 		if ( ! $downloads ) {
-			return array();
+			return [];
 		}
 
 		// Calculate progress info for each download.
@@ -3260,7 +3301,7 @@ final class WPInsight_Admin {
 			// If we have remote filesize, estimate speed and progress.
 			if ( ! empty( $download['remote_filesize'] ) && $elapsed > 0 ) {
 				// Estimate download speed (conservative: assume 50% downloaded at this point).
-				$estimated_bytes_downloaded = $download['remote_filesize'] * 0.5;
+				$estimated_bytes_downloaded  = $download['remote_filesize'] * 0.5;
 				$download['estimated_speed'] = $estimated_bytes_downloaded / $elapsed; // Bytes per second.
 
 				// Estimate progress (50% if still processing).
@@ -3299,8 +3340,8 @@ final class WPInsight_Admin {
 		$free_space  = disk_free_space( $base_path );
 
 		// Calculate used space.
-		$used_space    = $total_space - $free_space;
-		$used_percent  = $total_space > 0 ? ( $used_space / $total_space ) * 100 : 0;
+		$used_space   = $total_space - $free_space;
+		$used_percent = $total_space > 0 ? ( $used_space / $total_space ) * 100 : 0;
 
 		// Get artifacts size from database.
 		global $wpdb;
@@ -3327,15 +3368,15 @@ final class WPInsight_Admin {
 			)
 		);
 
-		return array(
-			'total_space'     => (int) $total_space,
-			'free_space'      => (int) $free_space,
-			'used_space'      => (int) $used_space,
-			'used_percent'    => round( $used_percent, 1 ),
-			'artifacts_size'  => (int) $artifacts_size,
-			'pending_size'    => (int) $pending_size,
-			'total_required'  => (int) $artifacts_size + (int) $pending_size,
-		);
+		return [
+			'total_space'    => (int) $total_space,
+			'free_space'     => (int) $free_space,
+			'used_space'     => (int) $used_space,
+			'used_percent'   => round( $used_percent, 1 ),
+			'artifacts_size' => (int) $artifacts_size,
+			'pending_size'   => (int) $pending_size,
+			'total_required' => (int) $artifacts_size + (int) $pending_size,
+		];
 	}
 
 	/**
@@ -3348,7 +3389,7 @@ final class WPInsight_Admin {
 	 */
 	public static function handle_download_control_actions(): void {
 		// Check if action is set.
-		if ( ! isset( $_GET['action'] ) || ! in_array( $_GET['action'], array( 'pause_downloads', 'resume_downloads' ), true ) ) {
+		if ( ! isset( $_GET['action'] ) || ! in_array( $_GET['action'], [ 'pause_downloads', 'resume_downloads' ], true ) ) {
 			return;
 		}
 
@@ -3371,7 +3412,7 @@ final class WPInsight_Admin {
 
 				WPInsight_Logger::info(
 					'Downloads paused by user',
-					array( 'user_id' => get_current_user_id() )
+					[ 'user_id' => get_current_user_id() ]
 				);
 
 				add_settings_error(
@@ -3386,7 +3427,7 @@ final class WPInsight_Admin {
 
 				WPInsight_Logger::info(
 					'Downloads resumed by user',
-					array( 'user_id' => get_current_user_id() )
+					[ 'user_id' => get_current_user_id() ]
 				);
 
 				add_settings_error(
@@ -3399,10 +3440,10 @@ final class WPInsight_Admin {
 		} catch ( Exception $e ) {
 			WPInsight_Logger::error(
 				'Download control action failed',
-				array(
+				[
 					'action' => $action,
 					'error'  => $e->getMessage(),
-				)
+				]
 			);
 
 			add_settings_error(
@@ -3419,9 +3460,9 @@ final class WPInsight_Admin {
 
 		// Redirect back to dashboard.
 		$redirect_url = add_query_arg(
-			array(
+			[
 				'page' => self::DASHBOARD_PAGE_SLUG,
-			),
+			],
 			admin_url( 'tools.php' )
 		);
 
@@ -3450,26 +3491,26 @@ final class WPInsight_Admin {
 	private static function get_system_health_data(): array {
 		global $wpdb;
 
-		$health = array();
+		$health = [];
 
 		// Check PHP Version.
-		$php_version     = PHP_VERSION;
-		$required_php    = '8.4';
-		$php_version_ok  = version_compare( $php_version, $required_php, '>=' );
-		$health['php_version'] = array(
+		$php_version           = PHP_VERSION;
+		$required_php          = '8.4';
+		$php_version_ok        = version_compare( $php_version, $required_php, '>=' );
+		$health['php_version'] = [
 			'status'   => $php_version_ok ? 'ok' : 'error',
 			'value'    => $php_version,
 			'required' => $required_php . '+',
 			'message'  => $php_version_ok
 				? sprintf( __( 'PHP %s (meets requirement)', 'cloudfest-wporgdownload' ), $php_version )
-				: sprintf( __( 'PHP %s (requires %s+)', 'cloudfest-wporgdownload' ), $php_version, $required_php ),
-		);
+				: sprintf( __( 'PHP %1$s (requires %2$s+)', 'cloudfest-wporgdownload' ), $php_version, $required_php ),
+		];
 
 		// Check PHP Memory.
-		$memory_limit     = ini_get( 'memory_limit' );
+		$memory_limit       = ini_get( 'memory_limit' );
 		$memory_limit_bytes = wp_convert_hr_to_bytes( $memory_limit );
-		$memory_usage     = memory_get_usage( true );
-		$memory_percent   = $memory_limit_bytes > 0 ? ( $memory_usage / $memory_limit_bytes ) * 100 : 0;
+		$memory_usage       = memory_get_usage( true );
+		$memory_percent     = $memory_limit_bytes > 0 ? ( $memory_usage / $memory_limit_bytes ) * 100 : 0;
 
 		$memory_status = 'ok';
 		if ( $memory_percent > 90 ) {
@@ -3478,7 +3519,7 @@ final class WPInsight_Admin {
 			$memory_status = 'warning';
 		}
 
-		$health['php_memory'] = array(
+		$health['php_memory'] = [
 			'status'  => $memory_status,
 			'value'   => $memory_limit,
 			'used'    => $memory_usage,
@@ -3491,41 +3532,41 @@ final class WPInsight_Admin {
 				$memory_limit,
 				round( $memory_percent, 1 )
 			),
-		);
+		];
 
 		// Check WordPress Version.
-		$wp_version     = get_bloginfo( 'version' );
-		$required_wp    = '6.9';
-		$wp_version_ok  = version_compare( $wp_version, $required_wp, '>=' );
-		$health['wp_version'] = array(
+		$wp_version           = get_bloginfo( 'version' );
+		$required_wp          = '6.9';
+		$wp_version_ok        = version_compare( $wp_version, $required_wp, '>=' );
+		$health['wp_version'] = [
 			'status'   => $wp_version_ok ? 'ok' : 'error',
 			'value'    => $wp_version,
 			'required' => $required_wp . '+',
 			'message'  => $wp_version_ok
 				? sprintf( __( 'WordPress %s (meets requirement)', 'cloudfest-wporgdownload' ), $wp_version )
-				: sprintf( __( 'WordPress %s (requires %s+)', 'cloudfest-wporgdownload' ), $wp_version, $required_wp ),
-		);
+				: sprintf( __( 'WordPress %1$s (requires %2$s+)', 'cloudfest-wporgdownload' ), $wp_version, $required_wp ),
+		];
 
 		// Check PHP Extensions.
-		$required_extensions = array(
+		$required_extensions = [
 			'curl'     => __( 'cURL extension (required for API requests)', 'cloudfest-wporgdownload' ),
 			'zip'      => __( 'ZIP extension (required for file validation)', 'cloudfest-wporgdownload' ),
 			'json'     => __( 'JSON extension (required for API parsing)', 'cloudfest-wporgdownload' ),
 			'mbstring' => __( 'Mbstring extension (recommended for string handling)', 'cloudfest-wporgdownload' ),
-		);
+		];
 
-		$health['extensions'] = array();
+		$health['extensions'] = [];
 		foreach ( $required_extensions as $ext => $description ) {
-			$installed = extension_loaded( $ext );
-			$is_required = in_array( $ext, array( 'curl', 'zip', 'json' ), true );
+			$installed   = extension_loaded( $ext );
+			$is_required = in_array( $ext, [ 'curl', 'zip', 'json' ], true );
 
-			$health['extensions'][ $ext ] = array(
+			$health['extensions'][ $ext ] = [
 				'status'    => $installed ? 'ok' : ( $is_required ? 'error' : 'warning' ),
 				'installed' => $installed,
 				'message'   => $installed
 					? sprintf( __( '%s - Installed', 'cloudfest-wporgdownload' ), $description )
 					: sprintf( __( '%s - Missing', 'cloudfest-wporgdownload' ), $description ),
-			);
+			];
 		}
 
 		// Check File Permissions.
@@ -3533,18 +3574,18 @@ final class WPInsight_Admin {
 		$base_path  = $upload_dir['basedir'];
 		$writable   = wp_is_writable( $base_path );
 
-		$health['permissions'] = array(
+		$health['permissions'] = [
 			'status'   => $writable ? 'ok' : 'error',
 			'path'     => $base_path,
 			'writable' => $writable,
 			'message'  => $writable
 				? sprintf( __( 'Uploads directory writable: %s', 'cloudfest-wporgdownload' ), $base_path )
 				: sprintf( __( 'Uploads directory NOT writable: %s', 'cloudfest-wporgdownload' ), $base_path ),
-		);
+		];
 
 		// Check Disk Space.
-		$total_space = disk_total_space( $base_path );
-		$free_space  = disk_free_space( $base_path );
+		$total_space  = disk_total_space( $base_path );
+		$free_space   = disk_free_space( $base_path );
 		$used_percent = $total_space > 0 ? ( ( $total_space - $free_space ) / $total_space ) * 100 : 0;
 
 		$disk_status = 'ok';
@@ -3554,7 +3595,7 @@ final class WPInsight_Admin {
 			$disk_status = 'warning';
 		}
 
-		$health['disk_space'] = array(
+		$health['disk_space'] = [
 			'status'  => $disk_status,
 			'free'    => $free_space,
 			'total'   => $total_space,
@@ -3565,30 +3606,30 @@ final class WPInsight_Admin {
 				size_format( $free_space ),
 				size_format( $total_space )
 			),
-		);
+		];
 
 		// Check Database.
 		$db_version = $wpdb->db_version();
 		$db_ok      = version_compare( $db_version, '10.6', '>=' );
 
-		$health['database'] = array(
+		$health['database'] = [
 			'status'  => $db_ok ? 'ok' : 'warning',
 			'version' => $db_version,
 			'message' => $db_ok
 				? sprintf( __( 'MariaDB/MySQL %s (meets requirement)', 'cloudfest-wporgdownload' ), $db_version )
 				: sprintf( __( 'MariaDB/MySQL %s (10.6+ recommended)', 'cloudfest-wporgdownload' ), $db_version ),
-		);
+		];
 
 		// Check Action Scheduler.
 		$as_installed = function_exists( 'as_schedule_recurring_action' );
 
-		$health['action_scheduler'] = array(
+		$health['action_scheduler'] = [
 			'status'    => $as_installed ? 'ok' : 'error',
 			'installed' => $as_installed,
 			'message'   => $as_installed
 				? __( 'Action Scheduler - Installed and active', 'cloudfest-wporgdownload' )
 				: __( 'Action Scheduler - Missing (REQUIRED)', 'cloudfest-wporgdownload' ),
-		);
+		];
 
 		return $health;
 	}
@@ -3621,12 +3662,10 @@ final class WPInsight_Admin {
 						++$warning_count;
 					}
 				}
-			} else {
-				if ( 'error' === $check['status'] ) {
+			} elseif ( 'error' === $check['status'] ) {
 					++$error_count;
-				} elseif ( 'warning' === $check['status'] ) {
-					++$warning_count;
-				}
+			} elseif ( 'warning' === $check['status'] ) {
+				++$warning_count;
 			}
 		}
 
@@ -3650,12 +3689,12 @@ final class WPInsight_Admin {
 			);
 		}
 
-		return array(
+		return [
 			'status'        => $overall_status,
 			'message'       => $message,
 			'error_count'   => $error_count,
 			'warning_count' => $warning_count,
-		);
+		];
 	}
 
 	/**
@@ -3676,15 +3715,15 @@ final class WPInsight_Admin {
 	private static function get_api_health_data(): array {
 		global $wpdb;
 
-		$health = array();
+		$health = [];
 
 		// Test API response time (real-time check).
-		$test_start = microtime( true );
+		$test_start    = microtime( true );
 		$test_response = WPInsight_WPOrg_Client::check_api_health();
-		$test_time = microtime( true ) - $test_start;
+		$test_time     = microtime( true ) - $test_start;
 
-		$response_ok = ! is_wp_error( $test_response );
-		$health['last_test'] = array(
+		$response_ok         = ! is_wp_error( $test_response );
+		$health['last_test'] = [
 			'success' => $response_ok,
 			'time'    => round( $test_time, 3 ),
 			'message' => $response_ok
@@ -3698,11 +3737,11 @@ final class WPInsight_Admin {
 					__( 'API test failed: %s', 'cloudfest-wporgdownload' ),
 					$test_response->get_error_message()
 				),
-		);
+		];
 
 		// Calculate average response time from recent successful requests.
 		// For now, use the test time as baseline.
-		$avg_response = $test_time;
+		$avg_response    = $test_time;
 		$response_status = 'ok';
 
 		if ( $avg_response > 3.0 ) {
@@ -3711,7 +3750,7 @@ final class WPInsight_Admin {
 			$response_status = 'warning';
 		}
 
-		$health['response_time'] = array(
+		$health['response_time'] = [
 			'status'  => $response_status,
 			'value'   => round( $avg_response, 3 ),
 			'message' => $response_status === 'ok'
@@ -3725,7 +3764,7 @@ final class WPInsight_Admin {
 					__( 'Slow (%ss average)', 'cloudfest-wporgdownload' ),
 					round( $avg_response, 3 )
 				),
-		);
+		];
 
 		// Get API error rate from error log (last 24 hours).
 		$logs_table = WPInsight_DB::get_table_name( 'error_log' );
@@ -3750,14 +3789,14 @@ final class WPInsight_Admin {
 		// Each sync makes ~1-3 API calls depending on type.
 		// Plus size detection worker, etc.
 		// Conservative estimate: ~500-3000 requests per day.
-		$sync_interval = WPInsight_Settings::get( 'sync_interval', 300 );
-		$syncs_per_day = 86400 / $sync_interval; // 24h / interval.
+		$sync_interval      = WPInsight_Settings::get( 'sync_interval', 300 );
+		$syncs_per_day      = 86400 / $sync_interval; // 24h / interval.
 		$estimated_requests = $syncs_per_day * 2; // Average 2 API calls per sync.
 
 		// Add size detection requests.
-		$size_detection_rate = WPInsight_Settings::get( 'max_size_detection_rate', 3 );
+		$size_detection_rate    = WPInsight_Settings::get( 'max_size_detection_rate', 3 );
 		$size_detection_per_day = ( 86400 / 300 ) * 600; // Every 5 min, 600 ZIPs.
-		$estimated_requests += $size_detection_per_day;
+		$estimated_requests    += $size_detection_per_day;
 
 		$error_percent = $estimated_requests > 0 ? ( $api_errors / $estimated_requests ) * 100 : 0;
 
@@ -3768,7 +3807,7 @@ final class WPInsight_Admin {
 			$error_status = 'warning';
 		}
 
-		$health['error_rate'] = array(
+		$health['error_rate'] = [
 			'status'  => $error_status,
 			'errors'  => (int) $api_errors,
 			'total'   => (int) $estimated_requests,
@@ -3780,7 +3819,7 @@ final class WPInsight_Admin {
 				number_format_i18n( $estimated_requests ),
 				round( $error_percent, 2 )
 			),
-		);
+		];
 
 		// Rate limit recommendations.
 		$current_rate_limit = WPInsight_Settings::get( 'max_concurrent_downloads', 3 );
@@ -3793,7 +3832,7 @@ final class WPInsight_Admin {
 			$rate_status = 'warning'; // Above recommended.
 		}
 
-		$health['rate_limit'] = array(
+		$health['rate_limit'] = [
 			'status'  => $rate_status,
 			'current' => $current_rate_limit,
 			'optimal' => $optimal_rate_limit,
@@ -3809,10 +3848,10 @@ final class WPInsight_Admin {
 					$current_rate_limit,
 					$optimal_rate_limit
 				),
-		);
+		];
 
 		// Generate recommendations.
-		$recommendations = array();
+		$recommendations = [];
 
 		if ( $error_percent > 5 ) {
 			$recommendations[] = __( 'High API error rate detected. Consider reducing sync frequency or rate limits.', 'cloudfest-wporgdownload' );
@@ -3855,15 +3894,15 @@ final class WPInsight_Admin {
 	private static function export_diagnostic_report( bool $anonymize = false ): array {
 		global $wpdb;
 
-		$report = array(
-			'meta' => array(
-				'generated_at' => current_time( 'mysql', true ),
+		$report = [
+			'meta' => [
+				'generated_at'   => current_time( 'mysql', true ),
 				'plugin_version' => WPINSIGHT_VERSION,
-				'wp_version' => get_bloginfo( 'version' ),
-				'php_version' => PHP_VERSION,
-				'anonymized' => $anonymize,
-			),
-		);
+				'wp_version'     => get_bloginfo( 'version' ),
+				'php_version'    => PHP_VERSION,
+				'anonymized'     => $anonymize,
+			],
+		];
 
 		// System Health.
 		$report['system_health'] = self::get_system_health_data();
@@ -3883,10 +3922,10 @@ final class WPInsight_Admin {
 		$report['queue_stats'] = WPInsight_Zip_Queue::get_queue_stats();
 
 		// Sync States.
-		$report['sync_states'] = array(
+		$report['sync_states'] = [
 			'plugin' => WPInsight_Sync::get_sync_state( 'plugin' ),
 			'theme'  => WPInsight_Sync::get_sync_state( 'theme' ),
-		);
+		];
 
 		// Settings (optionally anonymized).
 		$all_settings = WPInsight_Settings::get_all();
@@ -3930,14 +3969,14 @@ final class WPInsight_Admin {
 
 		// WordPress environment info.
 		if ( ! $anonymize ) {
-			$report['environment'] = array(
+			$report['environment'] = [
 				'home_url'        => home_url(),
 				'site_url'        => site_url(),
 				'wp_debug'        => defined( 'WP_DEBUG' ) && WP_DEBUG,
 				'wp_debug_log'    => defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG,
 				'wp_memory_limit' => WP_MEMORY_LIMIT,
 				'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
-			);
+			];
 		}
 
 		return $report;
@@ -3953,7 +3992,7 @@ final class WPInsight_Admin {
 	 */
 	public static function handle_diagnostic_export(): void {
 		// Check if export action is set.
-		if ( ! isset( $_GET['action'] ) || ! in_array( $_GET['action'], array( 'export_diagnostics', 'export_diagnostics_anon' ), true ) ) {
+		if ( ! isset( $_GET['action'] ) || ! in_array( $_GET['action'], [ 'export_diagnostics', 'export_diagnostics_anon' ], true ) ) {
 			return;
 		}
 
@@ -3967,7 +4006,7 @@ final class WPInsight_Admin {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'cloudfest-wporgdownload' ) );
 		}
 
-		$action = sanitize_text_field( wp_unslash( $_GET['action'] ) );
+		$action    = sanitize_text_field( wp_unslash( $_GET['action'] ) );
 		$anonymize = ( 'export_diagnostics_anon' === $action );
 
 		try {
@@ -3977,10 +4016,10 @@ final class WPInsight_Admin {
 			// Log export.
 			WPInsight_Logger::info(
 				'Diagnostic report exported',
-				array(
+				[
 					'anonymized' => $anonymize,
 					'user_id'    => get_current_user_id(),
-				)
+				]
 			);
 
 			// Generate filename.
@@ -4004,9 +4043,9 @@ final class WPInsight_Admin {
 		} catch ( Exception $e ) {
 			WPInsight_Logger::error(
 				'Diagnostic export failed',
-				array(
+				[
 					'error' => $e->getMessage(),
-				)
+				]
 			);
 
 			wp_die(
@@ -4069,10 +4108,38 @@ final class WPInsight_Admin {
 		}
 
 		try {
-			// Validate file type.
+			// Security: Check file size (max 5MB to prevent DoS).
+			$max_file_size = 5 * 1024 * 1024; // 5MB.
+			if ( $_FILES['settings_file']['size'] > $max_file_size ) {
+				throw new Exception(
+					sprintf(
+						/* translators: %s: maximum file size */
+						__( 'File too large. Maximum allowed size is %s.', 'cloudfest-wporgdownload' ),
+						size_format( $max_file_size )
+					)
+				);
+			}
+
+			// Security: Verify MIME type.
+			$allowed_mimes = [ 'application/json', 'text/plain' ];
+			$finfo         = finfo_open( FILEINFO_MIME_TYPE );
+			$detected_mime = finfo_file( $finfo, $_FILES['settings_file']['tmp_name'] );
+			finfo_close( $finfo );
+
+			if ( ! in_array( $detected_mime, $allowed_mimes, true ) ) {
+				throw new Exception(
+					sprintf(
+						/* translators: %s: detected MIME type */
+						__( 'Invalid file type. Detected: %s. Only JSON files are allowed.', 'cloudfest-wporgdownload' ),
+						$detected_mime
+					)
+				);
+			}
+
+			// Validate file extension.
 			$file_name = sanitize_file_name( wp_unslash( $_FILES['settings_file']['name'] ) );
 			if ( ! str_ends_with( $file_name, '.json' ) ) {
-				throw new Exception( __( 'Invalid file type. Only JSON files are allowed.', 'cloudfest-wporgdownload' ) );
+				throw new Exception( __( 'Invalid file extension. Only .json files are allowed.', 'cloudfest-wporgdownload' ) );
 			}
 
 			// Read file content.
@@ -4094,7 +4161,7 @@ final class WPInsight_Admin {
 			}
 
 			// Import settings (only safe settings).
-			$safe_settings = array(
+			$safe_settings = [
 				'auto_sync_enabled',
 				'sync_plugins_enabled',
 				'sync_themes_enabled',
@@ -4107,7 +4174,7 @@ final class WPInsight_Admin {
 				'max_size_detection_rate',
 				'per_page',
 				'log_retention_days',
-			);
+			];
 
 			$imported_count = 0;
 			foreach ( $safe_settings as $setting_key ) {
@@ -4120,10 +4187,10 @@ final class WPInsight_Admin {
 			// Log import.
 			WPInsight_Logger::info(
 				'Settings imported from diagnostic file',
-				array(
+				[
 					'imported_count' => $imported_count,
 					'user_id'        => get_current_user_id(),
-				)
+				]
 			);
 
 			add_settings_error(
@@ -4140,9 +4207,9 @@ final class WPInsight_Admin {
 		} catch ( Exception $e ) {
 			WPInsight_Logger::error(
 				'Settings import failed',
-				array(
+				[
 					'error' => $e->getMessage(),
-				)
+				]
 			);
 
 			add_settings_error(

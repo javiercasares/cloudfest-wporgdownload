@@ -46,7 +46,7 @@ class WPInsight_REST_API {
 	 * @return void
 	 */
 	public static function init(): void {
-		add_action( 'rest_api_init', array( __CLASS__, 'register_routes' ) );
+		add_action( 'rest_api_init', [ __CLASS__, 'register_routes' ] );
 	}
 
 	/**
@@ -60,84 +60,84 @@ class WPInsight_REST_API {
 		register_rest_route(
 			self::NAMESPACE,
 			'/dashboard-stats',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( __CLASS__, 'get_dashboard_stats' ),
-				'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
-			)
+				'callback'            => [ __CLASS__, 'get_dashboard_stats' ],
+				'permission_callback' => [ __CLASS__, 'check_admin_permission' ],
+			]
 		);
 
 		// Active downloads endpoint.
 		register_rest_route(
 			self::NAMESPACE,
 			'/active-downloads',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( __CLASS__, 'get_active_downloads' ),
-				'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
-			)
+				'callback'            => [ __CLASS__, 'get_active_downloads' ],
+				'permission_callback' => [ __CLASS__, 'check_admin_permission' ],
+			]
 		);
 
 		// Sync status endpoint.
 		register_rest_route(
 			self::NAMESPACE,
 			'/sync-status',
-			array(
+			[
 				'methods'             => 'GET',
-				'callback'            => array( __CLASS__, 'get_sync_status' ),
-				'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
-			)
+				'callback'            => [ __CLASS__, 'get_sync_status' ],
+				'permission_callback' => [ __CLASS__, 'check_admin_permission' ],
+			]
 		);
 
 		// Download now action endpoint.
 		register_rest_route(
 			self::NAMESPACE,
 			'/download-now',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( __CLASS__, 'download_now' ),
-				'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
-				'args'                => array(
-					'slug'    => array(
+				'callback'            => [ __CLASS__, 'download_now' ],
+				'permission_callback' => [ __CLASS__, 'check_admin_permission' ],
+				'args'                => [
+					'slug'    => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-					),
-					'version' => array(
+					],
+					'version' => [
 						'required'          => true,
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
-					),
-					'type'    => array(
+					],
+					'type'    => [
 						'required'          => true,
 						'type'              => 'string',
-						'enum'              => array( 'plugin', 'theme' ),
+						'enum'              => [ 'plugin', 'theme' ],
 						'sanitize_callback' => 'sanitize_text_field',
-					),
-				),
-			)
+					],
+				],
+			]
 		);
 
 		// Pause downloads action endpoint.
 		register_rest_route(
 			self::NAMESPACE,
 			'/pause-downloads',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( __CLASS__, 'pause_downloads' ),
-				'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
-			)
+				'callback'            => [ __CLASS__, 'pause_downloads' ],
+				'permission_callback' => [ __CLASS__, 'check_admin_permission' ],
+			]
 		);
 
 		// Resume downloads action endpoint.
 		register_rest_route(
 			self::NAMESPACE,
 			'/resume-downloads',
-			array(
+			[
 				'methods'             => 'POST',
-				'callback'            => array( __CLASS__, 'resume_downloads' ),
-				'permission_callback' => array( __CLASS__, 'check_admin_permission' ),
-			)
+				'callback'            => [ __CLASS__, 'resume_downloads' ],
+				'permission_callback' => [ __CLASS__, 'check_admin_permission' ],
+			]
 		);
 	}
 
@@ -163,17 +163,17 @@ class WPInsight_REST_API {
 		$stats = WPInsight_Zip_Queue::get_queue_stats();
 
 		return new WP_REST_Response(
-			array(
+			[
 				'success' => true,
-				'data'    => array(
+				'data'    => [
 					'pending'    => $stats['pending'] ?? 0,
 					'processing' => $stats['processing'] ?? 0,
 					'completed'  => $stats['completed'] ?? 0,
 					'failed'     => $stats['failed'] ?? 0,
 					'paused'     => WPInsight_Settings::get( 'downloads_paused', false ),
 					'timestamp'  => time(),
-				),
-			),
+				],
+			],
 			200
 		);
 	}
@@ -205,22 +205,22 @@ class WPInsight_REST_API {
 			ARRAY_A
 		);
 
-		$active = array();
+		$active = [];
 
 		foreach ( $downloads as $download ) {
-			$started = strtotime( $download['started_at'] );
-			$elapsed = time() - $started;
+			$started   = strtotime( $download['started_at'] );
+			$elapsed   = time() - $started;
 			$file_size = (int) $download['file_size'];
 
 			// Calculate progress (estimate based on elapsed time and average speed).
-			$avg_speed = 1024 * 1024 * 2; // 2 MB/s average.
+			$avg_speed  = 1024 * 1024 * 2; // 2 MB/s average.
 			$downloaded = min( $elapsed * $avg_speed, $file_size );
-			$progress = $file_size > 0 ? min( 99, ( $downloaded / $file_size ) * 100 ) : 50;
+			$progress   = $file_size > 0 ? min( 99, ( $downloaded / $file_size ) * 100 ) : 50;
 
 			// Calculate speed.
 			$speed = $elapsed > 0 ? $downloaded / $elapsed : 0;
 
-			$active[] = array(
+			$active[] = [
 				'slug'       => $download['slug'],
 				'version'    => $download['version'],
 				'type'       => $download['type'],
@@ -230,14 +230,14 @@ class WPInsight_REST_API {
 				'speed'      => $speed,
 				'speed_text' => size_format( $speed, 1 ) . '/s',
 				'filename'   => $download['slug'] . '.' . $download['version'] . '.zip',
-			);
+			];
 		}
 
 		return new WP_REST_Response(
-			array(
+			[
 				'success' => true,
 				'data'    => $active,
-			),
+			],
 			200
 		);
 	}
@@ -280,7 +280,7 @@ class WPInsight_REST_API {
 		);
 
 		$plugin_progress = 0;
-		$theme_progress = 0;
+		$theme_progress  = 0;
 
 		if ( $plugin_state && $plugin_state['total_items'] > 0 ) {
 			$plugin_progress = round( ( $plugin_state['items_processed'] / $plugin_state['total_items'] ) * 100, 1 );
@@ -291,10 +291,10 @@ class WPInsight_REST_API {
 		}
 
 		return new WP_REST_Response(
-			array(
+			[
 				'success' => true,
-				'data'    => array(
-					'plugin' => array(
+				'data'    => [
+					'plugin' => [
 						'status'          => $plugin_state['status'] ?? 'idle',
 						'progress'        => $plugin_progress,
 						'items_processed' => (int) ( $plugin_state['items_processed'] ?? 0 ),
@@ -302,8 +302,8 @@ class WPInsight_REST_API {
 						'current_page'    => (int) ( $plugin_state['current_page'] ?? 0 ),
 						'total_pages'     => (int) ( $plugin_state['total_pages'] ?? 0 ),
 						'updated_at'      => $plugin_state['updated_at'] ?? '',
-					),
-					'theme'  => array(
+					],
+					'theme'  => [
 						'status'          => $theme_state['status'] ?? 'idle',
 						'progress'        => $theme_progress,
 						'items_processed' => (int) ( $theme_state['items_processed'] ?? 0 ),
@@ -311,9 +311,9 @@ class WPInsight_REST_API {
 						'current_page'    => (int) ( $theme_state['current_page'] ?? 0 ),
 						'total_pages'     => (int) ( $theme_state['total_pages'] ?? 0 ),
 						'updated_at'      => $theme_state['updated_at'] ?? '',
-					),
-				),
-			),
+					],
+				],
+			],
 			200
 		);
 	}
@@ -328,41 +328,41 @@ class WPInsight_REST_API {
 	 * @return WP_REST_Response Response.
 	 */
 	public static function download_now( WP_REST_Request $request ): WP_REST_Response {
-		$slug = $request->get_param( 'slug' );
+		$slug    = $request->get_param( 'slug' );
 		$version = $request->get_param( 'version' );
-		$type = $request->get_param( 'type' );
+		$type    = $request->get_param( 'type' );
 
 		// Get download URL from CPT meta.
 		$post_type = 'plugin' === $type ? WPInsight_CPT::get_plugin_post_type() : WPInsight_CPT::get_theme_post_type();
 
 		$posts = get_posts(
-			array(
+			[
 				'post_type'      => $post_type,
 				'name'           => $slug,
 				'posts_per_page' => 1,
 				'post_status'    => 'publish',
-			)
+			]
 		);
 
 		if ( empty( $posts ) ) {
 			return new WP_REST_Response(
-				array(
+				[
 					'success' => false,
 					'message' => __( 'Plugin or theme not found.', 'cloudfest-wporgdownload' ),
-				),
+				],
 				404
 			);
 		}
 
-		$post_id = $posts[0]->ID;
+		$post_id       = $posts[0]->ID;
 		$versions_data = get_post_meta( $post_id, '_wpinsight_versions_data', true );
 
 		if ( empty( $versions_data[ $version ] ) ) {
 			return new WP_REST_Response(
-				array(
+				[
 					'success' => false,
 					'message' => __( 'Version not found.', 'cloudfest-wporgdownload' ),
-				),
+				],
 				404
 			);
 		}
@@ -374,19 +374,19 @@ class WPInsight_REST_API {
 
 		if ( $result ) {
 			return new WP_REST_Response(
-				array(
+				[
 					'success' => true,
 					'message' => __( 'Download enqueued successfully.', 'cloudfest-wporgdownload' ),
-				),
+				],
 				200
 			);
 		}
 
 		return new WP_REST_Response(
-			array(
+			[
 				'success' => false,
 				'message' => __( 'Failed to enqueue download.', 'cloudfest-wporgdownload' ),
-			),
+			],
 			500
 		);
 	}
@@ -401,10 +401,10 @@ class WPInsight_REST_API {
 		WPInsight_Settings::set( 'downloads_paused', true );
 
 		return new WP_REST_Response(
-			array(
+			[
 				'success' => true,
 				'message' => __( 'Downloads paused.', 'cloudfest-wporgdownload' ),
-			),
+			],
 			200
 		);
 	}
@@ -419,10 +419,10 @@ class WPInsight_REST_API {
 		WPInsight_Settings::set( 'downloads_paused', false );
 
 		return new WP_REST_Response(
-			array(
+			[
 				'success' => true,
 				'message' => __( 'Downloads resumed.', 'cloudfest-wporgdownload' ),
-			),
+			],
 			200
 		);
 	}

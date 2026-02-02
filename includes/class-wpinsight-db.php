@@ -106,7 +106,7 @@ final class WPInsight_DB {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		// SQL statements for all tables.
-		$sql = array();
+		$sql = [];
 
 		// Table 1: Sync State - tracks pagination cursor and sync status.
 		$sql[] = 'CREATE TABLE ' . self::get_table_name( 'sync_state' ) . " (
@@ -433,7 +433,7 @@ final class WPInsight_DB {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT
+				'SELECT
 					TABLE_NAME as name,
 					TABLE_ROWS as row_count,
 					DATA_LENGTH as data_size,
@@ -443,7 +443,7 @@ final class WPInsight_DB {
 					UPDATE_TIME as last_optimize
 				FROM information_schema.TABLES
 				WHERE TABLE_SCHEMA = %s
-				AND TABLE_NAME = %s",
+				AND TABLE_NAME = %s',
 				DB_NAME,
 				$table_name
 			),
@@ -455,14 +455,14 @@ final class WPInsight_DB {
 		}
 
 		// Format sizes for display.
-		$result['rows']                   = (int) $result['row_count'];
-		$result['data_size']              = (int) $result['data_size'];
-		$result['index_size']             = (int) $result['index_size'];
-		$result['total_size']             = (int) $result['total_size'];
-		$result['data_size_formatted']    = size_format( $result['data_size'], 2 );
-		$result['index_size_formatted']   = size_format( $result['index_size'], 2 );
-		$result['total_size_formatted']   = size_format( $result['total_size'], 2 );
-		$result['last_optimize']          = $result['last_optimize'] ?? null;
+		$result['rows']                 = (int) $result['row_count'];
+		$result['data_size']            = (int) $result['data_size'];
+		$result['index_size']           = (int) $result['index_size'];
+		$result['total_size']           = (int) $result['total_size'];
+		$result['data_size_formatted']  = size_format( $result['data_size'], 2 );
+		$result['index_size_formatted'] = size_format( $result['index_size'], 2 );
+		$result['total_size_formatted'] = size_format( $result['total_size'], 2 );
+		$result['last_optimize']        = $result['last_optimize'] ?? null;
 
 		// Remove temporary row_count key.
 		unset( $result['row_count'] );
@@ -479,12 +479,12 @@ final class WPInsight_DB {
 	 * @return array<string, array> Array of table statistics keyed by short table name.
 	 */
 	public static function get_all_tables_stats(): array {
-		$tables = array( 'sync_state', 'zip_queue', 'artifacts', 'error_log' );
-		$stats  = array();
+		$tables = [ 'sync_state', 'zip_queue', 'artifacts', 'error_log' ];
+		$stats  = [];
 
 		foreach ( $tables as $table ) {
-			$full_name        = self::get_table_name( $table );
-			$table_stats      = self::get_table_stats( $full_name );
+			$full_name   = self::get_table_name( $table );
+			$table_stats = self::get_table_stats( $full_name );
 			if ( $table_stats ) {
 				$stats[ $table ] = $table_stats;
 			}
@@ -518,23 +518,23 @@ final class WPInsight_DB {
 		);
 
 		if ( ! $results ) {
-			return array(
-				array(
+			return [
+				[
 					'status'   => 'error',
 					'msg_type' => 'error',
 					'msg_text' => 'Failed to check table',
-				),
-			);
+				],
+			];
 		}
 
 		// Format results.
-		$formatted = array();
+		$formatted = [];
 		foreach ( $results as $row ) {
-			$formatted[] = array(
+			$formatted[] = [
 				'status'   => $row['Msg_type'] ?? 'unknown',
 				'msg_type' => $row['Msg_type'] ?? 'unknown',
 				'msg_text' => $row['Msg_text'] ?? '',
-			);
+			];
 		}
 
 		return $formatted;
@@ -565,20 +565,20 @@ final class WPInsight_DB {
 		);
 
 		if ( ! $results ) {
-			return array(
+			return [
 				'success' => false,
 				'message' => 'Failed to optimize table',
-			);
+			];
 		}
 
 		// Check if optimization succeeded.
 		$last_result = end( $results );
 		$success     = isset( $last_result['Msg_type'] ) && 'status' === $last_result['Msg_type'];
 
-		return array(
+		return [
 			'success' => $success,
 			'message' => $last_result['Msg_text'] ?? 'Unknown result',
-		);
+		];
 	}
 
 	/**
@@ -606,20 +606,20 @@ final class WPInsight_DB {
 		);
 
 		if ( ! $results ) {
-			return array(
+			return [
 				'success' => false,
 				'message' => 'Failed to repair table',
-			);
+			];
 		}
 
 		// Check if repair succeeded.
 		$last_result = end( $results );
 		$success     = isset( $last_result['Msg_type'] ) && 'status' === $last_result['Msg_type'];
 
-		return array(
+		return [
 			'success' => $success,
 			'message' => $last_result['Msg_text'] ?? 'Unknown result',
-		);
+		];
 	}
 
 	/**
@@ -649,19 +649,19 @@ final class WPInsight_DB {
 		);
 
 		if ( ! $results ) {
-			return array();
+			return [];
 		}
 
 		// Format index information.
-		$indexes = array();
+		$indexes = [];
 		foreach ( $results as $row ) {
-			$indexes[] = array(
+			$indexes[] = [
 				'name'        => $row['Key_name'] ?? '',
 				'column'      => $row['Column_name'] ?? '',
 				'unique'      => isset( $row['Non_unique'] ) && 0 === (int) $row['Non_unique'],
 				'type'        => $row['Index_type'] ?? 'BTREE',
 				'cardinality' => (int) ( $row['Cardinality'] ?? 0 ),
-			);
+			];
 		}
 
 		return $indexes;

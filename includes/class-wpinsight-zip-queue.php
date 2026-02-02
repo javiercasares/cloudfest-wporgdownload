@@ -48,15 +48,15 @@ final class WPInsight_Zip_Queue {
 	 */
 	public static function init(): void {
 		// Register ZIP worker tick handler.
-		add_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array( __CLASS__, 'worker_tick' ) );
+		add_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [ __CLASS__, 'worker_tick' ] );
 
 		// Register size detection worker tick handler.
-		add_action( 'wpinsight_size_detection_tick', array( __CLASS__, 'size_detection_tick' ) );
+		add_action( 'wpinsight_size_detection_tick', [ __CLASS__, 'size_detection_tick' ] );
 
 		// Ensure size detection worker is scheduled.
 		// This is called on every init to ensure the worker is scheduled even if the plugin
 		// was updated without being deactivated/reactivated.
-		add_action( 'init', array( __CLASS__, 'ensure_size_detection_scheduled' ), 20 );
+		add_action( 'init', [ __CLASS__, 'ensure_size_detection_scheduled' ], 20 );
 	}
 
 	/**
@@ -75,7 +75,7 @@ final class WPInsight_Zip_Queue {
 		}
 
 		// Check if already scheduled.
-		$next_run = as_next_scheduled_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
+		$next_run = as_next_scheduled_action( WPINSIGHT_ZIP_WORKER_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
 		if ( false !== $next_run ) {
 			return; // Already scheduled.
 		}
@@ -86,7 +86,7 @@ final class WPInsight_Zip_Queue {
 			time(),
 			$interval,
 			WPINSIGHT_ZIP_WORKER_TICK_ACTION,
-			array(),
+			[],
 			WPINSIGHT_AS_GROUP
 		);
 	}
@@ -107,7 +107,7 @@ final class WPInsight_Zip_Queue {
 		}
 
 		// Check if already scheduled.
-		$next_run = as_next_scheduled_action( 'wpinsight_size_detection_tick', array(), WPINSIGHT_AS_GROUP );
+		$next_run = as_next_scheduled_action( 'wpinsight_size_detection_tick', [], WPINSIGHT_AS_GROUP );
 		if ( false !== $next_run ) {
 			return; // Already scheduled.
 		}
@@ -117,7 +117,7 @@ final class WPInsight_Zip_Queue {
 			time(),
 			300, // 5 minutes.
 			'wpinsight_size_detection_tick',
-			array(),
+			[],
 			WPINSIGHT_AS_GROUP
 		);
 	}
@@ -234,7 +234,7 @@ final class WPInsight_Zip_Queue {
 		if ( $cleaned > 0 ) {
 			WPInsight_Logger::warning(
 				sprintf( 'Cleaned up %d stale processing locks', $cleaned ),
-				array( 'cleaned' => $cleaned )
+				[ 'cleaned' => $cleaned ]
 			);
 
 			// Invalidate cache.
@@ -278,14 +278,14 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			$table,
-			array(
+			[
 				'status'       => 'processing',
 				'started_at'   => current_time( 'mysql', true ),
 				'last_attempt' => current_time( 'mysql', true ),
-			),
-			array( 'id' => $job['id'] ),
-			array( '%s', '%s', '%s' ),
-			array( '%d' )
+			],
+			[ 'id' => $job['id'] ],
+			[ '%s', '%s', '%s' ],
+			[ '%d' ]
 		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit required.
@@ -359,13 +359,13 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->update(
 			$queue_table,
-			array(
+			[
 				'status'       => 'completed',
 				'completed_at' => current_time( 'mysql', true ),
-			),
-			array( 'id' => $job_id ),
-			array( '%s', '%s' ),
-			array( '%d' )
+			],
+			[ 'id' => $job_id ],
+			[ '%s', '%s' ],
+			[ '%d' ]
 		);
 
 		// Invalidate queue stats cache.
@@ -377,7 +377,7 @@ final class WPInsight_Zip_Queue {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->insert(
 			$artifacts_table,
-			array(
+			[
 				'item_type'     => $job['item_type'],
 				'slug'          => $job['slug'],
 				'version'       => $job['version'],
@@ -385,8 +385,8 @@ final class WPInsight_Zip_Queue {
 				'file_size'     => $file_size,
 				'file_hash'     => hash_file( 'sha256', $file_path ),
 				'downloaded_at' => current_time( 'mysql', true ),
-			),
-			array( '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
+			],
+			[ '%s', '%s', '%s', '%s', '%d', '%s', '%s' ]
 		);
 	}
 
@@ -415,30 +415,30 @@ final class WPInsight_Zip_Queue {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$table,
-				array(
+				[
 					'status'       => 'failed',
 					'attempts'     => $attempts,
 					'last_error'   => $error,
 					'last_attempt' => current_time( 'mysql', true ),
-				),
-				array( 'id' => $job_id ),
-				array( '%s', '%d', '%s', '%s' ),
-				array( '%d' )
+				],
+				[ 'id' => $job_id ],
+				[ '%s', '%d', '%s', '%s' ],
+				[ '%d' ]
 			);
 		} else {
 			// Retry available, requeue as pending.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->update(
 				$table,
-				array(
+				[
 					'status'       => 'pending',
 					'attempts'     => $attempts,
 					'last_error'   => $error,
 					'last_attempt' => current_time( 'mysql', true ),
-				),
-				array( 'id' => $job_id ),
-				array( '%s', '%d', '%s', '%s' ),
-				array( '%d' )
+				],
+				[ 'id' => $job_id ],
+				[ '%s', '%d', '%s', '%s' ],
+				[ '%d' ]
 			);
 		}
 
@@ -486,13 +486,13 @@ final class WPInsight_Zip_Queue {
 			ARRAY_A
 		);
 
-		$stats = array(
+		$stats = [
 			'pending'    => 0,
 			'processing' => 0,
 			'completed'  => 0,
 			'failed'     => 0,
 			'total'      => 0,
-		);
+		];
 
 		if ( is_array( $results ) ) {
 			foreach ( $results as $row ) {
@@ -596,18 +596,18 @@ final class WPInsight_Zip_Queue {
 		);
 
 		if ( empty( $jobs ) ) {
-			return array(
+			return [
 				'checked' => 0,
 				'updated' => 0,
 				'failed'  => 0,
-			);
+			];
 		}
 
-		$stats = array(
+		$stats = [
 			'checked' => count( $jobs ),
 			'updated' => 0,
 			'failed'  => 0,
-		);
+		];
 
 		// Get rate limit from settings (requests per second).
 		$rate_limit = WPInsight_Settings::get( 'max_size_detection_rate', 3 );
@@ -624,10 +624,10 @@ final class WPInsight_Zip_Queue {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$updated = $wpdb->update(
 					$table,
-					array( 'remote_filesize' => $filesize ),
-					array( 'id' => $job['id'] ),
-					array( '%d' ),
-					array( '%d' )
+					[ 'remote_filesize' => $filesize ],
+					[ 'id' => $job['id'] ],
+					[ '%d' ],
+					[ '%d' ]
 				);
 
 				if ( false !== $updated ) {
@@ -645,11 +645,11 @@ final class WPInsight_Zip_Queue {
 
 		WPInsight_Logger::info(
 			'ZIP size detection completed',
-			array(
+			[
 				'checked' => $stats['checked'],
 				'updated' => $stats['updated'],
 				'failed'  => $stats['failed'],
-			)
+			]
 		);
 
 		return $stats;
@@ -668,20 +668,20 @@ final class WPInsight_Zip_Queue {
 		// Make HEAD request.
 		$response = wp_remote_head(
 			$url,
-			array(
+			[
 				'timeout'    => 10,
 				'user-agent' => 'WPInsight/' . WPINSIGHT_VERSION . '; ' . home_url(),
-			)
+			]
 		);
 
 		// Check for errors.
 		if ( is_wp_error( $response ) ) {
 			WPInsight_Logger::warning(
 				'Failed to get remote filesize via HEAD request',
-				array(
+				[
 					'url'   => $url,
 					'error' => $response->get_error_message(),
-				)
+				]
 			);
 			return false;
 		}
@@ -821,23 +821,87 @@ final class WPInsight_Zip_Queue {
 			)
 		);
 
-		return array(
-			'plugins' => array(
+		return [
+			'plugins' => [
 				'downloaded_size'    => (int) $plugin_downloaded,
 				'pending_size'       => (int) $plugin_pending,
 				'total_size'         => (int) $plugin_downloaded + (int) $plugin_pending,
 				'count_with_size'    => (int) $plugin_count_with_size,
 				'total_count'        => (int) $plugin_total_count,
 				'detection_progress' => $plugin_total_count > 0 ? round( ( $plugin_count_with_size / $plugin_total_count ) * 100, 1 ) : 0,
-			),
-			'themes'  => array(
+			],
+			'themes'  => [
 				'downloaded_size'    => (int) $theme_downloaded,
 				'pending_size'       => (int) $theme_pending,
 				'total_size'         => (int) $theme_downloaded + (int) $theme_pending,
 				'count_with_size'    => (int) $theme_count_with_size,
 				'total_count'        => (int) $theme_total_count,
 				'detection_progress' => $theme_total_count > 0 ? round( ( $theme_count_with_size / $theme_total_count ) * 100, 1 ) : 0,
-			),
+			],
+		];
+	}
+
+	/**
+	 * Enqueue a single download.
+	 *
+	 * Adds a single download job to the zip_queue table.
+	 * Used by REST API and manual download triggers.
+	 *
+	 * @since 1.7.0
+	 * @param string $slug         Item slug.
+	 * @param string $version      Version string.
+	 * @param string $type         Item type ('plugin' or 'theme').
+	 * @param string $download_url Download URL.
+	 * @param int    $priority     Priority (1-100, lower = higher priority). Default: 50.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function enqueue_download( string $slug, string $version, string $type, string $download_url, int $priority = 50 ): bool {
+		global $wpdb;
+
+		// Validate parameters.
+		if ( empty( $slug ) || empty( $version ) || empty( $download_url ) ) {
+			return false;
+		}
+
+		if ( ! in_array( $type, [ 'plugin', 'theme' ], true ) ) {
+			return false;
+		}
+
+		$table = WPInsight_DB::get_table_name( 'zip_queue' );
+
+		// Check if already exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT id FROM %i WHERE slug = %s AND version = %s AND item_type = %s',
+				$table,
+				$slug,
+				$version,
+				$type
+			)
 		);
+
+		if ( $exists ) {
+			return false; // Already enqueued.
+		}
+
+		// Insert new job.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->insert(
+			$table,
+			[
+				'item_type'    => $type,
+				'slug'         => $slug,
+				'version'      => $version,
+				'download_url' => $download_url,
+				'status'       => 'pending',
+				'priority'     => $priority,
+				'attempts'     => 0,
+				'queued_at'    => current_time( 'mysql' ),
+			],
+			[ '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s' ]
+		);
+
+		return false !== $result;
 	}
 }

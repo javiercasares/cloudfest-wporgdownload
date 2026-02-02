@@ -48,17 +48,17 @@ class WPInsight_Export {
 	public static function export_plugins( bool $compress = false ): string {
 		$data = self::get_cpt_data( 'wpinsight_plugin' );
 
-		$export = array(
-			'schema_version'  => self::SCHEMA_VERSION,
-			'exported_at'     => current_time( 'mysql' ),
-			'wp_version'      => get_bloginfo( 'version' ),
-			'plugin_version'  => WPINSIGHT_VERSION,
-			'export_type'     => 'plugins',
-			'plugins'         => array(
+		$export = [
+			'schema_version' => self::SCHEMA_VERSION,
+			'exported_at'    => current_time( 'mysql' ),
+			'wp_version'     => get_bloginfo( 'version' ),
+			'plugin_version' => WPINSIGHT_VERSION,
+			'export_type'    => 'plugins',
+			'plugins'        => [
 				'count' => count( $data ),
 				'data'  => $data,
-			),
-		);
+			],
+		];
 
 		/**
 		 * Filter plugin export data before encoding.
@@ -72,7 +72,7 @@ class WPInsight_Export {
 		$json = wp_json_encode( $export, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 
 		if ( false === $json ) {
-			WPInsight_Logger::error( 'Failed to encode plugins export to JSON', array( 'count' => count( $data ) ) );
+			WPInsight_Logger::error( 'Failed to encode plugins export to JSON', [ 'count' => count( $data ) ] );
 			return '';
 		}
 
@@ -101,17 +101,17 @@ class WPInsight_Export {
 	public static function export_themes( bool $compress = false ): string {
 		$data = self::get_cpt_data( 'wpinsight_theme' );
 
-		$export = array(
-			'schema_version'  => self::SCHEMA_VERSION,
-			'exported_at'     => current_time( 'mysql' ),
-			'wp_version'      => get_bloginfo( 'version' ),
-			'plugin_version'  => WPINSIGHT_VERSION,
-			'export_type'     => 'themes',
-			'themes'          => array(
+		$export = [
+			'schema_version' => self::SCHEMA_VERSION,
+			'exported_at'    => current_time( 'mysql' ),
+			'wp_version'     => get_bloginfo( 'version' ),
+			'plugin_version' => WPINSIGHT_VERSION,
+			'export_type'    => 'themes',
+			'themes'         => [
 				'count' => count( $data ),
 				'data'  => $data,
-			),
-		);
+			],
+		];
 
 		/**
 		 * Filter theme export data before encoding.
@@ -125,7 +125,7 @@ class WPInsight_Export {
 		$json = wp_json_encode( $export, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 
 		if ( false === $json ) {
-			WPInsight_Logger::error( 'Failed to encode themes export to JSON', array( 'count' => count( $data ) ) );
+			WPInsight_Logger::error( 'Failed to encode themes export to JSON', [ 'count' => count( $data ) ] );
 			return '';
 		}
 
@@ -155,21 +155,21 @@ class WPInsight_Export {
 		$plugins = self::get_cpt_data( 'wpinsight_plugin' );
 		$themes  = self::get_cpt_data( 'wpinsight_theme' );
 
-		$export = array(
-			'schema_version'  => self::SCHEMA_VERSION,
-			'exported_at'     => current_time( 'mysql' ),
-			'wp_version'      => get_bloginfo( 'version' ),
-			'plugin_version'  => WPINSIGHT_VERSION,
-			'export_type'     => 'all',
-			'plugins'         => array(
+		$export = [
+			'schema_version' => self::SCHEMA_VERSION,
+			'exported_at'    => current_time( 'mysql' ),
+			'wp_version'     => get_bloginfo( 'version' ),
+			'plugin_version' => WPINSIGHT_VERSION,
+			'export_type'    => 'all',
+			'plugins'        => [
 				'count' => count( $plugins ),
 				'data'  => $plugins,
-			),
-			'themes'          => array(
+			],
+			'themes'         => [
 				'count' => count( $themes ),
 				'data'  => $themes,
-			),
-		);
+			],
+		];
 
 		/**
 		 * Filter combined export data before encoding.
@@ -185,10 +185,10 @@ class WPInsight_Export {
 		if ( false === $json ) {
 			WPInsight_Logger::error(
 				'Failed to encode combined export to JSON',
-				array(
+				[
 					'plugins' => count( $plugins ),
 					'themes'  => count( $themes ),
-				)
+				]
 			);
 			return '';
 		}
@@ -216,7 +216,7 @@ class WPInsight_Export {
 	 * @return array Array of post data with metadata.
 	 */
 	private static function get_cpt_data( string $post_type ): array {
-		$args = array(
+		$args = [
 			'post_type'      => $post_type,
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,
@@ -224,18 +224,18 @@ class WPInsight_Export {
 			'order'          => 'ASC',
 			'no_found_rows'  => true,
 			'cache_results'  => false,
-		);
+		];
 
 		$query = new WP_Query( $args );
 
 		if ( ! $query->have_posts() ) {
-			return array();
+			return [];
 		}
 
-		$data = array();
+		$data = [];
 
 		foreach ( $query->posts as $post ) {
-			$post_data = array(
+			$post_data = [
 				'post_id'    => $post->ID,
 				'slug'       => $post->post_name,
 				'title'      => $post->post_title,
@@ -243,8 +243,8 @@ class WPInsight_Export {
 				'status'     => $post->post_status,
 				'created_at' => $post->post_date,
 				'updated_at' => $post->post_modified,
-				'meta'       => array(),
-			);
+				'meta'       => [],
+			];
 
 			// Get all post meta.
 			$meta = get_post_meta( $post->ID );
@@ -296,11 +296,11 @@ class WPInsight_Export {
 		$plugins = wp_count_posts( 'wpinsight_plugin' );
 		$themes  = wp_count_posts( 'wpinsight_theme' );
 
-		return array(
+		return [
 			'plugins' => (int) ( $plugins->publish ?? 0 ),
 			'themes'  => (int) ( $themes->publish ?? 0 ),
 			'total'   => (int) ( $plugins->publish ?? 0 ) + (int) ( $themes->publish ?? 0 ),
-		);
+		];
 	}
 
 	/**

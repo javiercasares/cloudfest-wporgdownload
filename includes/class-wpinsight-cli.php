@@ -36,13 +36,13 @@ final class WPInsight_CLI {
 			return;
 		}
 
-		WP_CLI::add_command( 'wpinsight sync', array( __CLASS__, 'sync' ) );
-		WP_CLI::add_command( 'wpinsight zip', array( __CLASS__, 'zip' ) );
-		WP_CLI::add_command( 'wpinsight stats', array( __CLASS__, 'stats' ) );
-		WP_CLI::add_command( 'wpinsight queue', array( __CLASS__, 'queue' ) );
-		WP_CLI::add_command( 'wpinsight reset', array( __CLASS__, 'reset' ) );
-		WP_CLI::add_command( 'wpinsight export', array( __CLASS__, 'export' ) );
-		WP_CLI::add_command( 'wpinsight import', array( __CLASS__, 'import' ) );
+		WP_CLI::add_command( 'wpinsight sync', [ __CLASS__, 'sync' ] );
+		WP_CLI::add_command( 'wpinsight zip', [ __CLASS__, 'zip' ] );
+		WP_CLI::add_command( 'wpinsight stats', [ __CLASS__, 'stats' ] );
+		WP_CLI::add_command( 'wpinsight queue', [ __CLASS__, 'queue' ] );
+		WP_CLI::add_command( 'wpinsight reset', [ __CLASS__, 'reset' ] );
+		WP_CLI::add_command( 'wpinsight export', [ __CLASS__, 'export' ] );
+		WP_CLI::add_command( 'wpinsight import', [ __CLASS__, 'import' ] );
 	}
 
 	/**
@@ -99,7 +99,7 @@ final class WPInsight_CLI {
 		$time_limit = isset( $assoc_args['time-limit'] ) ? (int) $assoc_args['time-limit'] : 0;
 
 		// Validate type.
-		if ( ! in_array( $type, array( 'plugins', 'themes', 'both' ), true ) ) {
+		if ( ! in_array( $type, [ 'plugins', 'themes', 'both' ], true ) ) {
 			WP_CLI::error( 'Invalid type. Must be: plugins, themes, or both.' );
 		}
 
@@ -448,7 +448,7 @@ final class WPInsight_CLI {
 		}
 
 		// Validate type.
-		if ( ! in_array( $type, array( 'plugins', 'themes', 'both' ), true ) ) {
+		if ( ! in_array( $type, [ 'plugins', 'themes', 'both' ], true ) ) {
 			WP_CLI::error( 'Invalid type. Must be: plugins, themes, or both.' );
 		}
 
@@ -581,7 +581,7 @@ final class WPInsight_CLI {
 		$compress = isset( $assoc_args['compress'] );
 
 		// Validate type.
-		if ( ! in_array( $type, array( 'plugins', 'themes', 'all' ), true ) ) {
+		if ( ! in_array( $type, [ 'plugins', 'themes', 'all' ], true ) ) {
 			WP_CLI::error( 'Invalid type. Must be: plugins, themes, or all.' );
 		}
 
@@ -664,11 +664,11 @@ final class WPInsight_CLI {
 		}
 
 		// Prepare options.
-		$options = array(
+		$options = [
 			'skip_existing'   => isset( $assoc_args['skip-existing'] ) || ! isset( $assoc_args['update-existing'] ),
 			'update_existing' => isset( $assoc_args['update-existing'] ),
 			'dry_run'         => isset( $assoc_args['dry-run'] ),
-		);
+		];
 
 		WP_CLI::log( sprintf( 'Importing from: %s', $file ) );
 

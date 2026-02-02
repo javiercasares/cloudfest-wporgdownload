@@ -89,15 +89,15 @@ final class WPInsight_Sync {
 	 */
 	public static function init(): void {
 		// Register sync tick handler.
-		add_action( WPINSIGHT_SYNC_TICK_ACTION, array( __CLASS__, 'sync_tick' ) );
+		add_action( WPINSIGHT_SYNC_TICK_ACTION, [ __CLASS__, 'sync_tick' ] );
 
 		// Register incremental sync handlers.
-		add_action( 'wpinsight_sync_plugins', array( __CLASS__, 'sync_plugins_handler' ) );
-		add_action( 'wpinsight_sync_themes', array( __CLASS__, 'sync_themes_handler' ) );
+		add_action( 'wpinsight_sync_plugins', [ __CLASS__, 'sync_plugins_handler' ] );
+		add_action( 'wpinsight_sync_themes', [ __CLASS__, 'sync_themes_handler' ] );
 
 		// Register full sync handlers.
-		add_action( 'wpinsight_full_sync_plugins', array( __CLASS__, 'full_sync_plugins_handler' ) );
-		add_action( 'wpinsight_full_sync_themes', array( __CLASS__, 'full_sync_themes_handler' ) );
+		add_action( 'wpinsight_full_sync_plugins', [ __CLASS__, 'full_sync_plugins_handler' ] );
+		add_action( 'wpinsight_full_sync_themes', [ __CLASS__, 'full_sync_themes_handler' ] );
 	}
 
 	/**
@@ -116,7 +116,7 @@ final class WPInsight_Sync {
 		}
 
 		// Check if already scheduled.
-		$next_run = as_next_scheduled_action( WPINSIGHT_SYNC_TICK_ACTION, array(), WPINSIGHT_AS_GROUP );
+		$next_run = as_next_scheduled_action( WPINSIGHT_SYNC_TICK_ACTION, [], WPINSIGHT_AS_GROUP );
 		if ( false !== $next_run ) {
 			return; // Already scheduled.
 		}
@@ -127,7 +127,7 @@ final class WPInsight_Sync {
 			time(),
 			$interval,
 			WPINSIGHT_SYNC_TICK_ACTION,
-			array(),
+			[],
 			WPINSIGHT_AS_GROUP
 		);
 	}
@@ -172,7 +172,7 @@ final class WPInsight_Sync {
 		$state = self::get_sync_state( 'plugin' );
 
 		// Skip if already completed or in error state.
-		if ( in_array( $state['status'], array( self::STATE_COMPLETED, self::STATE_ERROR ), true ) ) {
+		if ( in_array( $state['status'], [ self::STATE_COMPLETED, self::STATE_ERROR ], true ) ) {
 			return false;
 		}
 
@@ -182,11 +182,11 @@ final class WPInsight_Sync {
 		// Fetch plugins from API.
 		$per_page = WPInsight_Settings::get( 'per_page', 250 );
 		$response = WPInsight_WPOrg_Client::query_plugins(
-			array(
+			[
 				'browse'   => 'updated',
 				'page'     => $state['page'],
 				'per_page' => $per_page,
-			)
+			]
 		);
 
 		// Handle API error.
@@ -235,7 +235,7 @@ final class WPInsight_Sync {
 		$state = self::get_sync_state( 'theme' );
 
 		// Skip if already completed or in error state.
-		if ( in_array( $state['status'], array( self::STATE_COMPLETED, self::STATE_ERROR ), true ) ) {
+		if ( in_array( $state['status'], [ self::STATE_COMPLETED, self::STATE_ERROR ], true ) ) {
 			return false;
 		}
 
@@ -245,11 +245,11 @@ final class WPInsight_Sync {
 		// Fetch themes from API.
 		$per_page = WPInsight_Settings::get( 'per_page', 250 );
 		$response = WPInsight_WPOrg_Client::query_themes(
-			array(
+			[
 				'browse'   => 'updated',
 				'page'     => $state['page'],
 				'per_page' => $per_page,
-			)
+			]
 		);
 
 		// Handle API error.
@@ -371,7 +371,7 @@ final class WPInsight_Sync {
 		global $wpdb;
 
 		if ( empty( $versions ) ) {
-			return array();
+			return [];
 		}
 
 		$table = WPInsight_DB::get_table_name( 'zip_queue' );
@@ -385,13 +385,13 @@ final class WPInsight_Sync {
 		$existing = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT version FROM %i WHERE item_type = %s AND slug = %s AND version IN ($placeholders)",
-				array_merge( array( $table, $type, $slug ), $versions )
+				array_merge( [ $table, $type, $slug ], $versions )
 			)
 		);
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 
 		// Convert to associative array for fast lookup.
-		return is_array( $existing ) ? array_fill_keys( $existing, true ) : array();
+		return is_array( $existing ) ? array_fill_keys( $existing, true ) : [];
 	}
 
 	/**
@@ -417,8 +417,8 @@ final class WPInsight_Sync {
 		$now   = current_time( 'mysql', true );
 
 		// Build multi-row INSERT statement.
-		$values       = array( $table ); // Table name as first parameter for %i.
-		$placeholders = array();
+		$values       = [ $table ]; // Table name as first parameter for %i.
+		$placeholders = [];
 
 		foreach ( $versions as $version => $download_url ) {
 			$placeholders[] = '(%s, %s, %s, %s, %s, %d, %d, %s)';
@@ -466,10 +466,10 @@ final class WPInsight_Sync {
 			if ( $memory_available > 0 && $memory_available < 128 ) {
 				WPInsight_Logger::warning(
 					sprintf( 'Large version array (%d versions) may exceed memory limit (%dM)', count( $versions ), $memory_available ),
-					array(
+					[
 						'slug'           => $slug,
 						'versions_count' => count( $versions ),
-					)
+					]
 				);
 			}
 		}
@@ -490,10 +490,10 @@ final class WPInsight_Sync {
 		if ( $inserted > 0 ) {
 			WPInsight_Logger::info(
 				sprintf( 'Enqueued %d plugin versions for download', $inserted ),
-				array(
+				[
 					'slug'     => $slug,
 					'inserted' => $inserted,
-				)
+				]
 			);
 		}
 	}
@@ -522,10 +522,10 @@ final class WPInsight_Sync {
 			if ( $memory_available > 0 && $memory_available < 128 ) {
 				WPInsight_Logger::warning(
 					sprintf( 'Large version array (%d versions) may exceed memory limit (%dM)', count( $versions ), $memory_available ),
-					array(
+					[
 						'slug'           => $slug,
 						'versions_count' => count( $versions ),
-					)
+					]
 				);
 			}
 		}
@@ -546,10 +546,10 @@ final class WPInsight_Sync {
 		if ( $inserted > 0 ) {
 			WPInsight_Logger::info(
 				sprintf( 'Enqueued %d theme versions for download', $inserted ),
-				array(
+				[
 					'slug'     => $slug,
 					'inserted' => $inserted,
-				)
+				]
 			);
 		}
 	}
@@ -589,7 +589,7 @@ final class WPInsight_Sync {
 
 		if ( ! $row ) {
 			// No state yet, return defaults.
-			return array(
+			return [
 				'status'      => self::STATE_IDLE,
 				'page'        => 1,
 				'last_error'  => '',
@@ -597,10 +597,10 @@ final class WPInsight_Sync {
 				'total_pages' => null,
 				'total_items' => null,
 				'per_page'    => WPInsight_Settings::get( 'per_page', 250 ),
-			);
+			];
 		}
 
-		return array(
+		return [
 			'status'      => $row['status'],
 			'page'        => (int) $row['page'],
 			'last_error'  => $row['last_error'] ?? '',
@@ -608,7 +608,7 @@ final class WPInsight_Sync {
 			'total_pages' => isset( $row['total_pages'] ) ? (int) $row['total_pages'] : null,
 			'total_items' => isset( $row['total_items'] ) ? (int) $row['total_items'] : null,
 			'per_page'    => isset( $row['per_page'] ) ? (int) $row['per_page'] : WPInsight_Settings::get( 'per_page', 250 ),
-		);
+		];
 	}
 
 	/**
@@ -631,16 +631,16 @@ final class WPInsight_Sync {
 		// Get per_page from settings to save with state.
 		$per_page = WPInsight_Settings::get( 'per_page', 250 );
 
-		$data = array(
+		$data = [
 			'sync_type'  => $type,
 			'status'     => $status,
 			'page'       => $page,
 			'per_page'   => $per_page,
 			'last_error' => $last_error,
 			'updated_at' => current_time( 'mysql', true ),
-		);
+		];
 
-		$format = array( '%s', '%s', '%d', '%d', '%s', '%s' );
+		$format = [ '%s', '%s', '%d', '%d', '%s', '%s' ];
 
 		// Add optional fields if provided.
 		if ( null !== $total_pages ) {
@@ -717,15 +717,15 @@ final class WPInsight_Sync {
 	 */
 	public static function sync_full( string $entity_type, int $max_pages = 0, int $time_limit = 0 ): array {
 		// Validate entity type.
-		if ( ! in_array( $entity_type, array( 'plugin', 'theme' ), true ) ) {
-			return array(
+		if ( ! in_array( $entity_type, [ 'plugin', 'theme' ], true ) ) {
+			return [
 				'completed'       => false,
 				'pages_processed' => 0,
 				'items_processed' => 0,
 				'items_enqueued'  => 0,
 				'status'          => self::STATE_ERROR,
 				'message'         => 'Invalid entity type. Must be "plugin" or "theme".',
-			);
+			];
 		}
 
 		$start_time      = time();
@@ -751,11 +751,11 @@ final class WPInsight_Sync {
 		// Log start.
 		WPInsight_Logger::info(
 			sprintf( 'Starting full %s sync from page %d', $entity_type, $state['page'] ),
-			array(
+			[
 				'entity_type' => $entity_type,
 				'start_page'  => $state['page'],
 				'per_page'    => $per_page,
-			)
+			]
 		);
 
 		// Main sync loop - process all pages.
@@ -767,11 +767,11 @@ final class WPInsight_Sync {
 			if ( $time_limit > 0 && ( time() - $start_time ) >= $time_limit ) {
 				WPInsight_Logger::warning(
 					sprintf( 'Full sync time limit reached (%d seconds). Pausing at page %d.', $time_limit, $current_page ),
-					array(
+					[
 						'entity_type'     => $entity_type,
 						'pages_processed' => $pages_processed,
 						'items_processed' => $items_processed,
-					)
+					]
 				);
 				break;
 			}
@@ -780,10 +780,10 @@ final class WPInsight_Sync {
 			if ( $max_pages > 0 && $pages_processed >= $max_pages ) {
 				WPInsight_Logger::info(
 					sprintf( 'Full sync page limit reached (%d pages). Pausing at page %d.', $max_pages, $current_page ),
-					array(
+					[
 						'entity_type'     => $entity_type,
 						'pages_processed' => $pages_processed,
-					)
+					]
 				);
 				break;
 			}
@@ -791,41 +791,41 @@ final class WPInsight_Sync {
 			// Fetch data from API.
 			$response = ( 'plugin' === $entity_type )
 				? WPInsight_WPOrg_Client::query_plugins(
-					array(
+					[
 						'browse'   => 'updated',
 						'page'     => $current_page,
 						'per_page' => $per_page,
-					)
+					]
 				)
 				: WPInsight_WPOrg_Client::query_themes(
-					array(
+					[
 						'browse'   => 'updated',
 						'page'     => $current_page,
 						'per_page' => $per_page,
-					)
+					]
 				);
 
 			// Handle API error.
 			if ( false === $response ) {
 				$error_msg = sprintf( 'API request failed at page %d', $current_page );
 				self::update_sync_state( $entity_type, self::STATE_ERROR, $current_page, $error_msg );
-				WPInsight_Logger::error( $error_msg, array( 'entity_type' => $entity_type ) );
+				WPInsight_Logger::error( $error_msg, [ 'entity_type' => $entity_type ] );
 
-				return array(
+				return [
 					'completed'       => false,
 					'pages_processed' => $pages_processed,
 					'items_processed' => $items_processed,
 					'items_enqueued'  => $items_enqueued,
 					'status'          => self::STATE_ERROR,
 					'message'         => $error_msg,
-				);
+				];
 			}
 
 			// Get items from response.
 			$items_key = ( 'plugin' === $entity_type ) ? 'plugins' : 'themes';
 			$items     = isset( $response[ $items_key ] ) && is_array( $response[ $items_key ] )
 				? $response[ $items_key ]
-				: array();
+				: [];
 
 			// Process each item.
 			$page_count = 0;
@@ -867,12 +867,12 @@ final class WPInsight_Sync {
 			if ( 0 === $current_page % 10 ) { // Log every 10 pages.
 				WPInsight_Logger::info(
 					sprintf( 'Full sync progress: page %d, %d items processed', $current_page, $items_processed ),
-					array(
+					[
 						'entity_type'     => $entity_type,
 						'current_page'    => $current_page,
 						'page_count'      => $page_count,
 						'items_processed' => $items_processed,
-					)
+					]
 				);
 			}
 
@@ -901,23 +901,23 @@ final class WPInsight_Sync {
 
 		WPInsight_Logger::info(
 			$message,
-			array(
+			[
 				'entity_type'     => $entity_type,
 				'completed'       => $completed,
 				'pages_processed' => $pages_processed,
 				'items_processed' => $items_processed,
 				'items_enqueued'  => $items_enqueued,
-			)
+			]
 		);
 
-		return array(
+		return [
 			'completed'       => $completed,
 			'pages_processed' => $pages_processed,
 			'items_processed' => $items_processed,
 			'items_enqueued'  => $items_enqueued,
 			'status'          => $status,
 			'message'         => $message,
-		);
+		];
 	}
 
 	/**
@@ -974,13 +974,13 @@ final class WPInsight_Sync {
 
 		// If not completed, schedule another run.
 		if ( ! $result['completed'] && function_exists( 'as_schedule_single_action' ) ) {
-			as_schedule_single_action( time() + 60, 'wpinsight_full_sync_plugins', array(), WPINSIGHT_AS_GROUP );
+			as_schedule_single_action( time() + 60, 'wpinsight_full_sync_plugins', [], WPINSIGHT_AS_GROUP );
 			WPInsight_Logger::info(
 				'Full plugin sync continuing. Scheduled next batch.',
-				array(
+				[
 					'pages_processed' => $result['pages_processed'],
 					'items_processed' => $result['items_processed'],
-				)
+				]
 			);
 		}
 	}
@@ -1001,13 +1001,13 @@ final class WPInsight_Sync {
 
 		// If not completed, schedule another run.
 		if ( ! $result['completed'] && function_exists( 'as_schedule_single_action' ) ) {
-			as_schedule_single_action( time() + 60, 'wpinsight_full_sync_themes', array(), WPINSIGHT_AS_GROUP );
+			as_schedule_single_action( time() + 60, 'wpinsight_full_sync_themes', [], WPINSIGHT_AS_GROUP );
 			WPInsight_Logger::info(
 				'Full theme sync continuing. Scheduled next batch.',
-				array(
+				[
 					'pages_processed' => $result['pages_processed'],
 					'items_processed' => $result['items_processed'],
-				)
+				]
 			);
 		}
 	}

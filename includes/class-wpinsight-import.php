@@ -32,7 +32,7 @@ class WPInsight_Import {
 	 *
 	 * @since 1.2.0
 	 */
-	private const SUPPORTED_SCHEMA_VERSIONS = array( '1.0.0' );
+	private const SUPPORTED_SCHEMA_VERSIONS = [ '1.0.0' ];
 
 	/**
 	 * Import from file.
@@ -103,11 +103,11 @@ class WPInsight_Import {
 
 		WPInsight_Logger::info(
 			'Import file loaded successfully',
-			array(
+			[
 				'file'           => basename( $file_path ),
 				'schema_version' => $data['schema_version'],
 				'export_type'    => $data['export_type'] ?? 'unknown',
-			)
+			]
 		);
 
 		return $data;
@@ -124,18 +124,18 @@ class WPInsight_Import {
 	 * @param array $options Optional. Import options. Default empty array.
 	 * @return array Import results with counts and errors.
 	 */
-	public static function import_plugins( array $data, array $options = array() ): array {
+	public static function import_plugins( array $data, array $options = [] ): array {
 		// Validate data structure.
 		if ( ! isset( $data['plugins']['data'] ) || ! is_array( $data['plugins']['data'] ) ) {
-			return array(
+			return [
 				'success'  => false,
 				'error'    => __( 'Invalid plugins data structure.', 'cloudfest-wporgdownload' ),
 				'imported' => 0,
 				'updated'  => 0,
 				'skipped'  => 0,
 				'failed'   => 0,
-				'errors'   => array(),
-			);
+				'errors'   => [],
+			];
 		}
 
 		return self::import_cpt_data( 'wpinsight_plugin', $data['plugins']['data'], $options );
@@ -152,18 +152,18 @@ class WPInsight_Import {
 	 * @param array $options Optional. Import options. Default empty array.
 	 * @return array Import results with counts and errors.
 	 */
-	public static function import_themes( array $data, array $options = array() ): array {
+	public static function import_themes( array $data, array $options = [] ): array {
 		// Validate data structure.
 		if ( ! isset( $data['themes']['data'] ) || ! is_array( $data['themes']['data'] ) ) {
-			return array(
+			return [
 				'success'  => false,
 				'error'    => __( 'Invalid themes data structure.', 'cloudfest-wporgdownload' ),
 				'imported' => 0,
 				'updated'  => 0,
 				'skipped'  => 0,
 				'failed'   => 0,
-				'errors'   => array(),
-			);
+				'errors'   => [],
+			];
 		}
 
 		return self::import_cpt_data( 'wpinsight_theme', $data['themes']['data'], $options );
@@ -180,36 +180,36 @@ class WPInsight_Import {
 	 * @param array  $options   Optional. Import options. Default empty array.
 	 * @return array Import results with counts and errors.
 	 */
-	public static function import_all( string $file_path, array $options = array() ): array {
+	public static function import_all( string $file_path, array $options = [] ): array {
 		$data = self::import_from_file( $file_path );
 
 		if ( is_wp_error( $data ) ) {
-			return array(
+			return [
 				'success' => false,
 				'error'   => $data->get_error_message(),
-			);
+			];
 		}
 
-		$results = array(
+		$results = [
 			'success'  => true,
-			'plugins'  => array(),
-			'themes'   => array(),
+			'plugins'  => [],
+			'themes'   => [],
 			'imported' => 0,
 			'updated'  => 0,
 			'skipped'  => 0,
 			'failed'   => 0,
-			'errors'   => array(),
-		);
+			'errors'   => [],
+		];
 
 		// Import plugins if present.
 		if ( isset( $data['plugins']['data'] ) ) {
-			$plugin_results        = self::import_plugins( $data, $options );
-			$results['plugins']    = $plugin_results;
-			$results['imported']  += $plugin_results['imported'];
-			$results['updated']   += $plugin_results['updated'];
-			$results['skipped']   += $plugin_results['skipped'];
-			$results['failed']    += $plugin_results['failed'];
-			$results['errors']     = array_merge( $results['errors'], $plugin_results['errors'] );
+			$plugin_results       = self::import_plugins( $data, $options );
+			$results['plugins']   = $plugin_results;
+			$results['imported'] += $plugin_results['imported'];
+			$results['updated']  += $plugin_results['updated'];
+			$results['skipped']  += $plugin_results['skipped'];
+			$results['failed']   += $plugin_results['failed'];
+			$results['errors']    = array_merge( $results['errors'], $plugin_results['errors'] );
 		}
 
 		// Import themes if present.
@@ -225,12 +225,12 @@ class WPInsight_Import {
 
 		WPInsight_Logger::info(
 			'Import completed',
-			array(
+			[
 				'imported' => $results['imported'],
 				'updated'  => $results['updated'],
 				'skipped'  => $results['skipped'],
 				'failed'   => $results['failed'],
-			)
+			]
 		);
 
 		return $results;
@@ -249,30 +249,30 @@ class WPInsight_Import {
 	 * @return array Import results.
 	 */
 	private static function import_cpt_data( string $post_type, array $items, array $options ): array {
-		$defaults = array(
+		$defaults = [
 			'skip_existing'   => true,
 			'update_existing' => false,
 			'dry_run'         => false,
 			'batch_size'      => 100,
-		);
+		];
 
 		$options = wp_parse_args( $options, $defaults );
 
-		$results = array(
+		$results = [
 			'success'  => true,
 			'imported' => 0,
 			'updated'  => 0,
 			'skipped'  => 0,
 			'failed'   => 0,
-			'errors'   => array(),
-		);
+			'errors'   => [],
+		];
 
 		$batch_count = 0;
 
 		foreach ( $items as $item ) {
 			// Validate required fields.
 			if ( empty( $item['slug'] ) || empty( $item['title'] ) ) {
-				$results['failed']++;
+				++$results['failed'];
 				$results['errors'][ $item['slug'] ?? 'unknown' ] = __( 'Missing required fields (slug or title).', 'cloudfest-wporgdownload' );
 				continue;
 			}
@@ -284,25 +284,25 @@ class WPInsight_Import {
 
 			if ( $existing ) {
 				if ( $options['skip_existing'] ) {
-					$results['skipped']++;
+					++$results['skipped'];
 					continue;
 				}
 
 				if ( ! $options['update_existing'] ) {
-					$results['failed']++;
+					++$results['failed'];
 					$results['errors'][ $slug ] = __( 'Post already exists.', 'cloudfest-wporgdownload' );
 					continue;
 				}
 			}
 
 			// Prepare post data.
-			$post_data = array(
+			$post_data = [
 				'post_type'    => $post_type,
 				'post_name'    => $slug,
 				'post_title'   => sanitize_text_field( $item['title'] ),
 				'post_content' => wp_kses_post( $item['content'] ?? '' ),
 				'post_status'  => 'publish',
-			);
+			];
 
 			if ( $existing ) {
 				$post_data['ID'] = $existing->ID;
@@ -322,9 +322,9 @@ class WPInsight_Import {
 			// Dry run: don't actually import.
 			if ( $options['dry_run'] ) {
 				if ( $existing ) {
-					$results['updated']++;
+					++$results['updated'];
 				} else {
-					$results['imported']++;
+					++$results['imported'];
 				}
 				continue;
 			}
@@ -337,14 +337,14 @@ class WPInsight_Import {
 			}
 
 			if ( is_wp_error( $post_id ) ) {
-				$results['failed']++;
+				++$results['failed'];
 				$results['errors'][ $slug ] = $post_id->get_error_message();
 				WPInsight_Logger::error(
 					'Failed to import post',
-					array(
+					[
 						'slug'  => $slug,
 						'error' => $post_id->get_error_message(),
-					)
+					]
 				);
 				continue;
 			}
@@ -357,13 +357,13 @@ class WPInsight_Import {
 			}
 
 			if ( $existing ) {
-				$results['updated']++;
+				++$results['updated'];
 			} else {
-				$results['imported']++;
+				++$results['imported'];
 			}
 
 			// Batch processing: pause periodically.
-			$batch_count++;
+			++$batch_count;
 			if ( $batch_count >= $options['batch_size'] ) {
 				$batch_count = 0;
 				wp_cache_flush();
@@ -390,15 +390,15 @@ class WPInsight_Import {
 			return $data;
 		}
 
-		$validation = array(
+		$validation = [
 			'valid'          => true,
 			'schema_version' => $data['schema_version'],
 			'export_type'    => $data['export_type'] ?? 'unknown',
 			'exported_at'    => $data['exported_at'] ?? 'unknown',
 			'plugins_count'  => $data['plugins']['count'] ?? 0,
 			'themes_count'   => $data['themes']['count'] ?? 0,
-			'warnings'       => array(),
-		);
+			'warnings'       => [],
+		];
 
 		// Check for empty data.
 		if ( empty( $data['plugins']['data'] ) && empty( $data['themes']['data'] ) ) {

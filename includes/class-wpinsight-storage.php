@@ -57,20 +57,20 @@ class WPInsight_Storage {
 	 */
 	public static function download_and_store_zip( string $entity_type, string $slug, string $version, string $url ): array {
 		// Validate entity type.
-		if ( ! in_array( $entity_type, array( 'plugin', 'theme' ), true ) ) {
-			return array(
+		if ( ! in_array( $entity_type, [ 'plugin', 'theme' ], true ) ) {
+			return [
 				'success' => false,
 				'error'   => 'Invalid entity type',
-			);
+			];
 		}
 
 		// Get storage path.
 		$storage_dir = self::get_storage_path( $entity_type, $slug );
 		if ( ! $storage_dir ) {
-			return array(
+			return [
 				'success' => false,
 				'error'   => 'Failed to create storage directory',
-			);
+			];
 		}
 
 		// Build destination file path.
@@ -78,10 +78,10 @@ class WPInsight_Storage {
 
 		// Validate path is safe.
 		if ( ! self::validate_download_path( $dest_file ) ) {
-			return array(
+			return [
 				'success' => false,
 				'error'   => 'Invalid destination path',
-			);
+			];
 		}
 
 		// Check if file already exists.
@@ -89,12 +89,12 @@ class WPInsight_Storage {
 			$file_size = filesize( $dest_file );
 			$sha256    = hash_file( 'sha256', $dest_file );
 
-			return array(
+			return [
 				'success' => true,
 				'path'    => $dest_file,
 				'size'    => false !== $file_size ? $file_size : 0,
 				'hash'    => false !== $sha256 ? $sha256 : '',
-			);
+			];
 		}
 
 		// Download to temporary file first.
@@ -102,98 +102,98 @@ class WPInsight_Storage {
 
 		$response = wp_remote_get(
 			$url,
-			array(
+			[
 				'timeout'  => self::DOWNLOAD_TIMEOUT,
 				'stream'   => true,
 				'filename' => $temp_file,
-			)
+			]
 		);
 
 		// Check for errors.
 		if ( is_wp_error( $response ) ) {
 			wp_delete_file( $temp_file );
-			return array(
+			return [
 				'success' => false,
 				'error'   => $response->get_error_message(),
-			);
+			];
 		}
 
 		// Check HTTP status.
 		$status_code = wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $status_code ) {
 			wp_delete_file( $temp_file );
-			return array(
+			return [
 				'success' => false,
 				'error'   => "HTTP {$status_code}",
-			);
+			];
 		}
 
 		// Verify file was created.
 		if ( ! file_exists( $temp_file ) ) {
-			return array(
+			return [
 				'success' => false,
 				'error'   => 'File not created after download',
-			);
+			];
 		}
 
 		// Verify file size.
 		$file_size = filesize( $temp_file );
 		if ( false === $file_size || 0 === $file_size ) {
 			wp_delete_file( $temp_file );
-			return array(
+			return [
 				'success' => false,
 				'error'   => 'Downloaded file is empty or unreadable',
-			);
+			];
 		}
 
 		// Check max file size.
 		if ( $file_size > self::MAX_FILE_SIZE ) {
 			wp_delete_file( $temp_file );
-			return array(
+			return [
 				'success' => false,
 				'error'   => 'File exceeds maximum size limit',
-			);
+			];
 		}
 
 		// Verify it's a valid ZIP file.
 		if ( ! self::is_valid_zip( $temp_file ) ) {
 			wp_delete_file( $temp_file );
-			return array(
+			return [
 				'success' => false,
 				'error'   => 'Downloaded file is not a valid ZIP',
-			);
+			];
 		}
 
 		// Calculate SHA256 hash.
 		$sha256 = hash_file( 'sha256', $temp_file );
 		if ( false === $sha256 ) {
 			wp_delete_file( $temp_file );
-			return array(
+			return [
 				'success' => false,
 				'error'   => 'Failed to calculate file hash',
-			);
+			];
 		}
 
 		// Atomic move: temp → final destination.
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Need atomic filesystem operation.
 		if ( ! rename( $temp_file, $dest_file ) ) {
 			wp_delete_file( $temp_file );
-			return array(
+			return [
 				'success' => false,
 				'error'   => 'Failed to move file to destination',
-			);
+			];
 		}
 
 		// Record artifact in database.
 		self::record_artifact( $entity_type, $slug, $version, $dest_file, $sha256 );
 
 		// Success!
-		return array(
+		return [
 			'success' => true,
 			'path'    => $dest_file,
 			'size'    => $file_size,
 			'hash'    => $sha256,
-		);
+		];
 	}
 
 	/**
@@ -222,11 +222,11 @@ class WPInsight_Storage {
 			if ( ! wp_mkdir_p( $storage_path ) ) {
 				WPInsight_Logger::error(
 					'Failed to create storage directory',
-					array(
+					[
 						'path' => $storage_path,
 						'slug' => $slug,
 						'type' => $entity_type,
-					)
+					]
 				);
 				return false;
 			}
@@ -303,13 +303,13 @@ class WPInsight_Storage {
 		if ( $wpdb->insert_id > 0 ) {
 			WPInsight_Logger::info(
 				'Artifact recorded successfully',
-				array(
+				[
 					'type'    => $entity_type,
 					'slug'    => $slug,
 					'version' => $version,
 					'size'    => $file_size,
 					'hash'    => substr( $sha256, 0, 16 ) . '...',
-				)
+				]
 			);
 		}
 	}
@@ -394,22 +394,22 @@ class WPInsight_Storage {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Delete artifact record. Table name from get_table_name() is safe.
 		$deleted = $wpdb->delete(
 			$table,
-			array(
+			[
 				'item_type' => $entity_type,
 				'slug'      => $slug,
 				'version'   => $version,
-			),
-			array( '%s', '%s', '%s' )
+			],
+			[ '%s', '%s', '%s' ]
 		);
 
 		if ( $deleted ) {
 			WPInsight_Logger::info(
 				'Artifact deleted',
-				array(
+				[
 					'type'    => $entity_type,
 					'slug'    => $slug,
 					'version' => $version,
-				)
+				]
 			);
 		}
 

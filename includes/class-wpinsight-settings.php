@@ -52,7 +52,7 @@ final class WPInsight_Settings {
 	 * @return array<string,mixed> Associative array of default settings.
 	 */
 	public static function get_defaults(): array {
-		return array(
+		return [
 			// Data management.
 			'delete_on_uninstall'               => false, // Preserve data by default.
 
@@ -86,7 +86,7 @@ final class WPInsight_Settings {
 			'admin_email_notifications_enabled' => false, // Email notifications for critical errors (opt-in).
 			'admin_notification_email'          => get_option( 'admin_email' ), // Email recipient.
 			'log_retention_days'                => 30, // Days to retain error logs.
-		);
+		];
 	}
 
 	/**
@@ -121,7 +121,7 @@ final class WPInsight_Settings {
 	 * @return array<string,mixed> All settings merged with defaults.
 	 */
 	public static function get_all(): array {
-		$stored   = get_option( WPINSIGHT_SETTINGS_OPTION, array() );
+		$stored   = get_option( WPINSIGHT_SETTINGS_OPTION, [] );
 		$defaults = self::get_defaults();
 
 		// Merge stored settings over defaults.
@@ -172,7 +172,7 @@ final class WPInsight_Settings {
 	public static function update_all( array $new_settings ): bool {
 		try {
 			// Validate all values first (fail fast).
-			$validated = array();
+			$validated = [];
 			foreach ( $new_settings as $key => $value ) {
 				$validated[ $key ] = self::validate( $key, $value );
 			}
@@ -302,5 +302,27 @@ final class WPInsight_Settings {
 				}
 				return $value;
 		}
+	}
+
+	/**
+	 * Set a single setting value.
+	 *
+	 * Updates the value of a specific setting in the database.
+	 * This method updates the setting immediately and returns the success status.
+	 *
+	 * @since 1.7.0
+	 * @param string $key   Setting key to update.
+	 * @param mixed  $value New value for the setting.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function set( string $key, $value ): bool {
+		// Get current settings.
+		$settings = get_option( WPINSIGHT_SETTINGS_OPTION, [] );
+
+		// Update the specific key.
+		$settings[ $key ] = $value;
+
+		// Save back to database.
+		return update_option( WPINSIGHT_SETTINGS_OPTION, $settings );
 	}
 }
