@@ -1,0 +1,75 @@
+# CloudFest WPOrg Download - Git Ignore File
+# Prevents development files from being committed to repository
+
+# Composer dependencies
+/vendor/
+composer.lock
+
+# PHPUnit
+.phpunit.result.cache
+/phpunit.xml.local
+
+# PHPCS
+.phpcs-cache
+/.phpcs.xml.local
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Operating system files
+*.swp
+*.swo
+*~
+.*.swp
+
+# Node modules (if we add frontend build tools later)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build artifacts
+*.zip
+/dist/
+/build/
+
+# WordPress specific
+wp-config-local.php
+.htaccess.local
+
+# Temporary files
+*.tmp
+*.log
+*.cache
+/tmp/
+
+# Environment files
+.env
+.env.local
+
+# Test coverage reports
+/coverage/
+/clover.xml
+/.phpunit.cache/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+# Plugin generated files (uploaded ZIPs during testing)
+# Note: In production, these would be in wp-content/uploads/wpinsight/
+# but for testing they might be generated elsewhere
+/test-uploads/

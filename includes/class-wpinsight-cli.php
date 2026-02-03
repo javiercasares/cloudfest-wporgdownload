@@ -1,0 +1,748 @@
+<?php
+/**
+ * WP-CLI Commands for WPInsight.
+ *
+ * Provides command-line interface for manual operations:
+ * - Sync plugins/themes from WordPress.org
+ * - Process ZIP download queue
+ * - Display statistics and status
+ * - Manage download queue (retry, clear)
+ *
+ * @package    CloudFest_WPOrg_Download
+ * @subpackage CLI
+ * @since      0.1.0
+ */
+
+// Exit if accessed directly.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * WP-CLI commands for WPInsight.
+ *
+ * @since 0.1.0
+ */
+final class WPInsight_CLI {
+
+	/**
+	 * Register WP-CLI commands.
+	 *
+	 * @since 0.1.0
+	 * @return void
+	 */
+	public static function register(): void {
+		if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
+			return;
+		}
+
+		WP_CLI::add_command( 'wpinsight sync', [ __CLASS__, 'sync' ] );
+		WP_CLI::add_command( 'wpinsight zip', [ __CLASS__, 'zip' ] );
+		WP_CLI::add_command( 'wpinsight stats', [ __CLASS__, 'stats' ] );
+		WP_CLI::add_command( 'wpinsight queue', [ __CLASS__, 'queue' ] );
+		WP_CLI::add_command( 'wpinsight reset', [ __CLASS__, 'reset' ] );
+		WP_CLI::add_command( 'wpinsight export', [ __CLASS__, 'export' ] );
+		WP_CLI::add_command( 'wpinsight import', [ __CLASS__, 'import' ] );
+	}
+
+	/**
+	 * Sync plugins and themes from WordPress.org.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--type=<type>]
+	 * : Type to sync: plugins, themes, or both.
+	 * ---
+	 * default: both
+	 * options:
+	 *   - plugins
+	 *   - themes
+	 *   - both
+	 * ---
+	 *
+	 * [--reset]
+	 * : Reset sync state before starting (start from page 1).
+	 *
+	 * [--full]
+	 * : Perform full sync (all pages, all versions). This will take hours/days.
+	 *
+	 * [--max-pages=<number>]
+	 * : Maximum pages to process in full sync mode (0 = unlimited).
+	 * ---
+	 * default: 0
+	 * ---
+	 *
+	 * [--time-limit=<seconds>]
+	 * : Time limit in seconds for full sync (0 = no limit).
+	 * ---
+	 * default: 0
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wpinsight sync
+	 *     wp wpinsight sync --type=plugins
+	 *     wp wpinsight sync --type=themes --reset
+	 *     wp wpinsight sync --type=plugins --full
+	 *     wp wpinsight sync --type=plugins --full --max-pages=100
+	 *
+	 * @since 0.1.0
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
+	 * @return void
+	 */
+	public static function sync( array $args, array $assoc_args ): void {
+		$type       = $assoc_args['type'] ?? 'both';
+		$reset      = isset( $assoc_args['reset'] );
+		$full       = isset( $assoc_args['full'] );
+		$max_pages  = isset( $assoc_args['max-pages'] ) ? (int) $assoc_args['max-pages'] : 0;
+		$time_limit = isset( $assoc_args['time-limit'] ) ? (int) $assoc_args['time-limit'] : 0;
+
+		// Validate type.
+		if ( ! in_array( $type, [ 'plugins', 'themes', 'both' ], true ) ) {
+			WP_CLI::error( 'Invalid type. Must be: plugins, themes, or both.' );
+		}
+
+		// Check if sync is enabled in settings.
+		$sync_plugins_enabled = WPInsight_Settings::get( 'sync_plugins_enabled', true );
+		$sync_themes_enabled  = WPInsight_Settings::get( 'sync_themes_enabled', true );
+
+		if ( 'plugins' === $type && ! $sync_plugins_enabled ) {
+			WP_CLI::warning( 'Plugin sync is disabled in settings.' );
+		}
+
+		if ( 'themes' === $type && ! $sync_themes_enabled ) {
+			WP_CLI::warning( 'Theme sync is disabled in settings.' );
+		}
+
+		// Reset sync state if requested.
+		if ( $reset ) {
+			if ( 'both' === $type || 'plugins' === $type ) {
+				WPInsight_Sync::reset_sync_state( 'plugin' );
+				WP_CLI::success( 'Plugin sync state reset.' );
+			}
+			if ( 'both' === $type || 'themes' === $type ) {
+				WPInsight_Sync::reset_sync_state( 'theme' );
+				WP_CLI::success( 'Theme sync state reset.' );
+			}
+		}
+
+		// Run sync.
+		if ( $full ) {
+			WP_CLI::log( 'Starting FULL sync (this may take hours or days)...' );
+		} else {
+			WP_CLI::log( 'Starting sync...' );
+		}
+
+		$plugins_success = true;
+		$themes_success  = true;
+
+		if ( 'both' === $type || 'plugins' === $type ) {
+			if ( $sync_plugins_enabled ) {
+				if ( $full ) {
+					WP_CLI::log( 'Syncing ALL plugins with full version history...' );
+					$result          = WPInsight_Sync::sync_full( 'plugin', $max_pages, $time_limit );
+					$plugins_success = $result['completed'] || 'running' === $result['status'];
+
+					WP_CLI::log( sprintf( 'Processed %d pages, %d plugins, %d versions enqueued', $result['pages_processed'], $result['items_processed'], $result['items_enqueued'] ) );
+
+					if ( $result['completed'] ) {
+						WP_CLI::success( 'Full plugin sync completed!' );
+					} else {
+						WP_CLI::warning( 'Full plugin sync paused. Run again to continue.' );
+					}
+				} else {
+					WP_CLI::log( 'Syncing plugins...' );
+					$plugins_success = WPInsight_Sync::sync_plugins();
+				}
+			}
+		}
+
+		if ( 'both' === $type || 'themes' === $type ) {
+			if ( $sync_themes_enabled ) {
+				if ( $full ) {
+					WP_CLI::log( 'Syncing ALL themes with full version history...' );
+					$result         = WPInsight_Sync::sync_full( 'theme', $max_pages, $time_limit );
+					$themes_success = $result['completed'] || 'running' === $result['status'];
+
+					WP_CLI::log( sprintf( 'Processed %d pages, %d themes, %d versions enqueued', $result['pages_processed'], $result['items_processed'], $result['items_enqueued'] ) );
+
+					if ( $result['completed'] ) {
+						WP_CLI::success( 'Full theme sync completed!' );
+					} else {
+						WP_CLI::warning( 'Full theme sync paused. Run again to continue.' );
+					}
+				} else {
+					WP_CLI::log( 'Syncing themes...' );
+					$themes_success = WPInsight_Sync::sync_themes();
+				}
+			}
+		}
+
+		// Report results.
+		if ( $plugins_success && $themes_success ) {
+			WP_CLI::success( 'Sync completed successfully.' );
+		} else {
+			WP_CLI::warning( 'Sync completed with errors. Check logs for details.' );
+		}
+
+		// Show stats.
+		self::show_sync_stats( $type );
+	}
+
+	/**
+	 * Process ZIP download queue.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--limit=<limit>]
+	 * : Maximum number of jobs to process.
+	 * ---
+	 * default: 0
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wpinsight zip
+	 *     wp wpinsight zip --limit=10
+	 *
+	 * @since 0.1.0
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
+	 * @return void
+	 */
+	public static function zip( array $args, array $assoc_args ): void {
+		$limit = isset( $assoc_args['limit'] ) ? absint( $assoc_args['limit'] ) : 0;
+
+		WP_CLI::log( 'Processing ZIP download queue...' );
+
+		$processed = 0;
+
+		// Process jobs until limit reached or queue empty.
+		while ( true ) {
+			if ( $limit > 0 && $processed >= $limit ) {
+				WP_CLI::log( sprintf( 'Limit of %d jobs reached.', $limit ) );
+				break;
+			}
+
+			// Get queue stats before processing.
+			$stats_before = WPInsight_Zip_Queue::get_queue_stats();
+
+			if ( 0 === $stats_before['pending'] ) {
+				WP_CLI::log( 'Queue is empty.' );
+				break;
+			}
+
+			// Process one tick.
+			WPInsight_Zip_Queue::worker_tick();
+
+			// Get queue stats after processing.
+			$stats_after = WPInsight_Zip_Queue::get_queue_stats();
+
+			// Check if any jobs were processed.
+			if ( $stats_before['pending'] === $stats_after['pending'] ) {
+				WP_CLI::log( 'No jobs available to process (max concurrency reached or all jobs failed).' );
+				break;
+			}
+
+			++$processed;
+
+			// Show progress.
+			WP_CLI::log(
+				sprintf(
+					'Processed: %d | Pending: %d | Processing: %d | Completed: %d | Failed: %d',
+					$processed,
+					$stats_after['pending'],
+					$stats_after['processing'],
+					$stats_after['completed'],
+					$stats_after['failed']
+				)
+			);
+
+			// Small delay to avoid overwhelming the system.
+			sleep( 1 );
+		}
+
+		WP_CLI::success( sprintf( 'Processed %d jobs.', $processed ) );
+	}
+
+	/**
+	 * Display statistics and status.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wpinsight stats
+	 *
+	 * @since 0.1.0
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
+	 * @return void
+	 */
+	public static function stats( array $args, array $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+		global $wpdb;
+
+		WP_CLI::log( '' );
+		WP_CLI::log( '=== WPInsight Statistics ===' );
+		WP_CLI::log( '' );
+
+		// CPT counts.
+		$plugin_count = wp_count_posts( WPInsight_CPT::get_plugin_post_type() )->publish ?? 0;
+		$theme_count  = wp_count_posts( WPInsight_CPT::get_theme_post_type() )->publish ?? 0;
+
+		WP_CLI::log( sprintf( 'Plugins: %s', number_format_i18n( $plugin_count ) ) );
+		WP_CLI::log( sprintf( 'Themes:  %s', number_format_i18n( $theme_count ) ) );
+		WP_CLI::log( '' );
+
+		// Sync state.
+		WP_CLI::log( '--- Sync State ---' );
+		$plugin_state = WPInsight_Sync::get_sync_state( 'plugin' );
+		$theme_state  = WPInsight_Sync::get_sync_state( 'theme' );
+
+		WP_CLI::log( sprintf( 'Plugins: %s (page %d)', $plugin_state['status'], $plugin_state['page'] ) );
+		if ( ! empty( $plugin_state['last_error'] ) ) {
+			WP_CLI::warning( '  Error: ' . $plugin_state['last_error'] );
+		}
+
+		WP_CLI::log( sprintf( 'Themes:  %s (page %d)', $theme_state['status'], $theme_state['page'] ) );
+		if ( ! empty( $theme_state['last_error'] ) ) {
+			WP_CLI::warning( '  Error: ' . $theme_state['last_error'] );
+		}
+		WP_CLI::log( '' );
+
+		// Queue stats.
+		WP_CLI::log( '--- Download Queue ---' );
+		$queue_stats = WPInsight_Zip_Queue::get_queue_stats();
+
+		WP_CLI::log( sprintf( 'Pending:    %s', number_format_i18n( $queue_stats['pending'] ) ) );
+		WP_CLI::log( sprintf( 'Processing: %s', number_format_i18n( $queue_stats['processing'] ) ) );
+		WP_CLI::log( sprintf( 'Completed:  %s', number_format_i18n( $queue_stats['completed'] ) ) );
+		WP_CLI::log( sprintf( 'Failed:     %s', number_format_i18n( $queue_stats['failed'] ) ) );
+		WP_CLI::log( sprintf( 'Total:      %s', number_format_i18n( $queue_stats['total'] ) ) );
+		WP_CLI::log( '' );
+
+		// Artifacts.
+		$artifacts_table = WPInsight_DB::get_table_name( 'artifacts' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Simple COUNT query for CLI statistics. Table name from get_table_name() is safe.
+		$artifact_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$artifacts_table}" );
+
+		WP_CLI::log( sprintf( 'Downloaded ZIPs: %s', number_format_i18n( $artifact_count ) ) );
+		WP_CLI::log( '' );
+
+		// Storage size (if directory exists).
+		$upload_dir  = wp_upload_dir();
+		$base_path   = WPInsight_Settings::get( 'storage_base_path', 'wpinsight' );
+		$storage_dir = trailingslashit( $upload_dir['basedir'] ) . $base_path;
+
+		if ( is_dir( $storage_dir ) ) {
+			$size = self::get_directory_size( $storage_dir );
+			WP_CLI::log( sprintf( 'Storage used: %s', size_format( $size, 2 ) ) );
+		} else {
+			WP_CLI::log( 'Storage directory does not exist yet.' );
+		}
+
+		WP_CLI::log( '' );
+	}
+
+	/**
+	 * Manage download queue.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action>
+	 * : Action to perform: retry, clear.
+	 * ---
+	 * options:
+	 *   - retry
+	 *   - clear
+	 * ---
+	 *
+	 * [--limit=<limit>]
+	 * : Maximum number of jobs to process (for retry).
+	 * ---
+	 * default: 100
+	 * ---
+	 *
+	 * [--days=<days>]
+	 * : Days threshold for clearing completed jobs.
+	 * ---
+	 * default: 7
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wpinsight queue retry
+	 *     wp wpinsight queue retry --limit=50
+	 *     wp wpinsight queue clear --days=30
+	 *
+	 * @since 0.1.0
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
+	 * @return void
+	 */
+	public static function queue( array $args, array $assoc_args ): void {
+		if ( empty( $args[0] ) ) {
+			WP_CLI::error( 'Action required: retry or clear.' );
+		}
+
+		$action = $args[0];
+
+		switch ( $action ) {
+			case 'retry':
+				$limit = isset( $assoc_args['limit'] ) ? absint( $assoc_args['limit'] ) : 100;
+
+				WP_CLI::log( sprintf( 'Retrying up to %d failed jobs...', $limit ) );
+				$count = WPInsight_Zip_Queue::retry_failed_jobs( $limit );
+
+				WP_CLI::success( sprintf( '%d jobs reset for retry.', $count ) );
+				break;
+
+			case 'clear':
+				$days = isset( $assoc_args['days'] ) ? absint( $assoc_args['days'] ) : 7;
+
+				WP_CLI::log( sprintf( 'Clearing completed jobs older than %d days...', $days ) );
+				$count = WPInsight_Zip_Queue::clear_completed_jobs( $days );
+
+				WP_CLI::success( sprintf( '%d completed jobs cleared.', $count ) );
+				break;
+
+			default:
+				WP_CLI::error( sprintf( 'Invalid action: %s. Use retry or clear.', $action ) );
+				break;
+		}
+	}
+
+	/**
+	 * Reset sync state.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--type=<type>]
+	 * : Type to reset: plugins, themes, or both.
+	 * ---
+	 * default: both
+	 * options:
+	 *   - plugins
+	 *   - themes
+	 *   - both
+	 * ---
+	 *
+	 * [--confirm]
+	 * : Confirm the reset action.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wpinsight reset --type=plugins --confirm
+	 *     wp wpinsight reset --type=both --confirm
+	 *
+	 * @since 0.1.0
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
+	 * @return void
+	 */
+	public static function reset( array $args, array $assoc_args ): void {
+		$type    = $assoc_args['type'] ?? 'both';
+		$confirm = isset( $assoc_args['confirm'] );
+
+		if ( ! $confirm ) {
+			WP_CLI::error( 'This will reset sync state. Add --confirm to proceed.' );
+		}
+
+		// Validate type.
+		if ( ! in_array( $type, [ 'plugins', 'themes', 'both' ], true ) ) {
+			WP_CLI::error( 'Invalid type. Must be: plugins, themes, or both.' );
+		}
+
+		if ( 'both' === $type || 'plugins' === $type ) {
+			WPInsight_Sync::reset_sync_state( 'plugin' );
+			WP_CLI::success( 'Plugin sync state reset.' );
+		}
+
+		if ( 'both' === $type || 'themes' === $type ) {
+			WPInsight_Sync::reset_sync_state( 'theme' );
+			WP_CLI::success( 'Theme sync state reset.' );
+		}
+	}
+
+	/**
+	 * Show sync statistics after sync operation.
+	 *
+	 * @since 0.1.0
+	 * @param string $type Type synced: plugins, themes, or both.
+	 * @return void
+	 */
+	private static function show_sync_stats( string $type ): void {
+		WP_CLI::log( '' );
+		WP_CLI::log( '--- Sync Results ---' );
+
+		if ( 'both' === $type || 'plugins' === $type ) {
+			$plugin_state = WPInsight_Sync::get_sync_state( 'plugin' );
+			$plugin_count = wp_count_posts( WPInsight_CPT::get_plugin_post_type() )->publish ?? 0;
+
+			WP_CLI::log(
+				sprintf(
+					'Plugins: %s total | Status: %s (page %d)',
+					number_format_i18n( $plugin_count ),
+					$plugin_state['status'],
+					$plugin_state['page']
+				)
+			);
+		}
+
+		if ( 'both' === $type || 'themes' === $type ) {
+			$theme_state = WPInsight_Sync::get_sync_state( 'theme' );
+			$theme_count = wp_count_posts( WPInsight_CPT::get_theme_post_type() )->publish ?? 0;
+
+			WP_CLI::log(
+				sprintf(
+					'Themes:  %s total | Status: %s (page %d)',
+					number_format_i18n( $theme_count ),
+					$theme_state['status'],
+					$theme_state['page']
+				)
+			);
+		}
+
+		// Show queue stats.
+		$queue_stats = WPInsight_Zip_Queue::get_queue_stats();
+		WP_CLI::log(
+			sprintf(
+				'Queue: %s pending | %s completed | %s failed',
+				number_format_i18n( $queue_stats['pending'] ),
+				number_format_i18n( $queue_stats['completed'] ),
+				number_format_i18n( $queue_stats['failed'] )
+			)
+		);
+
+		WP_CLI::log( '' );
+	}
+
+	/**
+	 * Get total size of directory recursively.
+	 *
+	 * @since 0.1.0
+	 * @param string $path Directory path.
+	 * @return int Total size in bytes.
+	 */
+	private static function get_directory_size( string $path ): int {
+		$size = 0;
+
+		if ( ! is_dir( $path ) ) {
+			return 0;
+		}
+
+		$files = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $path, RecursiveDirectoryIterator::SKIP_DOTS )
+		);
+
+		foreach ( $files as $file ) {
+			if ( $file->isFile() ) {
+				$size += $file->getSize();
+			}
+		}
+
+		return $size;
+	}
+
+	/**
+	 * Export plugin and theme data to JSON file.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--type=<type>]
+	 * : Type to export: plugins, themes, or all.
+	 * ---
+	 * default: all
+	 * options:
+	 *   - plugins
+	 *   - themes
+	 *   - all
+	 * ---
+	 *
+	 * [--output=<file>]
+	 * : Output file path. If not specified, outputs to stdout.
+	 *
+	 * [--compress]
+	 * : Compress output with gzip.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wpinsight export --type=all --output=backup.json.gz --compress
+	 *     wp wpinsight export --type=plugins --output=plugins.json
+	 *     wp wpinsight export > export.json
+	 *
+	 * @since 1.2.0
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
+	 * @return void
+	 */
+	public static function export( array $args, array $assoc_args ): void {
+		$type     = $assoc_args['type'] ?? 'all';
+		$output   = $assoc_args['output'] ?? null;
+		$compress = isset( $assoc_args['compress'] );
+
+		// Validate type.
+		if ( ! in_array( $type, [ 'plugins', 'themes', 'all' ], true ) ) {
+			WP_CLI::error( 'Invalid type. Must be: plugins, themes, or all.' );
+		}
+
+		WP_CLI::log( sprintf( 'Exporting %s data...', $type ) );
+
+		// Generate export data.
+		$data = '';
+		switch ( $type ) {
+			case 'plugins':
+				$data = WPInsight_Export::export_plugins( $compress );
+				break;
+			case 'themes':
+				$data = WPInsight_Export::export_themes( $compress );
+				break;
+			case 'all':
+			default:
+				$data = WPInsight_Export::export_all( $compress );
+				break;
+		}
+
+		if ( empty( $data ) ) {
+			WP_CLI::error( 'Failed to generate export data.' );
+		}
+
+		// Output to file or stdout.
+		if ( $output ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- CLI context, local file.
+			$result = file_put_contents( $output, $data );
+
+			if ( false === $result ) {
+				WP_CLI::error( sprintf( 'Failed to write to file: %s', $output ) );
+			}
+
+			$size = size_format( strlen( $data ), 2 );
+			WP_CLI::success( sprintf( 'Export complete: %s (%s)', $output, $size ) );
+		} else {
+			// Output to stdout.
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Binary data, JSON, or compressed content.
+			echo $data;
+		}
+	}
+
+	/**
+	 * Import plugin and theme data from JSON file.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <file>
+	 * : Path to JSON or JSON.gz export file.
+	 *
+	 * [--skip-existing]
+	 * : Skip items that already exist (default behavior).
+	 *
+	 * [--update-existing]
+	 * : Update items that already exist.
+	 *
+	 * [--dry-run]
+	 * : Preview import without making changes.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wpinsight import backup.json.gz --dry-run
+	 *     wp wpinsight import backup.json.gz --update-existing
+	 *     wp wpinsight import backup.json.gz --skip-existing
+	 *
+	 * @since 1.2.0
+	 * @param array<int, string>    $args       Positional arguments.
+	 * @param array<string, string> $assoc_args Associative arguments.
+	 * @return void
+	 */
+	public static function import( array $args, array $assoc_args ): void {
+		if ( empty( $args[0] ) ) {
+			WP_CLI::error( 'Please specify an import file.' );
+		}
+
+		$file = $args[0];
+
+		if ( ! file_exists( $file ) ) {
+			WP_CLI::error( sprintf( 'File not found: %s', $file ) );
+		}
+
+		// Prepare options.
+		$options = [
+			'skip_existing'   => isset( $assoc_args['skip-existing'] ) || ! isset( $assoc_args['update-existing'] ),
+			'update_existing' => isset( $assoc_args['update-existing'] ),
+			'dry_run'         => isset( $assoc_args['dry-run'] ),
+		];
+
+		WP_CLI::log( sprintf( 'Importing from: %s', $file ) );
+
+		if ( $options['dry_run'] ) {
+			WP_CLI::log( 'DRY RUN MODE - No changes will be made' );
+		}
+
+		// Show progress bar.
+		$progress = null;
+
+		// Validate file first.
+		WP_CLI::log( 'Validating import file...' );
+		$validation = WPInsight_Import::validate_import_file( $file );
+
+		if ( is_wp_error( $validation ) ) {
+			WP_CLI::error( $validation->get_error_message() );
+		}
+
+		WP_CLI::log(
+			sprintf(
+				'Found: %d plugins, %d themes',
+				$validation['plugins_count'],
+				$validation['themes_count']
+			)
+		);
+
+		if ( ! empty( $validation['warnings'] ) ) {
+			foreach ( $validation['warnings'] as $warning ) {
+				WP_CLI::warning( $warning );
+			}
+		}
+
+		$total_items = $validation['plugins_count'] + $validation['themes_count'];
+
+		if ( $total_items > 0 ) {
+			$progress = \WP_CLI\Utils\make_progress_bar( 'Importing', $total_items );
+		}
+
+		// Perform import.
+		$results = WPInsight_Import::import_all( $file, $options );
+
+		if ( $progress ) {
+			$progress->finish();
+		}
+
+		// Display results.
+		if ( ! $results['success'] ) {
+			WP_CLI::error( $results['error'] ?? 'Import failed.' );
+		}
+
+		WP_CLI::log( '' );
+		WP_CLI::log( 'Import Results:' );
+		WP_CLI::log( sprintf( '  Imported: %d', $results['imported'] ) );
+		WP_CLI::log( sprintf( '  Updated:  %d', $results['updated'] ) );
+		WP_CLI::log( sprintf( '  Skipped:  %d', $results['skipped'] ) );
+		WP_CLI::log( sprintf( '  Failed:   %d', $results['failed'] ) );
+
+		if ( ! empty( $results['errors'] ) ) {
+			WP_CLI::log( '' );
+			WP_CLI::log( 'Errors:' );
+			foreach ( array_slice( $results['errors'], 0, 10 ) as $slug => $error ) {
+				WP_CLI::log( sprintf( '  %s: %s', $slug, $error ) );
+			}
+
+			if ( count( $results['errors'] ) > 10 ) {
+				WP_CLI::log( sprintf( '  ... and %d more errors', count( $results['errors'] ) - 10 ) );
+			}
+		}
+
+		if ( $options['dry_run'] ) {
+			WP_CLI::log( '' );
+			WP_CLI::warning( 'DRY RUN - No changes were made. Remove --dry-run to perform actual import.' );
+		} else {
+			WP_CLI::success( 'Import complete!' );
+		}
+	}
+}
