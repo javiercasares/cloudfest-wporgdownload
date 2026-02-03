@@ -116,44 +116,31 @@ copy_plugin_files() {
 
     # Use rsync to copy files with exclusions
     rsync -a \
-        --exclude='.git/' \
-        --exclude='.gitignore' \
-        --exclude='.gitattributes' \
+        --exclude='.*' \
         --exclude='node_modules/' \
         --exclude='vendor/' \
         --exclude='tests/' \
         --exclude='bin/' \
         --exclude='docs/' \
-        --exclude='.phpcs.xml' \
-        --exclude='.phpcs.xml.dist' \
-        --exclude='phpcs.xml' \
-        --exclude='phpcs.xml.dist' \
-        --exclude='phpunit.xml' \
-        --exclude='phpunit.xml.dist' \
+        --exclude='phpcs.xml*' \
+        --exclude='phpunit.xml*' \
         --exclude='composer.json' \
         --exclude='composer.lock' \
         --exclude='package.json' \
         --exclude='package-lock.json' \
         --exclude='webpack.config.js' \
-        --exclude='.phpstan.neon' \
-        --exclude='.phpstan.neon.dist' \
-        --exclude='psalm.xml' \
-        --exclude='.env' \
-        --exclude='.env.example' \
         --exclude='*.log' \
         --exclude='*.tmp' \
-        --exclude='.DS_Store' \
-        --exclude='Thumbs.db' \
+        --exclude='*.backup' \
+        --exclude='AGENTS.md' \
+        --exclude='CLAUDE.md' \
+        --exclude='README.md' \
         --exclude='DOCUMENTATION-*.md' \
         --exclude='SECURITY-*.md' \
         --exclude='FINAL-*.md' \
         --exclude='REST-API-*.md' \
         --exclude='SYNC-*.md' \
         --exclude='TRANSLATION-*.md' \
-        --exclude='*.backup' \
-        --exclude='.editorconfig' \
-        --exclude='.vscode/' \
-        --exclude='.idea/' \
         "$PLUGIN_DIR/" "$BUILD_DIR/$PLUGIN_SLUG/"
 
     print_success "Files copied to build directory"

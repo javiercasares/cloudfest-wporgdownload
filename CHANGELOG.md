@@ -7,6 +7,136 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] - 2026-02-03
+
+_Real-time Dashboard & Security Enhancements Release_
+
+### Highlights
+
+* Real-time AJAX dashboard updates without page refresh
+* Complete security audit and fixes (0 critical vulnerabilities)
+* 93% reduction in PHPCS errors, 58% reduction in PHPStan errors
+* Translation support with POT file generation
+* Manual size detection trigger button
+
+### Added
+
+* **Real-time AJAX Dashboard (Phase 20.5)**
+  * JavaScript polling system updating dashboard every 5 seconds
+  * Live statistics updates without page reload
+  * Smooth animations for value changes
+  * Progress bars update in real-time
+  * Active downloads display with real-time progress
+  * File: `assets/js/dashboard-live.js` (~500 lines)
+
+* **REST API Backend**
+  * 6 new REST API endpoints:
+    - `/wpinsight/v1/dashboard-stats` - Queue statistics
+    - `/wpinsight/v1/active-downloads` - Downloads in progress
+    - `/wpinsight/v1/sync-status` - Sync worker status
+    - `/wpinsight/v1/queue-actions` - Pause/resume/clear queue
+    - `/wpinsight/v1/trigger-download` - Manual download trigger
+    - `/wpinsight/v1/update-setting` - Settings updates
+  * Permission callbacks on all endpoints (manage_options required)
+  * Nonce verification for CSRF protection
+  * File: `includes/class-wpinsight-rest-api.php` (420 lines)
+
+* **Manual Size Detection Button**
+  * "Detect Sizes Now" button in ZIP Size Detection Progress card
+  * Manually trigger size detection for up to 600 ZIPs
+  * Bypass 5-minute auto-schedule when needed
+  * Useful after bulk sync operations
+  * Handler: `trigger_size_detection` action
+
+* **Translation Support**
+  * Generated POT file with 524 translatable strings
+  * File: `languages/cloudfest-wporgdownload.pot` (56 KB)
+  * UTF-8 encoding, GNU gettext format
+  * Ready for GlotPress or Poedit translation
+  * All strings wrapped in i18n functions
+
+### Changed
+
+* Removed obsolete 10-second page reload from dashboard
+* Dashboard now updates via AJAX instead of full page refresh
+* Settings UI sections reorganized (moved to partials)
+* Deployment script excludes more dev files (docs/, *.md reports)
+
+### Fixed
+
+* **SQL Injection Vulnerabilities (Critical)**
+  * Fixed 20+ instances of unprepared database queries
+  * All queries now use `$wpdb->prepare()` with `%i` placeholder
+  * Affects: `class-wpinsight-admin.php` (60 lines changed)
+
+* **REST API Database Errors**
+  * Fixed incorrect column names in queries:
+    - `type` → `item_type` in `wpinsight_zip_queue`
+    - `file_size` → `remote_filesize` in `wpinsight_zip_queue`
+    - `current_page` → `page` in `wpinsight_sync_state`
+    - Calculated `items_processed` from `page` and `per_page`
+  * File: `includes/class-wpinsight-rest-api.php`
+
+* **Missing REST API Methods**
+  * Implemented `WPInsight_Settings::set()` method
+  * Implemented `WPInsight_Zip_Queue::enqueue_download()` method
+  * Both methods now properly validate parameters
+
+* **File Upload Security**
+  * Added 5MB size limit (prevents DoS)
+  * MIME type verification using PHP fileinfo
+  * Triple validation layer (size + MIME + extension)
+  * File: `includes/class-wpinsight-admin.php`
+
+* **Development Functions**
+  * Replaced `error_log()` with `WPInsight_Logger::error()`
+  * Centralized logging to database
+
+### Security
+
+* **OWASP Top 10 Compliance**
+  * A03:2021 - Injection: All SQL queries use prepared statements
+  * A04:2021 - Insecure Design: Triple validation for file uploads
+  * A08:2021 - Data Integrity: CSRF protection with nonces
+
+* **Code Quality Improvements**
+  * PHPCS errors: 466 → 32 (93% reduction)
+  * PHPCS warnings: 114 → 0 (100% reduction)
+  * PHPStan errors: 36 → 15 (58% reduction)
+  * All critical PHPStan issues resolved
+
+* **Testing**
+  * All 157 unit tests passing (100% success rate)
+  * 500 assertions verified
+  * No failures, errors, or skipped tests
+
+### Documentation
+
+* `FINAL-AUDIT-REPORT.md` - Complete audit results
+* `SECURITY-FIXES-APPLIED.md` - Security fix details
+* `REST-API-DATABASE-FIXES.md` - Database error fixes
+* `SYNC-BUTTONS-VERIFICATION.md` - Sync functionality verification
+* `SYNC-AND-SIZE-DETECTION-ENHANCEMENTS.md` - Feature documentation
+* `TRANSLATION-POT-GENERATION.md` - Translation guide
+* Updated `readme.txt` with version 1.7.0 changelog
+* Created `changelog.txt` for WordPress.org
+
+### Compatibility
+
+* WordPress: 6.9+
+* PHP: 8.4+
+* MariaDB: 10.6+
+* Action Scheduler: Required
+
+### Tests
+
+* PHPUnit: 10.5.63 (157 tests, 500 assertions)
+* PHPCS: WordPress-Coding-Standards 3.0
+* PHPStan: 2.1.38 (level 6)
+* PHP: 8.4
+
+---
+
 ## [1.6.0] - 2026-02-02
 
 _CPT UI Enhancement Release_
