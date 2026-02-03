@@ -1,0 +1,2396 @@
+# Copyright (C) 2026 CloudFest Team
+# This file is distributed under the GPL-3.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: CloudFest WPOrg Download 1.4.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/cloudfest-wporgdownload\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-02-03T06:35:58+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: cloudfest-wporgdownload\n"
+
+#. Plugin Name of the plugin
+#: cloudfest-wporgdownload.php
+msgid "CloudFest WPOrg Download"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: cloudfest-wporgdownload.php
+msgid "https://github.com/javiercasares/cloudfest-wporgdownload"
+msgstr ""
+
+#. Description of the plugin
+#: cloudfest-wporgdownload.php
+msgid "Downloads and archives ALL WordPress.org plugins including historical versions. Requires Action Scheduler."
+msgstr ""
+
+#. Author of the plugin
+#: cloudfest-wporgdownload.php
+msgid "CloudFest Team"
+msgstr ""
+
+#. Author URI of the plugin
+#: cloudfest-wporgdownload.php
+msgid "https://hackathon.cloudfest.com/"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:154
+msgid "WPInsight Dashboard"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:155
+#: includes/class-wpinsight-admin.php:164
+msgid "WPInsight"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:163
+msgid "WPInsight Settings"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:173
+msgid "WPInsight Error Log"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:174
+msgid "WPInsight Errors"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:183
+#: includes/class-wpinsight-admin.php:184
+msgid "WPInsight Import/Export"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:213
+msgid "General Settings"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:221
+msgid "Sync Settings"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:229
+msgid "Rate Limiting"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:237
+msgid "Error Notifications"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:245
+msgid "Delete Data on Uninstall"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:254
+msgid "Enable Auto Sync"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:262
+msgid "Sync Plugins"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:270
+msgid "Sync Themes"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:278
+msgid "Download Plugin ZIPs"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:286
+msgid "Download Theme ZIPs"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:294
+msgid "Sync Interval (seconds)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:303
+msgid "Max Concurrent Downloads"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:311
+msgid "Size Detection Rate (req/sec)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:319
+msgid "ZIP Worker Interval (seconds)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:327
+msgid "Max Download Retries"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:336
+msgid "Enable Email Notifications"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:344
+msgid "Notification Email"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:352
+msgid "Log Retention (days)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:380
+#: includes/class-wpinsight-admin.php:570
+#: includes/class-wpinsight-admin.php:761
+#: includes/class-wpinsight-admin.php:988
+#: includes/class-wpinsight-admin.php:3408
+#: includes/class-wpinsight-admin.php:4011
+#: includes/class-wpinsight-admin.php:4092
+msgid "Security check failed."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:386
+#: includes/class-wpinsight-admin.php:576
+#: includes/class-wpinsight-admin.php:767
+#: includes/class-wpinsight-admin.php:993
+msgid "You do not have sufficient permissions."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:405
+msgid "Plugin sync queued. It will start processing shortly."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:407
+#: includes/class-wpinsight-admin.php:425
+#: includes/class-wpinsight-admin.php:489
+#: includes/class-wpinsight-admin.php:503
+msgid "Action Scheduler not available. Cannot start sync."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:423
+msgid "Theme sync queued. It will start processing shortly."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:431
+msgid "Queue processed. Check statistics below."
+msgstr ""
+
+#. translators: %d: number of jobs reset
+#: includes/class-wpinsight-admin.php:441
+#, php-format
+msgid "%d failed jobs reset for retry."
+msgstr ""
+
+#. translators: %d: number of jobs cleared
+#: includes/class-wpinsight-admin.php:455
+#, php-format
+msgid "%d completed jobs cleared."
+msgstr ""
+
+#. translators: %d: number of logs cleared
+#: includes/class-wpinsight-admin.php:471
+#, php-format
+msgid "%d old log entries cleared."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:487
+msgid "Full plugin sync queued. It will start processing shortly. This may take hours."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:501
+msgid "Full theme sync queued. It will start processing shortly. This may take hours."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:517
+msgid "Plugin sync state reset and pending jobs cancelled."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:530
+msgid "Theme sync state reset and pending jobs cancelled."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:537
+msgid "Size detection triggered. Processing up to 600 ZIPs without size information."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:539
+msgid "Action Scheduler not available. Cannot trigger size detection."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:544
+msgid "Invalid action."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:585
+#: includes/class-wpinsight-admin.php:649
+msgid "Missing cron hook."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:594
+#: includes/class-wpinsight-admin.php:658
+msgid "Invalid cron hook."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:606
+msgid "Sync tick executed."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:611
+msgid "ZIP worker tick executed."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:616
+msgid "Size detection tick executed."
+msgstr ""
+
+#. translators: 1: result message, 2: execution time in milliseconds
+#: includes/class-wpinsight-admin.php:627
+#, php-format
+msgid "%1$s (Execution time: %2$s ms)"
+msgstr ""
+
+#. translators: %s: error message
+#: includes/class-wpinsight-admin.php:639
+#, php-format
+msgid "Error executing cron: %s"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:663
+#: includes/class-wpinsight-admin.php:712
+msgid "Action Scheduler is not available."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:672
+#: includes/class-wpinsight-admin.php:1849
+msgid "Sync Worker"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:677
+#: includes/class-wpinsight-admin.php:1853
+msgid "ZIP Worker"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:682
+#: includes/class-wpinsight-admin.php:1857
+msgid "Size Detection Worker"
+msgstr ""
+
+#. translators: %s: worker name
+#: includes/class-wpinsight-admin.php:691
+#, php-format
+msgid "%s has been scheduled successfully."
+msgstr ""
+
+#. translators: %s: error message
+#: includes/class-wpinsight-admin.php:702
+#, php-format
+msgid "Error scheduling worker: %s"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:729
+msgid "All scheduled workers have been reset and recreated successfully."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:735
+msgid "Invalid debug action."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:776
+#: includes/class-wpinsight-admin.php:818
+#: includes/class-wpinsight-admin.php:870
+msgid "Missing table name."
+msgstr ""
+
+#. translators: 1: table name, 2: check results
+#: includes/class-wpinsight-admin.php:796
+#, php-format
+msgid "Table %1$s checked: %2$s"
+msgstr ""
+
+#. translators: %s: error message
+#: includes/class-wpinsight-admin.php:808
+#, php-format
+msgid "Error checking table: %s"
+msgstr ""
+
+#. translators: 1: table name, 2: result message
+#: includes/class-wpinsight-admin.php:834
+#, php-format
+msgid "Table %1$s optimized: %2$s"
+msgstr ""
+
+#. translators: 1: table name, 2: error message
+#: includes/class-wpinsight-admin.php:847
+#, php-format
+msgid "Failed to optimize table %1$s: %2$s"
+msgstr ""
+
+#. translators: %s: error message
+#: includes/class-wpinsight-admin.php:860
+#, php-format
+msgid "Error optimizing table: %s"
+msgstr ""
+
+#. translators: 1: table name, 2: result message
+#: includes/class-wpinsight-admin.php:886
+#, php-format
+msgid "Table %1$s repaired: %2$s"
+msgstr ""
+
+#. translators: 1: table name, 2: error message
+#: includes/class-wpinsight-admin.php:899
+#, php-format
+msgid "Failed to repair table %1$s: %2$s"
+msgstr ""
+
+#. translators: %s: error message
+#: includes/class-wpinsight-admin.php:912
+#, php-format
+msgid "Error repairing table: %s"
+msgstr ""
+
+#. translators: 1: successful optimizations, 2: total tables
+#: includes/class-wpinsight-admin.php:939
+#, php-format
+msgid "Optimized %1$d of %2$d tables successfully."
+msgstr ""
+
+#. translators: %s: error message
+#: includes/class-wpinsight-admin.php:952
+#, php-format
+msgid "Error optimizing tables: %s"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:961
+msgid "Invalid database action."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1002
+msgid "Invalid export type."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1022
+msgid "Failed to generate export. Please check error logs."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1060
+#: includes/class-wpinsight-admin.php:1234
+#: includes/class-wpinsight-admin.php:1443
+#: includes/class-wpinsight-admin.php:2086
+msgid "You do not have sufficient permissions to access this page."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1139
+msgid "Recent Errors"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1144
+msgid "No recent errors"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1150
+#: includes/class-wpinsight-admin.php:1359
+#: templates/admin-dashboard.php:900
+msgid "Severity"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1151
+#: includes/class-wpinsight-admin.php:1360
+#: templates/admin-dashboard.php:901
+msgid "Time"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1152
+#: includes/class-wpinsight-admin.php:1361
+#: templates/admin-dashboard.php:902
+msgid "Message"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1168
+#: includes/class-wpinsight-admin.php:1987
+#: includes/class-wpinsight-admin.php:2026
+#: includes/class-wpinsight-admin.php:3147
+#: templates/admin-dashboard.php:918
+msgid "ago"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1186
+msgid "View Full Error Log"
+msgstr ""
+
+#. translators: %d: number of logs deleted
+#: includes/class-wpinsight-admin.php:1247
+#, php-format
+msgid "%d log entries deleted."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1322
+msgid "Filter Logs"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1325
+msgid "Severity:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1327
+msgid "All Levels"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1328
+msgid "Emergency"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1329
+#: includes/class-wpinsight-admin.php:3099
+msgid "Error"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1330
+msgid "Warning"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1331
+msgid "Info"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1332
+msgid "Debug"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1334
+msgid "Filter"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1338
+msgid "Clear Filter"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1346
+msgid "Error Log"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1348
+msgid "entries"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1353
+msgid "No log entries found."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1358
+msgid "ID"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1379
+msgid "Show Context"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1400
+msgid "&laquo; Previous"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1401
+msgid "Next &raquo;"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1412
+msgid "Maintenance"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1417
+msgid "Delete logs older than:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1420
+msgid "days"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1422
+msgid "Are you sure you want to delete old logs?"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1423
+#: templates/admin-dashboard.php:936
+msgid "Clear Old Logs"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1456
+msgid "Please select a file to import."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1472
+msgid "Invalid file type. Only .json and .json.gz files are allowed."
+msgstr ""
+
+#. translators: %d: maximum file size in MB
+#: includes/class-wpinsight-admin.php:1484
+#, php-format
+msgid "File is too large. Maximum size: %d MB."
+msgstr ""
+
+#. translators: 1: imported count, 2: updated count, 3: skipped count, 4: failed count
+#: includes/class-wpinsight-admin.php:1503
+#, php-format
+msgid "Import completed: %1$d imported, %2$d updated, %3$d skipped, %4$d failed."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1511
+msgid "(Dry run - no changes were made)"
+msgstr ""
+
+#. translators: 1: item slug, 2: error message
+#: includes/class-wpinsight-admin.php:1529
+#, php-format
+msgid "%1$s: %2$s"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1541
+msgid "Import failed."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1557
+msgid "Export and import plugin and theme metadata for backups and migrations. Note: This exports CPT data only, not ZIP files."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1564
+#: includes/class-wpinsight-admin.php:1605
+msgid "Export Data"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1567
+msgid "Available Data:"
+msgstr ""
+
+#. translators: 1: plugin count, 2: theme count
+#: includes/class-wpinsight-admin.php:1571
+#, php-format
+msgid "Plugins: %1$s | Themes: %2$s"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1583
+msgid "Export Type"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1586
+msgid "Both (Plugins & Themes)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1587
+msgid "Plugins Only"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1588
+msgid "Themes Only"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1593
+msgid "Compression"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1597
+msgid "Compress with Gzip (recommended for large exports)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1613
+#: includes/class-wpinsight-admin.php:1656
+msgid "Import Data"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1616
+#: templates/admin-dashboard.php:375
+msgid "Warning:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1617
+msgid "Importing will add or update posts in your database. Use \"Dry Run\" to preview changes first."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1625
+msgid "Import File"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1628
+msgid "Select a .json or .json.gz export file."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1632
+msgid "Import Options"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1635
+msgid "Skip Existing"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1636
+msgid "Update Existing"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1643
+msgid "Preview Mode"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1647
+msgid "Dry Run (Preview Only - No Changes)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1649
+msgid "Test import without modifying the database."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1655
+msgid "Are you sure you want to import this file?"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1678
+msgid "Debug Tools"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1679
+msgid "Debug tools for developers and troubleshooting."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1686
+#: templates/partials/diagnostic-tools.php:106
+msgid "Note:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1687
+msgid "WP_DEBUG is currently disabled. Enable it in wp-config.php to see detailed debug information."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1695
+msgid "System Information"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1697
+msgid "WordPress Version:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1698
+msgid "PHP Version:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1699
+msgid "Plugin Version:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1700
+msgid "Database Schema:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1701
+msgid "WP_DEBUG:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1701
+msgid "Enabled"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1701
+msgid "Disabled"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1702
+msgid "Action Scheduler:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1702
+msgid "Active"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1702
+#: templates/admin-settings.php:65
+msgid "Not Found"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1706
+msgid "Database Information"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1722
+msgid "Plugin CPTs:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1723
+msgid "Theme CPTs:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1724
+msgid "Queue Jobs:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1725
+msgid "Downloaded Artifacts:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1726
+msgid "Error Log Entries:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1730
+msgid "Database Diagnostics"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1731
+msgid "Detailed table statistics, health checks, and optimization tools."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1738
+msgid "Table"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1739
+msgid "Rows"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1740
+msgid "Data Size"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1741
+msgid "Index Size"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1742
+msgid "Total Size"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1743
+msgid "Engine"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1744
+msgid "Last Optimize"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1745
+#: includes/class-wpinsight-admin.php:1869
+#: templates/admin-dashboard.php:588
+msgid "Actions"
+msgstr ""
+
+#. translators: %s: time ago
+#. translators: %s is the time difference (e.g., "2 hours ago").
+#: includes/class-wpinsight-admin.php:1762
+#: templates/admin-dashboard.php:614
+#: templates/admin-dashboard.php:670
+#, php-format
+msgid "%s ago"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1764
+msgid "Never"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1774
+msgid "Check"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1782
+msgid "Optimize"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1785
+msgid "Are you sure you want to repair this table? Only do this if CHECK indicates corruption."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1790
+msgid "Repair"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1799
+#: templates/admin-dashboard.php:850
+msgid "Total"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1826
+msgid "Bulk Actions"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1827
+msgid "Optimize all tables at once. This can take several minutes on large databases."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1828
+msgid "Are you sure you want to optimize all tables? This may take several minutes."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1832
+msgid "Optimize All Tables"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1838
+msgid "Scheduled Workers (Cron Jobs)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1843
+msgid "Action Scheduler is not available. Please install and activate the Action Scheduler plugin."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1850
+msgid "Fetches new plugins/themes from WordPress.org API"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1854
+msgid "Downloads ZIP files from download.wordpress.org"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1858
+msgid "Detects ZIP file sizes via HEAD requests"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1866
+msgid "Worker"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1867
+#: includes/class-wpinsight-admin.php:2007
+msgid "Status"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1868
+msgid "Next Run"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1890
+msgid "Show Stats & History"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1895
+msgid "Scheduled"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1897
+msgid "Not Scheduled"
+msgstr ""
+
+#. translators: %d: number of completed jobs
+#: includes/class-wpinsight-admin.php:1903
+#, php-format
+msgid "24h: %d completed"
+msgstr ""
+
+#. translators: %d: number of failed jobs
+#: includes/class-wpinsight-admin.php:1909
+#, php-format
+msgid ", %d failed"
+msgstr ""
+
+#. translators: %s: average execution time
+#: includes/class-wpinsight-admin.php:1928
+#, php-format
+msgid "Avg: %ss"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1940
+msgid "Schedule Now"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1949
+msgid "Run Now"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1960
+msgid "24-Hour Statistics"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1963
+msgid "Completed:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1967
+msgid "Failed:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1971
+#: templates/admin-dashboard.php:359
+msgid "Pending:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1975
+msgid "In Progress:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1980
+msgid "Avg Duration:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1986
+msgid "Last Execution:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:1993
+msgid "Last Error:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2002
+msgid "Recent Executions (Last 10)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2008
+#: includes/class-wpinsight-admin.php:3095
+#: templates/admin-dashboard.php:842
+msgid "Completed"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2009
+msgid "Duration"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2017
+msgid "Success"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2019
+#: includes/class-wpinsight-cpt.php:1345
+#: templates/admin-dashboard.php:846
+msgid "Failed"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2046
+msgid "No execution history available."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2058
+msgid "Reset Scheduled Workers"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2059
+msgid "If workers are not running correctly, you can reset all scheduled actions. This will clear existing schedules and recreate them."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2060
+msgid "Are you sure you want to reset all scheduled workers? This will clear and recreate all Action Scheduler jobs."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2064
+msgid "Reset All Workers"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2149
+msgid "Configure general plugin behavior and data management."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2161
+msgid "Configure synchronization behavior with WordPress.org repositories."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2174
+#: includes/class-wpinsight-admin.php:2327
+msgid "CRITICAL:"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2176
+msgid "These settings control rate limiting to prevent being banned by WordPress.org. Do not exceed recommended values."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2188
+msgid "Configure error logging and email notifications for critical errors."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2209
+msgid "Delete all plugin data when uninstalling"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2212
+msgid "By default, data is preserved when uninstalling. Enable this to delete all posts, tables, and files on uninstall."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2228
+msgid "Enable automatic background synchronization"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2231
+msgid "When enabled, the plugin will automatically sync with WordPress.org repositories in the background."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2247
+msgid "Sync WordPress.org plugins"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2263
+msgid "Sync WordPress.org themes"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2279
+msgid "Download plugin ZIP files (requires Sync Plugins enabled)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2295
+msgid "Download theme ZIP files (requires Sync Themes enabled)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2311
+msgid "How often to check for new plugins/themes (minimum 60 seconds). Default: 300 (5 minutes)."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2328
+msgid "Maximum concurrent downloads (1-5). Exceeding 5 may result in IP ban from WordPress.org. Default: 3 (recommended)."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2344
+msgid "HEAD requests per second for size detection (1-10). Lower values are more polite to WordPress.org servers. Default: 3 (recommended)."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2360
+msgid "How often to process download queue (minimum 30 seconds). Default: 60 (1 minute)."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2376
+msgid "Maximum retry attempts for failed downloads (1-10). Default: 3."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2392
+msgid "Send email notifications for critical errors"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2395
+msgid "When enabled, you will receive email notifications for EMERGENCY and ERROR level events (rate-limited to 1 per hour per error type)."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2411
+msgid "Email address to receive error notifications. Default: site admin email."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:2427
+msgid "Number of days to retain error logs before automatic deletion (1-365). Default: 30."
+msgstr ""
+
+#. translators: %s: Setting name
+#: includes/class-wpinsight-admin.php:2509
+#, php-format
+msgid "Invalid value for %s. Previous value restored."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3087
+msgid "Running"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3091
+#: includes/class-wpinsight-cpt.php:1343
+msgid "Queued"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3103
+msgid "Paused"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3107
+msgid "Idle"
+msgstr ""
+
+#. translators: %d: number of seconds
+#: includes/class-wpinsight-admin.php:3227
+#, php-format
+msgid "%d seconds"
+msgstr ""
+
+#. translators: %d: number of minutes
+#: includes/class-wpinsight-admin.php:3233
+#, php-format
+msgid "%d minutes"
+msgstr ""
+
+#. translators: 1: number of hours, 2: number of minutes
+#: includes/class-wpinsight-admin.php:3242
+#, php-format
+msgid "%1$d hours %2$d minutes"
+msgstr ""
+
+#. translators: %d: number of hours
+#: includes/class-wpinsight-admin.php:3246
+#, php-format
+msgid "%d hours"
+msgstr ""
+
+#. translators: 1: number of days, 2: number of hours
+#: includes/class-wpinsight-admin.php:3254
+#, php-format
+msgid "%1$d days %2$d hours"
+msgstr ""
+
+#. translators: %d: number of days
+#: includes/class-wpinsight-admin.php:3258
+#, php-format
+msgid "%d days"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3413
+#: includes/class-wpinsight-admin.php:4016
+#: includes/class-wpinsight-admin.php:4103
+msgid "You do not have permission to perform this action."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3431
+msgid "Downloads have been paused. No new downloads will start."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3446
+msgid "Downloads have been resumed. Download queue will continue processing."
+msgstr ""
+
+#. translators: %s: Error message
+#: includes/class-wpinsight-admin.php:3464
+#, php-format
+msgid "Action failed: %s"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3515
+#, php-format
+msgid "PHP %s (meets requirement)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3516
+#, php-format
+msgid "PHP %1$s (requires %2$s+)"
+msgstr ""
+
+#. translators: 1: used memory, 2: memory limit, 3: percentage
+#: includes/class-wpinsight-admin.php:3540
+#, php-format
+msgid "%1$s used of %2$s (%3$s%%)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3556
+#, php-format
+msgid "WordPress %s (meets requirement)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3557
+#, php-format
+msgid "WordPress %1$s (requires %2$s+)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3562
+msgid "cURL extension (required for API requests)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3563
+msgid "ZIP extension (required for file validation)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3564
+msgid "JSON extension (required for API parsing)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3565
+msgid "Mbstring extension (recommended for string handling)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3577
+#, php-format
+msgid "%s - Installed"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3578
+#, php-format
+msgid "%s - Missing"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3592
+#, php-format
+msgid "Uploads directory writable: %s"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3593
+#, php-format
+msgid "Uploads directory NOT writable: %s"
+msgstr ""
+
+#. translators: 1: free space, 2: total space
+#: includes/class-wpinsight-admin.php:3615
+#, php-format
+msgid "%1$s free of %2$s"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3629
+#, php-format
+msgid "MariaDB/MySQL %s (meets requirement)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3630
+#, php-format
+msgid "MariaDB/MySQL %s (10.6+ recommended)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3640
+msgid "Action Scheduler - Installed and active"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3641
+msgid "Action Scheduler - Missing (REQUIRED)"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3684
+msgid "All system checks passed"
+msgstr ""
+
+#. translators: %d: number of errors
+#: includes/class-wpinsight-admin.php:3690
+#, php-format
+msgid "%d critical issue detected"
+msgid_plural "%d critical issues detected"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of warnings
+#: includes/class-wpinsight-admin.php:3697
+#, php-format
+msgid "%d warning detected"
+msgid_plural "%d warnings detected"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: response time in seconds
+#: includes/class-wpinsight-admin.php:3742
+#, php-format
+msgid "API responding in %ss"
+msgstr ""
+
+#. translators: %s: error message
+#: includes/class-wpinsight-admin.php:3747
+#, php-format
+msgid "API test failed: %s"
+msgstr ""
+
+#. translators: %s: response time in seconds
+#: includes/class-wpinsight-admin.php:3769
+#, php-format
+msgid "Fast (%ss average)"
+msgstr ""
+
+#. translators: %s: response time in seconds
+#: includes/class-wpinsight-admin.php:3774
+#, php-format
+msgid "Slow (%ss average)"
+msgstr ""
+
+#. translators: 1: error count, 2: total requests, 3: error percentage
+#: includes/class-wpinsight-admin.php:3827
+#, php-format
+msgid "%1$d errors of %2$d requests (%3$s%%)"
+msgstr ""
+
+#. translators: %d: rate limit value
+#: includes/class-wpinsight-admin.php:3852
+#, php-format
+msgid "Optimal (%d concurrent downloads)"
+msgstr ""
+
+#. translators: 1: current rate, 2: optimal rate
+#: includes/class-wpinsight-admin.php:3857
+#, php-format
+msgid "Current: %1$d, Recommended: %2$d"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3867
+msgid "High API error rate detected. Consider reducing sync frequency or rate limits."
+msgstr ""
+
+#. translators: %d: current rate limit
+#: includes/class-wpinsight-admin.php:3873
+#, php-format
+msgid "Current rate limit (%d) is above WordPress.org recommended limit (3). Reduce to avoid being blocked."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3879
+msgid "Slow API response times detected. This may indicate network issues or WordPress.org service degradation."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3883
+msgid "API test failed. Check your network connection and WordPress.org service status."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:3887
+msgid "API health is optimal. No issues detected."
+msgstr ""
+
+#. translators: %s: Error message
+#: includes/class-wpinsight-admin.php:4065
+#, php-format
+msgid "Export failed: %s"
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:4114
+msgid "No file uploaded or upload error occurred."
+msgstr ""
+
+#. translators: %s: maximum file size
+#: includes/class-wpinsight-admin.php:4127
+#, php-format
+msgid "File too large. Maximum allowed size is %s."
+msgstr ""
+
+#. translators: %s: detected MIME type
+#: includes/class-wpinsight-admin.php:4143
+#, php-format
+msgid "Invalid file type. Detected: %s. Only JSON files are allowed."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:4152
+msgid "Invalid file extension. Only .json files are allowed."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:4159
+msgid "Failed to read uploaded file."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:4165
+msgid "Invalid JSON format."
+msgstr ""
+
+#: includes/class-wpinsight-admin.php:4170
+msgid "Invalid diagnostic file. Missing settings data."
+msgstr ""
+
+#. translators: %d: number of settings imported
+#: includes/class-wpinsight-admin.php:4211
+#, php-format
+msgid "%d setting imported successfully."
+msgid_plural "%d settings imported successfully."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Error message
+#: includes/class-wpinsight-admin.php:4230
+#, php-format
+msgid "Import failed: %s"
+msgstr ""
+
+#: includes/class-wpinsight-bootstrap.php:166
+msgid "Plugin Activation Failed"
+msgstr ""
+
+#: includes/class-wpinsight-bootstrap.php:265
+msgid "CloudFest WPOrg Download: Missing Dependency"
+msgstr ""
+
+#: includes/class-wpinsight-bootstrap.php:267
+msgid "Action Scheduler is required but not found."
+msgstr ""
+
+#: includes/class-wpinsight-bootstrap.php:269
+msgid "This plugin requires Action Scheduler for reliable background processing of large-scale operations."
+msgstr ""
+
+#: includes/class-wpinsight-bootstrap.php:271
+msgid "How to Install Action Scheduler:"
+msgstr ""
+
+#. translators: %s: Link to Action Scheduler plugin
+#: includes/class-wpinsight-bootstrap.php:276
+#, php-format
+msgid "Install the <a href=\"%s\" target=\"_blank\">Action Scheduler</a> plugin from WordPress.org"
+msgstr ""
+
+#: includes/class-wpinsight-bootstrap.php:279
+msgid "OR install WooCommerce (which includes Action Scheduler)"
+msgstr ""
+
+#: includes/class-wpinsight-bootstrap.php:282
+msgid "Once Action Scheduler is installed and activated, you can activate this plugin."
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:110
+msgctxt "Post type general name"
+msgid "Plugins"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:111
+msgctxt "Post type singular name"
+msgid "Plugin"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:112
+msgctxt "Admin Menu text"
+msgid "WP.org Plugins"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:113
+msgctxt "Add New on Toolbar"
+msgid "Plugin"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:114
+#: includes/class-wpinsight-cpt.php:170
+msgid "Add New"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:115
+msgid "Add New Plugin"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:116
+msgid "New Plugin"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:117
+msgid "Edit Plugin"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:118
+msgid "View Plugin"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:119
+msgid "All Plugins"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:120
+msgid "Search Plugins"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:121
+msgid "No plugins found."
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:122
+msgid "No plugins found in Trash."
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:123
+msgctxt "Screen reader text"
+msgid "Filter plugins list"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:124
+msgctxt "Screen reader text"
+msgid "Plugins list navigation"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:125
+msgctxt "Screen reader text"
+msgid "Plugins list"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:130
+msgid "WordPress.org plugins from the plugin repository"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:166
+msgctxt "Post type general name"
+msgid "Themes"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:167
+msgctxt "Post type singular name"
+msgid "Theme"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:168
+msgctxt "Admin Menu text"
+msgid "WP.org Themes"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:169
+msgctxt "Add New on Toolbar"
+msgid "Theme"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:171
+msgid "Add New Theme"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:172
+msgid "New Theme"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:173
+msgid "Edit Theme"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:174
+msgid "View Theme"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:175
+msgid "All Themes"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:176
+msgid "Search Themes"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:177
+msgid "No themes found."
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:178
+msgid "No themes found in Trash."
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:179
+msgctxt "Screen reader text"
+msgid "Filter themes list"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:180
+msgctxt "Screen reader text"
+msgid "Themes list navigation"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:181
+msgctxt "Screen reader text"
+msgid "Themes list"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:186
+msgid "WordPress.org themes from the theme repository"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:536
+#: includes/class-wpinsight-cpt.php:566
+msgid "Slug"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:537
+#: includes/class-wpinsight-cpt.php:567
+msgid "Version"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:538
+#: includes/class-wpinsight-cpt.php:568
+#: includes/class-wpinsight-cpt.php:804
+#: includes/class-wpinsight-cpt.php:884
+msgid "Author"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:539
+#: includes/class-wpinsight-cpt.php:569
+#: includes/class-wpinsight-cpt.php:1209
+msgid "Downloads"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:540
+#: includes/class-wpinsight-cpt.php:1202
+msgid "Active Installs"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:541
+#: includes/class-wpinsight-cpt.php:570
+#: includes/class-wpinsight-cpt.php:1216
+msgid "Rating"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:542
+#: includes/class-wpinsight-cpt.php:571
+#: includes/class-wpinsight-cpt.php:1231
+msgid "Last Updated"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:727
+msgid "Plugin Information"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:737
+msgid "Theme Information"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:747
+msgid "ZIP Downloads"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:757
+msgid "Quick Stats"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:790
+#: includes/class-wpinsight-cpt.php:870
+msgid "Description"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:797
+#: includes/class-wpinsight-cpt.php:877
+msgid "Current Version"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:811
+msgid "Homepage"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:818
+msgid "Requires WordPress"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:825
+msgid "Requires PHP"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:832
+msgid "Tested up to"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:839
+#: includes/class-wpinsight-cpt.php:898
+msgid "Tags"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:891
+msgid "Theme URI"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:924
+msgid "No versions available."
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1045
+#, php-format
+msgid "Total versions: %d"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1082
+msgid "Changelog:"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1087
+msgid "No changelog available for this version."
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1098
+msgid "Download ZIP"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1109
+msgid "View on WordPress.org"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1114
+msgid "Retry (Not implemented)"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1118
+msgid "In download queue..."
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1224
+#, php-format
+msgid "%s reviews"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1341
+msgid "Downloaded"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1342
+#: templates/admin-dashboard.php:834
+msgid "Pending"
+msgstr ""
+
+#: includes/class-wpinsight-cpt.php:1344
+#: templates/admin-dashboard.php:838
+msgid "Processing"
+msgstr ""
+
+#: includes/class-wpinsight-import.php:50
+msgid "Import file not found."
+msgstr ""
+
+#: includes/class-wpinsight-import.php:54
+msgid "Import file is not readable."
+msgstr ""
+
+#: includes/class-wpinsight-import.php:62
+msgid "Failed to read import file."
+msgstr ""
+
+#: includes/class-wpinsight-import.php:69
+msgid "Failed to decompress gzip file."
+msgstr ""
+
+#. translators: %s: JSON error message
+#: includes/class-wpinsight-import.php:82
+#, php-format
+msgid "Failed to parse JSON: %s"
+msgstr ""
+
+#: includes/class-wpinsight-import.php:90
+msgid "Import file missing schema version."
+msgstr ""
+
+#. translators: %s: schema version
+#: includes/class-wpinsight-import.php:98
+#, php-format
+msgid "Unsupported schema version: %s"
+msgstr ""
+
+#: includes/class-wpinsight-import.php:132
+msgid "Invalid plugins data structure."
+msgstr ""
+
+#: includes/class-wpinsight-import.php:160
+msgid "Invalid themes data structure."
+msgstr ""
+
+#: includes/class-wpinsight-import.php:276
+msgid "Missing required fields (slug or title)."
+msgstr ""
+
+#: includes/class-wpinsight-import.php:293
+msgid "Post already exists."
+msgstr ""
+
+#: includes/class-wpinsight-import.php:405
+msgid "Import file contains no data."
+msgstr ""
+
+#. translators: %d: item index
+#: includes/class-wpinsight-import.php:414
+#, php-format
+msgid "Plugin at index %d missing required fields."
+msgstr ""
+
+#. translators: %d: item index
+#: includes/class-wpinsight-import.php:427
+#, php-format
+msgid "Theme at index %d missing required fields."
+msgstr ""
+
+#: includes/class-wpinsight-logger.php:471
+msgid "WPInsight Error:"
+msgstr ""
+
+#. translators: %d is the number of errors.
+#: includes/class-wpinsight-logger.php:475
+#, php-format
+msgid "%d critical error occurred in the last hour."
+msgid_plural "%d critical errors occurred in the last hour."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-wpinsight-logger.php:485
+msgid "View Error Log"
+msgstr ""
+
+#: includes/class-wpinsight-rest-api.php:364
+msgid "Plugin or theme not found."
+msgstr ""
+
+#: includes/class-wpinsight-rest-api.php:377
+msgid "Version not found."
+msgstr ""
+
+#: includes/class-wpinsight-rest-api.php:392
+msgid "Download enqueued successfully."
+msgstr ""
+
+#: includes/class-wpinsight-rest-api.php:401
+msgid "Failed to enqueue download."
+msgstr ""
+
+#: includes/class-wpinsight-rest-api.php:419
+msgid "Downloads paused."
+msgstr ""
+
+#: includes/class-wpinsight-rest-api.php:437
+msgid "Downloads resumed."
+msgstr ""
+
+#: templates/admin-dashboard.php:55
+#: templates/admin-dashboard.php:89
+#: templates/admin-dashboard.php:593
+#: templates/admin-dashboard.php:731
+#: templates/partials/storage-requirements.php:28
+msgid "Plugins"
+msgstr ""
+
+#: templates/admin-dashboard.php:61
+#: templates/admin-dashboard.php:138
+#: templates/admin-dashboard.php:649
+#: templates/admin-dashboard.php:769
+#: templates/partials/storage-requirements.php:67
+msgid "Themes"
+msgstr ""
+
+#: templates/admin-dashboard.php:67
+msgid "Downloaded ZIPs"
+msgstr ""
+
+#: templates/admin-dashboard.php:73
+msgid "Storage Used"
+msgstr ""
+
+#: templates/admin-dashboard.php:81
+msgid "Sync Progress"
+msgstr ""
+
+#: templates/admin-dashboard.php:108
+#: templates/admin-dashboard.php:157
+msgid "Synced:"
+msgstr ""
+
+#: templates/admin-dashboard.php:113
+#: templates/admin-dashboard.php:162
+msgid "ETA:"
+msgstr ""
+
+#: templates/admin-dashboard.php:119
+#: templates/admin-dashboard.php:168
+msgid "Last Sync:"
+msgstr ""
+
+#: templates/admin-dashboard.php:125
+#: templates/admin-dashboard.php:174
+msgid "Errors:"
+msgstr ""
+
+#: templates/admin-dashboard.php:188
+msgid "Total Items"
+msgstr ""
+
+#: templates/admin-dashboard.php:194
+msgid "Overall Progress"
+msgstr ""
+
+#: templates/admin-dashboard.php:209
+msgid "Total Errors"
+msgstr ""
+
+#: templates/admin-dashboard.php:225
+msgid "Download Queue Monitor"
+msgstr ""
+
+#: templates/admin-dashboard.php:232
+msgid "▶ Resume Downloads"
+msgstr ""
+
+#: templates/admin-dashboard.php:238
+msgid "⏸ Pause Downloads"
+msgstr ""
+
+#: templates/admin-dashboard.php:245
+msgid "⏸ Downloads Paused"
+msgstr ""
+
+#: templates/admin-dashboard.php:246
+msgid "No new downloads will start until resumed."
+msgstr ""
+
+#: templates/admin-dashboard.php:254
+msgid "Active Downloads"
+msgstr ""
+
+#: templates/admin-dashboard.php:263
+msgid "No active downloads"
+msgstr ""
+
+#: templates/admin-dashboard.php:268
+msgid "ZIP File"
+msgstr ""
+
+#: templates/admin-dashboard.php:269
+msgid "Progress"
+msgstr ""
+
+#: templates/admin-dashboard.php:270
+msgid "Speed"
+msgstr ""
+
+#. translators: %s: elapsed time
+#: templates/admin-dashboard.php:297
+#, php-format
+msgid "%s elapsed"
+msgstr ""
+
+#: templates/admin-dashboard.php:322
+#: templates/partials/system-health-check.php:163
+msgid "Disk Space"
+msgstr ""
+
+#: templates/admin-dashboard.php:329
+msgid "Used"
+msgstr ""
+
+#: templates/admin-dashboard.php:341
+msgid "Total:"
+msgstr ""
+
+#: templates/admin-dashboard.php:347
+msgid "Free:"
+msgstr ""
+
+#: templates/admin-dashboard.php:353
+msgid "Downloaded:"
+msgstr ""
+
+#: templates/admin-dashboard.php:365
+#: templates/partials/storage-requirements.php:41
+#: templates/partials/storage-requirements.php:80
+msgid "Total Required:"
+msgstr ""
+
+#: templates/admin-dashboard.php:376
+msgid "Not enough disk space for all pending downloads"
+msgstr ""
+
+#: templates/admin-dashboard.php:392
+msgid "API Sync Progress"
+msgstr ""
+
+#: templates/admin-dashboard.php:397
+msgid "Plugin Sync"
+msgstr ""
+
+#: templates/admin-dashboard.php:403
+#: templates/admin-dashboard.php:495
+msgid "Sync Queued"
+msgstr ""
+
+#: templates/admin-dashboard.php:406
+#: templates/admin-dashboard.php:498
+msgid "Waiting for cron to start processing... This page will auto-refresh."
+msgstr ""
+
+#: templates/admin-dashboard.php:433
+#: templates/admin-dashboard.php:525
+msgid "Current Page"
+msgstr ""
+
+#: templates/admin-dashboard.php:445
+#: templates/admin-dashboard.php:537
+msgid "Pages Remaining"
+msgstr ""
+
+#: templates/admin-dashboard.php:452
+#: templates/admin-dashboard.php:544
+msgid "Items Processed"
+msgstr ""
+
+#: templates/admin-dashboard.php:464
+#: templates/admin-dashboard.php:556
+msgid "Items Remaining"
+msgstr ""
+
+#: templates/admin-dashboard.php:472
+#: templates/admin-dashboard.php:564
+msgid "Sync in progress..."
+msgstr ""
+
+#: templates/admin-dashboard.php:473
+#: templates/admin-dashboard.php:565
+msgid "Progress updates automatically in real-time."
+msgstr ""
+
+#: templates/admin-dashboard.php:477
+#: templates/admin-dashboard.php:569
+msgid "No active sync"
+msgstr ""
+
+#: templates/admin-dashboard.php:479
+#: templates/admin-dashboard.php:571
+msgid "Click \"Sync Now\" or \"Full Sync\" to start"
+msgstr ""
+
+#: templates/admin-dashboard.php:489
+msgid "Theme Sync"
+msgstr ""
+
+#: templates/admin-dashboard.php:581
+msgid "Sync Status"
+msgstr ""
+
+#: templates/admin-dashboard.php:585
+msgid "Type"
+msgstr ""
+
+#: templates/admin-dashboard.php:586
+msgid "Status / Progress"
+msgstr ""
+
+#: templates/admin-dashboard.php:587
+msgid "Last Run"
+msgstr ""
+
+#. translators: %d is the page number.
+#: templates/admin-dashboard.php:601
+#: templates/admin-dashboard.php:657
+#, php-format
+msgid "Page %d"
+msgstr ""
+
+#: templates/admin-dashboard.php:627
+#: templates/admin-dashboard.php:683
+msgid "Resume"
+msgstr ""
+
+#: templates/admin-dashboard.php:633
+#: templates/admin-dashboard.php:689
+msgid "Sync Now"
+msgstr ""
+
+#: templates/admin-dashboard.php:639
+msgid "This will sync ALL plugins and ALL versions. This may take hours or days to complete. Continue?"
+msgstr ""
+
+#: templates/admin-dashboard.php:639
+msgid "Download all plugins with full version history"
+msgstr ""
+
+#: templates/admin-dashboard.php:639
+#: templates/admin-dashboard.php:695
+msgid "Full Sync"
+msgstr ""
+
+#: templates/admin-dashboard.php:644
+#: templates/admin-dashboard.php:700
+msgid "Are you sure you want to reset the sync state?"
+msgstr ""
+
+#: templates/admin-dashboard.php:644
+#: templates/admin-dashboard.php:700
+msgid "Reset"
+msgstr ""
+
+#: templates/admin-dashboard.php:695
+msgid "This will sync ALL themes and ALL versions. This may take several hours to complete. Continue?"
+msgstr ""
+
+#: templates/admin-dashboard.php:695
+msgid "Download all themes with full version history"
+msgstr ""
+
+#: templates/admin-dashboard.php:708
+msgid "Plugin Sync Error:"
+msgstr ""
+
+#: templates/admin-dashboard.php:713
+msgid "Theme Sync Error:"
+msgstr ""
+
+#: templates/admin-dashboard.php:723
+msgid "ZIP Size Detection Progress"
+msgstr ""
+
+#: templates/admin-dashboard.php:750
+#: templates/admin-dashboard.php:788
+msgid "Size Detected"
+msgstr ""
+
+#: templates/admin-dashboard.php:760
+#: templates/admin-dashboard.php:798
+msgid "Remaining"
+msgstr ""
+
+#: templates/admin-dashboard.php:807
+msgid "Auto-detection:"
+msgstr ""
+
+#. translators: 1: batch size, 2: requests per second
+#: templates/admin-dashboard.php:811
+#, php-format
+msgid "Runs every 5 minutes (600 ZIPs per batch, %d req/sec)"
+msgstr ""
+
+#: templates/admin-dashboard.php:820
+msgid "Manually trigger size detection for ZIPs without size information"
+msgstr ""
+
+#: templates/admin-dashboard.php:822
+msgid "Detect Sizes Now"
+msgstr ""
+
+#: templates/admin-dashboard.php:830
+msgid "Download Queue"
+msgstr ""
+
+#: templates/admin-dashboard.php:860
+msgid "Process Queue"
+msgstr ""
+
+#: templates/admin-dashboard.php:867
+msgid "Retry Failed"
+msgstr ""
+
+#: templates/admin-dashboard.php:875
+msgid "Clear Completed"
+msgstr ""
+
+#: templates/admin-dashboard.php:887
+msgid "Error Logs (Last 10)"
+msgstr ""
+
+#: templates/admin-dashboard.php:895
+msgid "No errors found."
+msgstr ""
+
+#: templates/admin-dashboard.php:929
+msgid "View Full Log"
+msgstr ""
+
+#: templates/admin-dashboard.php:935
+msgid "Clear logs older than 30 days?"
+msgstr ""
+
+#: templates/admin-settings.php:44
+msgid "System Status"
+msgstr ""
+
+#: templates/admin-settings.php:48
+msgid "Database Version"
+msgstr ""
+
+#: templates/admin-settings.php:52
+msgid "Plugin Post Type"
+msgstr ""
+
+#: templates/admin-settings.php:56
+msgid "Theme Post Type"
+msgstr ""
+
+#: templates/admin-settings.php:60
+#: templates/partials/system-health-check.php:89
+msgid "Action Scheduler"
+msgstr ""
+
+#: templates/admin-settings.php:63
+msgid "Installed"
+msgstr ""
+
+#: templates/partials/api-health-monitor.php:11
+msgid "API Health Monitor"
+msgstr ""
+
+#: templates/partials/api-health-monitor.php:13
+msgid "WordPress.org API"
+msgstr ""
+
+#: templates/partials/api-health-monitor.php:18
+msgid "API Online"
+msgstr ""
+
+#: templates/partials/api-health-monitor.php:22
+msgid "API Offline"
+msgstr ""
+
+#: templates/partials/api-health-monitor.php:32
+msgid "Response Time"
+msgstr ""
+
+#: templates/partials/api-health-monitor.php:54
+msgid "Error Rate (24h)"
+msgstr ""
+
+#: templates/partials/api-health-monitor.php:76
+msgid "Rate Limit"
+msgstr ""
+
+#. translators: %d: optimal rate limit
+#: templates/partials/api-health-monitor.php:96
+#, php-format
+msgid "(optimal: %d)"
+msgstr ""
+
+#: templates/partials/api-health-monitor.php:111
+msgid "Recommendations"
+msgstr ""
+
+#. translators: %s: test result message
+#: templates/partials/api-health-monitor.php:127
+#, php-format
+msgid "Last API test: %s"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:4
+msgid "Diagnostic Tools"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:11
+msgid "Export Diagnostic Report"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:14
+msgid "Export a comprehensive diagnostic report for troubleshooting or sharing with support."
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:21
+msgid "Full Report"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:24
+msgid "Includes all system information, settings, and file paths. Use for internal troubleshooting."
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:27
+#: templates/partials/diagnostic-tools.php:50
+msgid "System health data"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:28
+#: templates/partials/diagnostic-tools.php:51
+msgid "API health metrics"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:29
+#: templates/partials/diagnostic-tools.php:52
+msgid "Database statistics"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:30
+msgid "All settings (including sensitive)"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:31
+msgid "Recent error logs"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:32
+msgid "Environment details"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:37
+msgid "📥 Download Full Report"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:44
+msgid "Anonymous Report"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:47
+msgid "Sanitized version safe for sharing publicly or with third-party support."
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:53
+msgid "Safe settings (no emails/paths)"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:54
+msgid "Redacted error logs"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:55
+msgid "✗ No environment details"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:60
+msgid "📥 Download Anonymous Report"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:69
+msgid "Import Settings"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:72
+msgid "Import settings from another WPInsight installation."
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:81
+msgid "Select JSON File:"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:93
+msgid "Settings Imported:"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:96
+msgid "Sync configuration"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:97
+msgid "Download limits"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:98
+msgid "Rate limiting"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:99
+msgid "Worker intervals"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:100
+msgid "Retry settings"
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:107
+msgid "Sensitive settings (emails, paths) are never imported for security."
+msgstr ""
+
+#: templates/partials/diagnostic-tools.php:115
+msgid "📤 Import Settings"
+msgstr ""
+
+#: templates/partials/storage-requirements.php:10
+msgid "Storage Requirements Analysis"
+msgstr ""
+
+#. translators: 1: plugin detection progress, 2: theme detection progress
+#: templates/partials/storage-requirements.php:16
+#, php-format
+msgid "Detection progress: Plugins %1$s%% | Themes %2$s%%"
+msgstr ""
+
+#: templates/partials/storage-requirements.php:33
+#: templates/partials/storage-requirements.php:72
+msgid "Downloaded ZIPs:"
+msgstr ""
+
+#: templates/partials/storage-requirements.php:37
+#: templates/partials/storage-requirements.php:76
+msgid "Pending ZIPs:"
+msgstr ""
+
+#. translators: 1: count with size, 2: total count
+#: templates/partials/storage-requirements.php:51
+#: templates/partials/storage-requirements.php:90
+#, php-format
+msgid "Size detected for %1$s of %2$s ZIPs"
+msgstr ""
+
+#: templates/partials/storage-requirements.php:105
+msgid "Grand Total:"
+msgstr ""
+
+#. translators: %s: total size
+#: templates/partials/storage-requirements.php:111
+#, php-format
+msgid "%s required for all ZIPs (downloaded + pending)"
+msgstr ""
+
+#: templates/partials/system-health-check.php:11
+msgid "System Health Check"
+msgstr ""
+
+#: templates/partials/system-health-check.php:34
+msgid "Software Requirements"
+msgstr ""
+
+#: templates/partials/system-health-check.php:42
+msgid "PHP Version"
+msgstr ""
+
+#: templates/partials/system-health-check.php:57
+msgid "WordPress Version"
+msgstr ""
+
+#: templates/partials/system-health-check.php:72
+msgid "Database"
+msgstr ""
+
+#: templates/partials/system-health-check.php:105
+msgid "PHP Extensions"
+msgstr ""
+
+#: templates/partials/system-health-check.php:134
+msgid "System Resources"
+msgstr ""
+
+#: templates/partials/system-health-check.php:141
+msgid "PHP Memory"
+msgstr ""
+
+#: templates/partials/system-health-check.php:183
+msgid "Permissions"
+msgstr ""
+
+#: templates/partials/system-health-check.php:209
+msgid "Action Required:"
+msgstr ""
+
+#: templates/partials/system-health-check.php:211
+msgid "Recommendations:"
+msgstr ""
+
+#: templates/partials/system-health-check.php:218
+msgid "Critical issues detected. The plugin may not work correctly until these are resolved."
+msgstr ""
+
+#: templates/partials/system-health-check.php:220
+msgid "Some warnings detected. The plugin will work but performance may be affected."
+msgstr ""
