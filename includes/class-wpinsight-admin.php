@@ -530,6 +530,16 @@ final class WPInsight_Admin {
 				add_settings_error( 'wpinsight_dashboard', 'reset_success', __( 'Theme sync state reset and pending jobs cancelled.', 'cloudfest-wporgdownload' ), 'success' );
 				break;
 
+			case 'trigger_size_detection':
+				// Trigger size detection manually by enqueuing a size detection job.
+				if ( function_exists( 'as_enqueue_async_action' ) ) {
+					as_enqueue_async_action( 'wpinsight_size_detection_tick', [], WPINSIGHT_AS_GROUP );
+					add_settings_error( 'wpinsight_dashboard', 'size_detection_triggered', __( 'Size detection triggered. Processing up to 600 ZIPs without size information.', 'cloudfest-wporgdownload' ), 'success' );
+				} else {
+					add_settings_error( 'wpinsight_dashboard', 'size_detection_error', __( 'Action Scheduler not available. Cannot trigger size detection.', 'cloudfest-wporgdownload' ), 'error' );
+				}
+				break;
+
 			default:
 				add_settings_error( 'wpinsight_dashboard', 'invalid_action', __( 'Invalid action.', 'cloudfest-wporgdownload' ), 'error' );
 				break;

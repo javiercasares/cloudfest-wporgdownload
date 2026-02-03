@@ -811,6 +811,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 					echo esc_html( sprintf( __( 'Runs every 5 minutes (600 ZIPs per batch, %d req/sec)', 'cloudfest-wporgdownload' ), $rate_limit ) );
 					?>
 				</div>
+
+				<!-- Manual Size Detection Trigger -->
+				<div style="margin-top: 15px; text-align: center;">
+					<form method="post" style="display: inline;">
+						<?php wp_nonce_field( 'wpinsight_dashboard_action', 'wpinsight_dashboard_nonce' ); ?>
+						<input type="hidden" name="wpinsight_action" value="trigger_size_detection">
+						<button type="submit" class="button button-secondary" title="<?php esc_attr_e( 'Manually trigger size detection for ZIPs without size information', 'cloudfest-wporgdownload' ); ?>">
+							<span class="dashicons dashicons-update" style="margin-top: 3px;"></span>
+							<?php esc_html_e( 'Detect Sizes Now', 'cloudfest-wporgdownload' ); ?>
+						</button>
+					</form>
+				</div>
 			</div>
 
 			<!-- Download Queue -->
