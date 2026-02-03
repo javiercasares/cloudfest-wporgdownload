@@ -117,6 +117,7 @@ copy_plugin_files() {
     # Use rsync to copy files with exclusions
     rsync -a \
         --exclude='.*' \
+        --exclude='*.md' \
         --exclude='node_modules/' \
         --exclude='vendor/' \
         --exclude='tests/' \
@@ -132,15 +133,6 @@ copy_plugin_files() {
         --exclude='*.log' \
         --exclude='*.tmp' \
         --exclude='*.backup' \
-        --exclude='AGENTS.md' \
-        --exclude='CLAUDE.md' \
-        --exclude='README.md' \
-        --exclude='DOCUMENTATION-*.md' \
-        --exclude='SECURITY-*.md' \
-        --exclude='FINAL-*.md' \
-        --exclude='REST-API-*.md' \
-        --exclude='SYNC-*.md' \
-        --exclude='TRANSLATION-*.md' \
         "$PLUGIN_DIR/" "$BUILD_DIR/$PLUGIN_SLUG/"
 
     print_success "Files copied to build directory"
@@ -153,8 +145,8 @@ validate_required_files() {
     local required_files=(
         "$BUILD_DIR/$PLUGIN_SLUG/$PLUGIN_SLUG.php"
         "$BUILD_DIR/$PLUGIN_SLUG/readme.txt"
+        "$BUILD_DIR/$PLUGIN_SLUG/changelog.txt"
         "$BUILD_DIR/$PLUGIN_SLUG/uninstall.php"
-        "$BUILD_DIR/$PLUGIN_SLUG/CHANGELOG.md"
     )
 
     for file in "${required_files[@]}"; do
