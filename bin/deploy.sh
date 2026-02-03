@@ -124,6 +124,7 @@ copy_plugin_files() {
         --exclude='bin/' \
         --exclude='docs/' \
         --exclude='phpcs.xml*' \
+        --exclude='phpstan.neon*' \
         --exclude='phpunit.xml*' \
         --exclude='composer.json' \
         --exclude='composer.lock' \
