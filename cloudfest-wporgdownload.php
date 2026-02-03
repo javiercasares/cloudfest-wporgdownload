@@ -25,7 +25,7 @@
  * Plugin Name:       CloudFest WPOrg Download
  * Plugin URI:        https://github.com/javiercasares/cloudfest-wporgdownload
  * Description:       Downloads and archives ALL WordPress.org plugins including historical versions. Requires Action Scheduler.
- * Version:           1.4.0
+ * Version:           1.7.0
  * Requires at least: 6.9
  * Requires PHP:      8.4
  * Requires Plugins:  action-scheduler
@@ -49,7 +49,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 0.1.0
  */
-define( 'WPINSIGHT_VERSION', '1.4.0' );
+define( 'WPINSIGHT_VERSION', '1.7.0' );
 
 /**
  * Plugin file path.

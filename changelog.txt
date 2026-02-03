@@ -1,0 +1,91 @@
+== Changelog ==
+
+= 1.7.0 - 2026-02-03 =
+
+**Real-time Dashboard & Security Enhancements Release**
+
+* Real-time AJAX dashboard updates (no page reload)
+* 6 new REST API endpoints for live data
+* Manual "Detect Sizes Now" button
+* Fixed SQL injection vulnerabilities (20+ instances)
+* Enhanced file upload security validation
+* PHPCS errors reduced 93% (466→32)
+* PHPStan errors reduced 58% (36→15)
+* Translation POT file with 524 strings
+* All 157 unit tests passing
+
+= 1.6.0 - 2026-02-02 =
+
+**CPT UI Enhancement Release**
+
+* Version history accordion with changelog display
+* Per-version download actions
+* Expandable/collapsible version details
+* Modern UI with smooth transitions
+
+= 1.5.0 - 2026-02-02 =
+
+**Settings & Storage System Release**
+
+* Settings page reorganization
+* Storage Requirements Analysis section
+* API Health Monitor
+* System Health Check
+* Diagnostic export/import tools
+
+= 1.4.0 - 2026-02-02 =
+
+**ZIP Size Detection System Release**
+
+* Automatic ZIP size detection via HEAD requests
+* Progress tracking for detection
+* Configurable rate limiting (1-10 req/sec)
+* Dashboard debug tools
+* Cron management UI
+
+= 1.3.0 - 2026-02-02 =
+
+**CPT Detail View Enhancement Release**
+
+* Plugin/Theme Information meta boxes
+* ZIP Downloads table with status badges
+* Quick Stats sidebar widget
+* Public URL generation for ZIPs
+
+= 1.2.0 - 2026-02-02 =
+
+**Import/Export System Release**
+
+* Export/import plugin and theme metadata
+* JSON/JSON.gz compression support
+* WP-CLI commands
+* Duplicate handling options
+
+= 1.1.0 - 2026-01-31 =
+
+**Logging & Monitoring Release**
+
+* Centralized error logging system
+* Error severity levels
+* Admin email notifications
+* Database-backed log storage
+* Admin UI for error log viewing
+
+= 1.0.0 - 2026-01-30 =
+
+**Initial Stable Release**
+
+* Full sync of WordPress.org plugins and themes
+* Historical version tracking (~600K ZIPs)
+* Background processing via Action Scheduler
+* Rate-limited downloads (max 3 concurrent)
+* WP-CLI integration
+* Admin dashboard with statistics
+* Custom database tables with indexes
+* OWASP Top 10 security compliance
+
+**Compatibility:**
+* WordPress: 6.9+
+* PHP: 8.4+
+* MariaDB: 10.6+
+* Action Scheduler: Required

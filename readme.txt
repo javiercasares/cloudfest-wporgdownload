@@ -3,10 +3,10 @@ Contributors: javiercasares
 Tags: wordpress.org, plugins, themes, archive, mirror, backup, downloader
 Requires at least: 6.9
 Tested up to: 6.9
-Stable tag: 1.4.0
+Stable tag: 1.7.0
 Requires PHP: 8.4
 Requires Plugins: action-scheduler
-Version: 1.4.0
+Version: 1.7.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -286,6 +286,61 @@ Yes! This plugin was developed during CloudFest Hackathon. Contributions welcome
 4. WP-CLI commands output showing sync progress
 
 == Changelog ==
+
+= 1.7.0 - 2026-02-03 =
+
+**Real-time Dashboard & Security Enhancements Release**
+
+* **Real-time AJAX Dashboard (Phase 20.5)**
+  * Live dashboard updates without page refresh
+  * JavaScript polling every 5 seconds via REST API
+  * Auto-updating statistics: queue counts, sync progress, active downloads
+  * Progress bars update in real-time
+  * Smooth animations for value changes
+  * Removed obsolete 10-second page reload
+
+* **REST API Backend**
+  * 6 new REST API endpoints for live data
+  * `/wpinsight/v1/dashboard-stats` - Queue statistics
+  * `/wpinsight/v1/active-downloads` - Downloads in progress
+  * `/wpinsight/v1/sync-status` - Sync worker status
+  * `/wpinsight/v1/queue-actions` - Pause/resume/clear queue
+  * `/wpinsight/v1/trigger-download` - Manual download trigger
+  * `/wpinsight/v1/update-setting` - Settings updates
+  * Permission callbacks on all endpoints (manage_options)
+  * Nonce verification for security
+
+* **Manual Size Detection**
+  * New "Detect Sizes Now" button in ZIP Size Detection card
+  * Manually trigger size detection for up to 600 ZIPs
+  * Bypass 5-minute auto-schedule when needed
+  * Useful after bulk sync operations
+
+* **Security Fixes**
+  * Fixed SQL injection vulnerabilities (20+ instances)
+  * All database queries now use $wpdb->prepare() with %i placeholder
+  * Added missing REST API methods (Settings::set, Zip_Queue::enqueue_download)
+  * Enhanced file upload validation (size + MIME + extension)
+  * Replaced error_log() with centralized WPInsight_Logger
+
+* **Code Quality Improvements**
+  * PHPCS errors reduced from 466 to 32 (93% reduction)
+  * PHPStan errors reduced from 36 to 15 (58% reduction)
+  * All 157 unit tests passing
+  * WordPress Coding Standards compliance
+  * Yoda conditions, inline comment formatting
+  * PHPDoc generic types added
+
+* **Translation Support**
+  * Generated POT file with 524 translatable strings
+  * Ready for translation via GlotPress or Poedit
+  * Text domain: cloudfest-wporgdownload
+  * UTF-8 encoding, GNU gettext format
+
+**Compatibility:**
+* WordPress: 6.9+
+* PHP: 8.4+
+* MariaDB: 10.6+
 
 = 1.4.0 - 2026-02-02 =
 

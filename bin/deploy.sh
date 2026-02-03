@@ -123,6 +123,7 @@ copy_plugin_files() {
         --exclude='vendor/' \
         --exclude='tests/' \
         --exclude='bin/' \
+        --exclude='docs/' \
         --exclude='.phpcs.xml' \
         --exclude='.phpcs.xml.dist' \
         --exclude='phpcs.xml' \
@@ -144,6 +145,12 @@ copy_plugin_files() {
         --exclude='.DS_Store' \
         --exclude='Thumbs.db' \
         --exclude='DOCUMENTATION-*.md' \
+        --exclude='SECURITY-*.md' \
+        --exclude='FINAL-*.md' \
+        --exclude='REST-API-*.md' \
+        --exclude='SYNC-*.md' \
+        --exclude='TRANSLATION-*.md' \
+        --exclude='*.backup' \
         --exclude='.editorconfig' \
         --exclude='.vscode/' \
         --exclude='.idea/' \
