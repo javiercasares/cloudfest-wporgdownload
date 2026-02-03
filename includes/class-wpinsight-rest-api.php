@@ -195,11 +195,12 @@ class WPInsight_REST_API {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$downloads = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT slug, version, type, file_size, started_at
-				FROM {$table}
+				'SELECT slug, version, item_type, remote_filesize, started_at
+				FROM %i
 				WHERE status = %s
 				ORDER BY started_at ASC
-				LIMIT 10",
+				LIMIT 10',
+				$table,
 				'processing'
 			),
 			ARRAY_A
@@ -210,7 +211,7 @@ class WPInsight_REST_API {
 		foreach ( $downloads as $download ) {
 			$started   = strtotime( $download['started_at'] );
 			$elapsed   = time() - $started;
-			$file_size = (int) $download['file_size'];
+			$file_size = (int) $download['remote_filesize'];
 
 			// Calculate progress (estimate based on elapsed time and average speed).
 			$avg_speed  = 1024 * 1024 * 2; // 2 MB/s average.
@@ -223,7 +224,7 @@ class WPInsight_REST_API {
 			$active[] = [
 				'slug'       => $download['slug'],
 				'version'    => $download['version'],
-				'type'       => $download['type'],
+				'type'       => $download['item_type'],
 				'file_size'  => $file_size,
 				'elapsed'    => $elapsed,
 				'progress'   => round( $progress, 1 ),
@@ -259,9 +260,10 @@ class WPInsight_REST_API {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$plugin_state = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT status, current_page, total_pages, items_processed, total_items, updated_at
-				FROM {$sync_table}
-				WHERE sync_type = %s",
+				'SELECT status, page, per_page, total_pages, total_items, updated_at
+				FROM %i
+				WHERE sync_type = %s',
+				$sync_table,
 				'plugin'
 			),
 			ARRAY_A
@@ -271,9 +273,10 @@ class WPInsight_REST_API {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$theme_state = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT status, current_page, total_pages, items_processed, total_items, updated_at
-				FROM {$sync_table}
-				WHERE sync_type = %s",
+				'SELECT status, page, per_page, total_pages, total_items, updated_at
+				FROM %i
+				WHERE sync_type = %s',
+				$sync_table,
 				'theme'
 			),
 			ARRAY_A
@@ -282,12 +285,22 @@ class WPInsight_REST_API {
 		$plugin_progress = 0;
 		$theme_progress  = 0;
 
-		if ( $plugin_state && $plugin_state['total_items'] > 0 ) {
-			$plugin_progress = round( ( $plugin_state['items_processed'] / $plugin_state['total_items'] ) * 100, 1 );
+		// Calculate items_processed from page and per_page.
+		$plugin_items_processed = 0;
+		$theme_items_processed  = 0;
+
+		if ( $plugin_state ) {
+			$plugin_items_processed = ( max( 0, (int) $plugin_state['page'] - 1 ) ) * (int) $plugin_state['per_page'];
+			if ( $plugin_state['total_items'] > 0 ) {
+				$plugin_progress = round( ( $plugin_items_processed / $plugin_state['total_items'] ) * 100, 1 );
+			}
 		}
 
-		if ( $theme_state && $theme_state['total_items'] > 0 ) {
-			$theme_progress = round( ( $theme_state['items_processed'] / $theme_state['total_items'] ) * 100, 1 );
+		if ( $theme_state ) {
+			$theme_items_processed = ( max( 0, (int) $theme_state['page'] - 1 ) ) * (int) $theme_state['per_page'];
+			if ( $theme_state['total_items'] > 0 ) {
+				$theme_progress = round( ( $theme_items_processed / $theme_state['total_items'] ) * 100, 1 );
+			}
 		}
 
 		return new WP_REST_Response(
@@ -297,18 +310,18 @@ class WPInsight_REST_API {
 					'plugin' => [
 						'status'          => $plugin_state['status'] ?? 'idle',
 						'progress'        => $plugin_progress,
-						'items_processed' => (int) ( $plugin_state['items_processed'] ?? 0 ),
+						'items_processed' => $plugin_items_processed,
 						'total_items'     => (int) ( $plugin_state['total_items'] ?? 0 ),
-						'current_page'    => (int) ( $plugin_state['current_page'] ?? 0 ),
+						'current_page'    => (int) ( $plugin_state['page'] ?? 0 ),
 						'total_pages'     => (int) ( $plugin_state['total_pages'] ?? 0 ),
 						'updated_at'      => $plugin_state['updated_at'] ?? '',
 					],
 					'theme'  => [
 						'status'          => $theme_state['status'] ?? 'idle',
 						'progress'        => $theme_progress,
-						'items_processed' => (int) ( $theme_state['items_processed'] ?? 0 ),
+						'items_processed' => $theme_items_processed,
 						'total_items'     => (int) ( $theme_state['total_items'] ?? 0 ),
-						'current_page'    => (int) ( $theme_state['current_page'] ?? 0 ),
+						'current_page'    => (int) ( $theme_state['page'] ?? 0 ),
 						'total_pages'     => (int) ( $theme_state['total_pages'] ?? 0 ),
 						'updated_at'      => $theme_state['updated_at'] ?? '',
 					],
