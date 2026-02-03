@@ -476,7 +476,7 @@ final class WPInsight_DB {
 	 * Returns statistics for sync_state, zip_queue, artifacts, and error_log tables.
 	 *
 	 * @since 1.5.0
-	 * @return array<string, array> Array of table statistics keyed by short table name.
+	 * @return array<string, array<string, mixed>> Array of table statistics keyed by short table name.
 	 */
 	public static function get_all_tables_stats(): array {
 		$tables = [ 'sync_state', 'zip_queue', 'artifacts', 'error_log' ];

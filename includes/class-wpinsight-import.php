@@ -42,7 +42,7 @@ class WPInsight_Import {
 	 * @since 1.2.0
 	 *
 	 * @param string $file_path Absolute path to import file.
-	 * @return array|WP_Error Parsed data array on success, WP_Error on failure.
+	 * @return array<string, mixed>|WP_Error Parsed data array on success, WP_Error on failure.
 	 */
 	public static function import_from_file( string $file_path ) {
 		// Validate file exists and is readable.
@@ -120,9 +120,9 @@ class WPInsight_Import {
 	 *
 	 * @since 1.2.0
 	 *
-	 * @param array $data    Parsed export data.
-	 * @param array $options Optional. Import options. Default empty array.
-	 * @return array Import results with counts and errors.
+	 * @param array<string, mixed> $data    Parsed export data.
+	 * @param array<string, mixed> $options Optional. Import options. Default empty array.
+	 * @return array<string, mixed> Import results with counts and errors.
 	 */
 	public static function import_plugins( array $data, array $options = [] ): array {
 		// Validate data structure.
@@ -148,9 +148,9 @@ class WPInsight_Import {
 	 *
 	 * @since 1.2.0
 	 *
-	 * @param array $data    Parsed export data.
-	 * @param array $options Optional. Import options. Default empty array.
-	 * @return array Import results with counts and errors.
+	 * @param array<string, mixed> $data    Parsed export data.
+	 * @param array<string, mixed> $options Optional. Import options. Default empty array.
+	 * @return array<string, mixed> Import results with counts and errors.
 	 */
 	public static function import_themes( array $data, array $options = [] ): array {
 		// Validate data structure.
@@ -176,9 +176,9 @@ class WPInsight_Import {
 	 *
 	 * @since 1.2.0
 	 *
-	 * @param string $file_path Absolute path to import file.
-	 * @param array  $options   Optional. Import options. Default empty array.
-	 * @return array Import results with counts and errors.
+	 * @param string               $file_path Absolute path to import file.
+	 * @param array<string, mixed> $options   Optional. Import options. Default empty array.
+	 * @return array<string, mixed> Import results with counts and errors.
 	 */
 	public static function import_all( string $file_path, array $options = [] ): array {
 		$data = self::import_from_file( $file_path );
@@ -243,10 +243,10 @@ class WPInsight_Import {
 	 *
 	 * @since 1.2.0
 	 *
-	 * @param string $post_type Post type to import (wpinsight_plugin or wpinsight_theme).
-	 * @param array  $items     Array of post data to import.
-	 * @param array  $options   Import options.
-	 * @return array Import results.
+	 * @param string               $post_type Post type to import (wpinsight_plugin or wpinsight_theme).
+	 * @param array<int, mixed>    $items     Array of post data to import.
+	 * @param array<string, mixed> $options   Import options.
+	 * @return array<string, mixed> Import results.
 	 */
 	private static function import_cpt_data( string $post_type, array $items, array $options ): array {
 		$defaults = [
@@ -381,7 +381,7 @@ class WPInsight_Import {
 	 * @since 1.2.0
 	 *
 	 * @param string $file_path Absolute path to import file.
-	 * @return array|WP_Error Validation results or WP_Error on failure.
+	 * @return array<string, mixed>|WP_Error Validation results or WP_Error on failure.
 	 */
 	public static function validate_import_file( string $file_path ) {
 		$data = self::import_from_file( $file_path );

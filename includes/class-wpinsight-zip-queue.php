@@ -575,7 +575,7 @@ final class WPInsight_Zip_Queue {
 	 *
 	 * @since 1.3.0
 	 * @param int $limit Maximum number of ZIPs to process. Default 100.
-	 * @return array Statistics about detection (checked, updated, failed).
+	 * @return array<string, int> Statistics about detection (checked, updated, failed).
 	 */
 	public static function detect_zip_sizes( int $limit = 100 ): array {
 		global $wpdb;
@@ -710,7 +710,7 @@ final class WPInsight_Zip_Queue {
 	 * Returns total sizes for downloaded ZIPs and pending/queued ZIPs.
 	 *
 	 * @since 1.3.0
-	 * @return array Statistics with plugin and theme sizes.
+	 * @return array<string, array<string, int|float>> Statistics with plugin and theme sizes.
 	 */
 	public static function get_size_statistics(): array {
 		global $wpdb;

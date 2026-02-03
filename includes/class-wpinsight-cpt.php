@@ -1254,7 +1254,7 @@ final class WPInsight_CPT {
 	 * @since 1.2.0
 	 * @param string $slug        Plugin or theme slug.
 	 * @param string $entity_type Entity type ('plugin' or 'theme').
-	 * @return array Array of artifacts keyed by version.
+	 * @return array<string, array<string, mixed>> Array of artifacts keyed by version.
 	 */
 	private static function get_artifact_data( string $slug, string $entity_type ): array {
 		global $wpdb;
@@ -1292,7 +1292,7 @@ final class WPInsight_CPT {
 	 * @since 1.2.0
 	 * @param string $slug        Plugin or theme slug.
 	 * @param string $entity_type Entity type ('plugin' or 'theme').
-	 * @return array Array of queue jobs keyed by version.
+	 * @return array<string, array<string, mixed>> Array of queue jobs keyed by version.
 	 */
 	private static function get_queue_data( string $slug, string $entity_type ): array {
 		global $wpdb;

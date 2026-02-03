@@ -1075,20 +1075,20 @@ final class WPInsight_Admin {
 		$theme_state  = WPInsight_Sync::get_sync_state( 'theme' );
 		$queue_stats  = WPInsight_Zip_Queue::get_queue_stats();
 
-		// Get sync progress data for Phase 18.3
+		// Get sync progress data for Phase 18.3.
 		$plugin_progress = self::get_sync_progress_data( 'plugin' );
 		$theme_progress  = self::get_sync_progress_data( 'theme' );
 
-		// Get active downloads and disk space info for Phase 18.4
+		// Get active downloads and disk space info for Phase 18.4.
 		$active_downloads = self::get_active_downloads();
 		$disk_space       = self::get_disk_space_info();
 		$downloads_paused = WPInsight_Settings::get( 'downloads_paused', false );
 
-		// Get system health data for Phase 18.6
+		// Get system health data for Phase 18.6.
 		$system_health  = self::get_system_health_data();
 		$overall_health = self::get_overall_health_status( $system_health );
 
-		// Get API health data for Phase 18.5
+		// Get API health data for Phase 18.5.
 		$api_health = self::get_api_health_data();
 
 		// Pass admin class reference for helper methods.
@@ -2021,7 +2021,7 @@ final class WPInsight_Admin {
 																</td>
 																<td style="padding: 5px; text-align: right;">
 																	<?php
-																	if ( $execution['duration'] !== null ) {
+																	if ( null !== $execution['duration'] ) {
 																		echo esc_html( number_format( $execution['duration'], 1 ) ) . 's';
 																	} else {
 																		echo '—';
@@ -2835,7 +2835,7 @@ final class WPInsight_Admin {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$counts = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT status, COUNT(*) as count
+				'SELECT status, COUNT(*) as count
 				FROM %i
 				WHERE hook = %s
 				AND last_attempt_gmt > %s
@@ -2844,7 +2844,7 @@ final class WPInsight_Admin {
 					WHERE slug = %s
 					LIMIT 1
 				)
-				GROUP BY status",
+				GROUP BY status',
 				$actions_table,
 				$hook,
 				$twentyfour_hours_ago,
@@ -3056,18 +3056,18 @@ final class WPInsight_Admin {
 	private static function get_sync_progress_data( string $entity_type ): array {
 		$state = WPInsight_Sync::get_sync_state( $entity_type );
 
-		// Get total count from WordPress.org API (estimated)
+		// Get total count from WordPress.org API (estimated).
 		$total_estimated = 'plugin' === $entity_type ? 60000 : 12000;
 
-		// Get current synced count from CPTs
+		// Get current synced count from CPTs.
 		$cpt_type     = 'plugin' === $entity_type ? WPInsight_CPT::get_plugin_post_type() : WPInsight_CPT::get_theme_post_type();
 		$synced_count = wp_count_posts( $cpt_type )->publish ?? 0;
 
-		// Calculate progress
+		// Calculate progress.
 		$progress_percent = $total_estimated > 0 ? ( $synced_count / $total_estimated ) * 100 : 0;
 		$progress_percent = min( $progress_percent, 100 ); // Cap at 100%
 
-		// Determine status and styling
+		// Determine status and styling.
 		$status       = $state['status'] ?? 'idle';
 		$status_label = '';
 		$status_color = '#646970';
@@ -3099,7 +3099,7 @@ final class WPInsight_Admin {
 				break;
 		}
 
-		// Calculate ETA
+		// Calculate ETA.
 		$eta_seconds   = null;
 		$eta_formatted = null;
 
@@ -3109,12 +3109,12 @@ final class WPInsight_Admin {
 			$eta_formatted = $eta_data['formatted'];
 		}
 
-		// Get error count from sync state
+		// Get error count from sync state.
 		$error_count = 0;
 		if ( isset( $state['last_error'] ) && ! empty( $state['last_error'] ) ) {
 			$error_count = 1; // At least one error
 
-			// Try to get actual error count from error log
+			// Try to get actual error count from error log.
 			global $wpdb;
 			$logs_table = WPInsight_DB::get_table_name( 'error_log' );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -3131,7 +3131,7 @@ final class WPInsight_Admin {
 			);
 		}
 
-		// Get last sync time
+		// Get last sync time.
 		$last_sync = null;
 		if ( isset( $state['last_run_at'] ) && ! empty( $state['last_run_at'] ) ) {
 			$last_sync = human_time_diff( strtotime( $state['last_run_at'] ), time() ) . ' ' . __( 'ago', 'cloudfest-wporgdownload' );
@@ -3175,27 +3175,27 @@ final class WPInsight_Admin {
 			];
 		}
 
-		// Get average execution time from Action Scheduler
+		// Get average execution time from Action Scheduler.
 		$hook  = 'wpinsight_sync_tick';
 		$stats = self::get_action_scheduler_stats( $hook );
 
 		$avg_time_per_execution = $stats['avg_execution_time'] ?? 3; // Default 3 seconds
 
-		// Get items per execution (from settings)
+		// Get items per execution (from settings).
 		$per_page = WPInsight_Settings::get( 'per_page', 250 );
 
-		// Calculate remaining items and executions
+		// Calculate remaining items and executions.
 		$remaining_items      = $total - $current;
 		$remaining_executions = ceil( $remaining_items / $per_page );
 
-		// Calculate ETA in seconds
+		// Calculate ETA in seconds.
 		$eta_seconds = $remaining_executions * $avg_time_per_execution;
 
-		// Add interval between executions (default: 5 minutes = 300 seconds)
+		// Add interval between executions (default: 5 minutes = 300 seconds).
 		$sync_interval = WPInsight_Settings::get( 'sync_interval', 300 );
 		$eta_seconds  += ( $remaining_executions - 1 ) * $sync_interval;
 
-		// Format ETA
+		// Format ETA.
 		$eta_formatted = self::format_eta( $eta_seconds );
 
 		return [
